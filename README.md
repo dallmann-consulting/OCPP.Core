@@ -1,5 +1,5 @@
 # OCPP.Core
-OCPP.Core is as an OCPP ([Open ChargePoint Protcol](https://en.wikipedia.org/wiki/Open_Charge_Point_Protocol)) server written in .NET-Core. It includes a management Web-UI for administration of charge points and charge tokens (RFID-Token)
+OCPP.Core is as an OCPP ([Open ChargePoint Protocol](https://en.wikipedia.org/wiki/Open_Charge_Point_Protocol)) server written in .NET-Core. It includes a management Web-UI for administration of charge points and charge tokens (RFID-Token)
 
 
 
@@ -111,7 +111,7 @@ Referenced Packages:
 	* Start both executables (=> Kestrel webserver)
 
 
-###Check Web-UI
+### Check Web-UI
 Open the configured URL in a browser. The debug URL in the project is "http://localhost:9419/".
 You should see the login screen. Enter the configured admin account.
 
@@ -135,9 +135,9 @@ Create new charge tag:
 
 The Web-UI is localized in English and German language
 
-###Check OCPP-Server
+### Check OCPP-Server
 An easy way to test the OCPP-Server is the 
-[OCPP1.6 Simple Chargebox Simuator](https://github.com/victormunoz/OCPP-1.6-Chargebox-Simulator)
+[OCPP1.6 Simple Chargebox Simulator](https://github.com/victormunoz/OCPP-1.6-Chargebox-Simulator)
 
 Enter "ws://localhost:8081/OCPP/station42" as the central station URL.
 "station42" is the ID of the charge point you created in the previous step.
