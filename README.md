@@ -105,7 +105,7 @@ Referenced Packages:
 3. Build & Run
 	* Make sure you installed the .NET-Core SDK.
 	* Open a command shell and navigate to the root folder of the project.
-	* Execute the followiong command
+	* Execute the following command
 ```dotnet build OCPP.Core.sln```
 	* Copy the 'wwwroot' folder to the build target directory (where the dlls are)
 	* Start both executables (=> Kestrel webserver)
@@ -164,7 +164,7 @@ if (la == "startTransaction"){
 	var array = $.map(ddata, function (value, index) {
 		return [value];
 	});
-	//var TransactionId = (array[0]); the correct array index is 1
+	//var TransactionId = (array[0]); bug => the correct array index is 1
 	var TransactionId = (array[1]);
 	sessionStorage.setItem('TransactionId', TransactionId);
 }
