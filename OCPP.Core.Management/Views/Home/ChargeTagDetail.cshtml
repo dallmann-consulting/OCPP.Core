@@ -1,0 +1,114 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@model ChargeTagViewModel
+@inject IViewLocalizer Localizer
+@{
+    ViewData["Title"] = @Localizer["Title"];
+}
+<br />
+
+@if (Model != null)
+{
+    @using (Html.BeginForm())
+    {
+        @Html.AntiForgeryToken()
+
+        <h4>@Localizer["EditChargeTag"]</h4>
+        <br />
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="TagId">@Localizer["ChargeTagIdLabel"]</label>
+                    </div>
+                </div>
+                @if (Model.CurrentTagId == "@")
+                {
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <input type="text" class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 50)" data-val-length-max="50" data-val-required="@Localizer["RequiredField"]" id="TagId" maxlength="50" name="TagId" placeholder="@Localizer["ChargeTagIdPlaceholder"]" value="@Model.TagId">
+                        </div>
+                    </div>
+                    <div class="col-sm-2">
+                        <span class="field-validation-valid text-danger" data-valmsg-for="TagId" data-valmsg-replace="true"></span>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <input type="text" readonly class="form-control" id="TagId" name="TagId" placeholder="@Localizer["ChargeTagIdPlaceholder"]" value="@Model.TagId">
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="TagName">@Localizer["ChargeTagNameLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 200)" data-val-length-max="200" data-val-required="@Localizer["RequiredField"]" id="TagName" maxlength="200" name="TagName" placeholder="@Localizer["ChargeTagNamePlaceholder"]" type="text" value="@Model.TagName" />
+                    </div>
+                </div>
+                <div class="col-sm-2">
+                    <span class="field-validation-valid text-danger" data-valmsg-for="TagName" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="expiryDatetimepicker">@Localizer["ChargeTagExpirationLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <div class="input-group date" id="expiryDatetimepicker" style="max-width: 180px">
+                            <input type="text" class="form-control" id="ExpiryDate" name="ExpiryDate" value="@Model.ExpiryDate?.ToString(ViewBag.DatePattern)">
+                            <span class="input-group-append"><i class="input-group-text fa fa-calendar" style="padding-top: 10px;"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <label class="form-check-label inline-label" for="Blocked">@Localizer["ChargeTagBlockedLabel"]</label>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-check">
+                        @Html.CheckBoxFor(m => m.Blocked, new { @class = "form-check-input checkbox-lg" })
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12 text-danger">
+                    @ViewBag.ErrorMsg
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-1">
+                    &nbsp;
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2">
+                    <button type="submit" class="btn btn-primary">@Localizer[(Model.CurrentTagId == "@") ? "SaveNew" : "Save"].Value</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @section scripts {
+        <script>
+            $(function () {
+                $('#expiryDatetimepicker').datepicker({
+                    weekStart: 1,
+                    todayBtn: true,
+                    language: "@ViewBag.Language",
+                    todayHighlight: true
+                });
+            });
+        </script>
+    }
+}

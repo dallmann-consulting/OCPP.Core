@@ -1,0 +1,92 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@model ChargePointViewModel
+@inject IViewLocalizer Localizer
+@{
+    ViewData["Title"] = @Localizer["Title"];
+}
+<br />
+
+@if (Model != null)
+{
+    @using (Html.BeginForm())
+    {
+        @Html.AntiForgeryToken()
+
+        <h4>@Localizer["EditChargePoint"]</h4>
+        <br />
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="ChargePointId">@Localizer["ChargePointIdLabel"]</label>
+                    </div>
+                </div>
+                @if (Model.CurrentId == "@")
+                {
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <input type="text" class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 100)" data-val-length-max="100" data-val-required="@Localizer["RequiredField"]" id="ChargePointId" maxlength="100" name="ChargePointId" placeholder="@Localizer["ChargePointIdPlaceholder"]" value="@Model.ChargePointId">
+                        </div>
+                    </div>
+                    <div class="col-sm-2">
+                        <span class="field-validation-valid text-danger" data-valmsg-for="ChargePointId" data-valmsg-replace="true"></span>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <input type="text" readonly class="form-control" id="ChargePointId" name="ChargePointId" placeholder="@Localizer["ChargePointIdPlaceholder"]" value="@Model.ChargePointId">
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="Name">@Localizer["NameLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 100)" data-val-length-max="100" data-val-required="@Localizer["RequiredField"]" id="Name" maxlength="100" name="Name" placeholder="@Localizer["NamePlaceholder"]" type="text" value="@Model.Name" />
+                    </div>
+                </div>
+                <div class="col-sm-2">
+                    <span class="field-validation-valid text-danger" data-valmsg-for="Name" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="Name">@Localizer["CommentLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 200)" data-val-length-max="200" id="Comment" maxlength="200" name="Comment" placeholder="@Localizer["CommentPlaceholder"]" type="text" value="@Model.Comment" />
+                    </div>
+                </div>
+                <div class="col-sm-2">
+                    <span class="field-validation-valid text-danger" data-valmsg-for="Comment" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-12 text-danger">
+                    @ViewBag.ErrorMsg
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-1">
+                    &nbsp;
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2">
+                    <button type="submit" class="btn btn-primary">@Localizer[(Model.CurrentId == "@") ? "SaveNew" : "Save"].Value</button>
+                </div>
+            </div>
+        </div>
+    }
+}

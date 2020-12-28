@@ -1,0 +1,115 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@model TransactionListViewModel
+@inject IViewLocalizer Localizer
+@{
+    ViewData["Title"] = @Localizer["Title"];
+}
+<br />
+@{ string ts = (Model.Timespan == 2) ? "?t=2" : ((Model.Timespan == 3) ? "?t=3" : string.Empty); }
+
+<div class="container fill">
+    <div class="row">
+        <div class="col-md-auto align-self-center">
+            @Localizer["ChargePointLabel"]
+        </div>
+        <div class="col-md-auto align-self-center">
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="ddbChargePoint" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    @Model.CurrentChargePointName
+                </button>
+                <div class="dropdown-menu" aria-labelledby="ddbChargePoint">
+                    @foreach (ChargePoint cp in Model.ChargePoints)
+                    {
+                        <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(cp.ChargePointId)@ts">@cp.Name</a>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-1">
+        </div>
+        <div class="col-md-auto align-self-center">
+            @Localizer["TimeSpanLabel"]
+        </div>
+        <div class="col-md-auto align-self-center">
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="ddbTimespan" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    @if (Model.Timespan == 2)
+                    {
+                        @Localizer["TimeSpan90"];
+                    }
+                    else if (Model.Timespan == 3)
+                    {
+                        @Localizer["TimeSpan365"];
+                    }
+                    else
+                    {
+                        @Localizer["TimeSpan30"];
+                    }
+                </button>
+                <div class="dropdown-menu" aria-labelledby="ddbTimespan">
+                    <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)">@Localizer["TimeSpan30"]</a>
+                    <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)/?t=2">@Localizer["TimeSpan90"]</a>
+                    <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)/?t=3">@Localizer["TimeSpan365"]</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+        </div>
+        <div class="col-md-auto align-self-center">
+            <a href="~/Home/Export/@Uri.EscapeDataString(Model.CurrentChargePointId)@ts" data-toggle="tooltip" data-placement="top" title="@Localizer["DownloadCsv"]">
+                <i class="fas fa-file-csv fa-2x"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<br />
+
+@if (Model != null)
+{
+    <table id="dtTransactions" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th class="th-sm">@Localizer["ChargePointId"]</th>
+                <th class="th-sm">@Localizer["Connector"]</th>
+                <th class="th-sm">@Localizer["StartTime"]</th>
+                <th class="th-sm">@Localizer["StartTag"]</th>
+                <th class="th-sm">@Localizer["StartMeter"]</th>
+                <th class="th-sm">@Localizer["StopTime"]</th>
+                <th class="th-sm">@Localizer["StopTag"]</th>
+                <th class="th-sm">@Localizer["StopMeter"]</th>
+                <th class="th-sm">@Localizer["ChargeSum"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Transactions != null)
+            {
+                foreach (Transaction t in Model.Transactions)
+                {
+                    string startTag = t.StartTagId;
+                    string stopTag = t.StopTagId;
+                    if (!string.IsNullOrEmpty(t.StartTagId) && Model.ChargeTags != null && Model.ChargeTags.ContainsKey(t.StartTagId))
+                    {
+                        startTag = Model.ChargeTags[t.StartTagId]?.TagName;
+                    }
+                    if (!string.IsNullOrEmpty(t.StopTagId) && Model.ChargeTags != null && Model.ChargeTags.ContainsKey(t.StopTagId))
+                    {
+                        stopTag = Model.ChargeTags[t.StopTagId]?.TagName;
+                    }
+                    <tr>
+                        <td>@t.ChargePointId</td>
+                        <td>@t.ConnectorId</td>
+                        <td>@string.Format("{0} {1}", t.StartTime.ToShortDateString(), t.StartTime.ToShortTimeString())</td>
+                        <td>@startTag</td>
+                        <td>@t.MeterStart</td>
+                        <td>@((t.StopTime != null) ? string.Format("{0} {1}", t.StopTime.Value.ToShortDateString(), t.StopTime.Value.ToShortTimeString()) : string.Empty)</td>
+                        <td>@stopTag</td>
+                        <td>@((t.MeterStop != null) ? t.MeterStop.ToString() : string.Empty)</td>
+                        <td>@((t.MeterStop != null) ? (t.MeterStop - t.MeterStart).ToString() : string.Empty)</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+

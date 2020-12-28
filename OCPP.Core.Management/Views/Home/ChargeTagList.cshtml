@@ -1,0 +1,39 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@model ChargeTagViewModel
+@inject IViewLocalizer Localizer
+@{
+    ViewData["Title"] = @Localizer["Title"];
+}
+<br />
+
+@if (Model != null)
+{
+    <table id="dtChargeTags" class="table table-striped table-bordered table-sm table-hover" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th class="th-sm">@Localizer["TagId"]</th>
+                <th class="th-sm">@Localizer["TagName"]</th>
+                <th class="th-sm">@Localizer["ExpiryDate"]</th>
+                <th class="th-sm">@Localizer["Blocked"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.ChargeTags != null)
+            {
+                foreach (ChargeTag tag in Model.ChargeTags)
+                {
+                    <tr class="table-row" data-href='@Url.Action("ChargeTag", Constants.HomeController, new { id = tag.TagId })'>
+                        <td>@tag.TagId</td>
+                        <td>@tag.TagName</td>
+                        <td>@((tag.ExpiryDate != null) ? tag.ExpiryDate.Value.ToString(ViewBag.DatePattern) : "-")</td>
+                        <td>@((tag.Blocked == true) ? "1" : "0")</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <br />
+    <a class="btn btn-secondary" href="~/Home/ChargeTag/@@">@Localizer["AddNew"]</a>
+}
+

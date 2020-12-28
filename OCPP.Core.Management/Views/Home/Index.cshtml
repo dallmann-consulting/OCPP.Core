@@ -1,0 +1,59 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@model List<ChargePointsOverviewViewModel>
+@inject IViewLocalizer Localizer
+@{
+    ViewData["Title"] = @Localizer["Title"];
+}
+<br />
+@if (Model != null)
+{
+    <div class="tilegrid">
+        @foreach (ChargePointsOverviewViewModel cpvm in Model)
+        {
+
+            string chargePointName = string.IsNullOrWhiteSpace(cpvm.Name) ? cpvm.ChargePointId : cpvm.Name;
+            string lastCharge = (cpvm.MeterStart >= 0 && cpvm.MeterStop != null) ? string.Format(Localizer["ChargekWh"].Value, (cpvm.MeterStop - cpvm.MeterStart)) : null;
+            string chargeTime = null;
+            if (cpvm.StartTime != null && cpvm.StopTime == null)
+            {
+                TimeSpan timeSpan = DateTime.Now.Subtract(cpvm.StartTime.Value);
+                chargeTime = string.Format(Localizer["ChargeTime"].Value, Math.Floor(timeSpan.TotalHours), timeSpan.Minutes);
+            }
+
+            if (cpvm.StartTime != null && cpvm.StopTime == null)
+            {
+                // Charging in progress
+                <div class="card border-secondary" style="max-width: 18rem;">
+                    <a href="~/Home/Transactions/@Uri.EscapeDataString(cpvm.ChargePointId)" class="text-decoration-none">
+                        <div class="card-header errorColor">
+                            <i class="fas fa-plug fa-2x"></i> @chargePointName
+                        </div>
+                        <div class="card-body text-secondary">
+                            <h5 class="card-title">@Localizer["Charging"]</h5>
+                            <p class="card-text">@chargeTime</p>
+                        </div>
+                    </a>
+                </div>
+            }
+            else
+            {
+                // Charge station available
+                <div class="card border-secondary" style="max-width: 18rem;">
+                    <a href="~/Home/Transactions/@Uri.EscapeDataString(cpvm.ChargePointId)" class="text-decoration-none">
+                        <div class="card-header successColor">
+                            <i class="fas fa-plug fa-2x"></i> @chargePointName
+                        </div>
+                        <div class="card-body text-secondary">
+                            <h5 class="card-title">@Localizer["Available"]</h5>
+                            @if (!string.IsNullOrEmpty(lastCharge))
+                            {
+                                <p class="card-text">@lastCharge</p>
+                            }
+                        </div>
+                    </a>
+                </div>
+            }
+        }
+    </div>
+}
+
