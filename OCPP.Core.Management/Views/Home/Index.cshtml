@@ -31,6 +31,10 @@
                         <div class="card-body text-secondary">
                             <h5 class="card-title">@Localizer["Charging"]</h5>
                             <p class="card-text">@chargeTime</p>
+                            @if (!string.IsNullOrEmpty(lastCharge))
+                            {
+                                <p class="card-text">@lastCharge</p>
+                            }
                         </div>
                     </a>
                 </div>

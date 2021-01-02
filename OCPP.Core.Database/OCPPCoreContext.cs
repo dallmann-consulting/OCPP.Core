@@ -112,6 +112,8 @@ namespace OCPP.Core.Database
 
             modelBuilder.Entity<Transaction>(entity =>
             {
+                entity.Property(e => e.Uid).HasMaxLength(50);
+
                 entity.Property(e => e.ChargePointId)
                     .IsRequired()
                     .HasMaxLength(100);

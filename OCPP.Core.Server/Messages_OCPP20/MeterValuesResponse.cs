@@ -22,26 +22,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace OCPP.Core.Management.Models
+namespace OCPP.Core.Server.Messages_OCPP20
 {
-    public class ChargePointsOverviewViewModel
+#pragma warning disable // Disable all warnings
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.3.1.0 (Newtonsoft.Json v9.0.0.0)")]
+    public partial class MeterValuesResponse
     {
-        public string ChargePointId { get; set; }
-
-        public string Name { get; set; }
-
-        public string Comment { get; set; }
-
-        public int LastTransactionId { get; set; }
-
-        public int ConnectorId { get; set; }
-
-        public double MeterStart { get; set; }
-
-        public double? MeterStop { get; set; }
-
-        public DateTime? StartTime { get; set; }
-
-        public DateTime? StopTime { get; set; }
+        [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public CustomDataType CustomData { get; set; }
     }
 }

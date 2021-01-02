@@ -17,31 +17,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace OCPP.Core.Management.Models
+namespace OCPP.Core.Server.Messages_OCPP16
 {
-    public class ChargePointsOverviewViewModel
+#pragma warning disable // Disable all warnings
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.3.1.0 (Newtonsoft.Json v9.0.0.0)")]
+    public partial class HeartbeatResponse
     {
-        public string ChargePointId { get; set; }
-
-        public string Name { get; set; }
-
-        public string Comment { get; set; }
-
-        public int LastTransactionId { get; set; }
-
-        public int ConnectorId { get; set; }
-
-        public double MeterStart { get; set; }
-
-        public double? MeterStop { get; set; }
-
-        public DateTime? StartTime { get; set; }
-
-        public DateTime? StopTime { get; set; }
+        [Newtonsoft.Json.JsonProperty("currentTime", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public System.DateTime CurrentTime { get; set; }
     }
 }

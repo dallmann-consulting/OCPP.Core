@@ -21,27 +21,28 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using OCPP.Core.Database;
+using OCPP.Core.Server.Messages_OCPP16;
 
-namespace OCPP.Core.Management.Models
+namespace OCPP.Core.Server
 {
-    public class ChargePointsOverviewViewModel
+    public partial class ControllerOCPP16
     {
-        public string ChargePointId { get; set; }
+        public string HandleHeartBeat(Message msgIn, Message msgOut)
+        {
+            string errorCode = null;
 
-        public string Name { get; set; }
+            Logger.LogTrace("Processing heartbeat...");
+            HeartbeatResponse heartbeatResponse = new HeartbeatResponse();
+            heartbeatResponse.CurrentTime = DateTime.Now;
 
-        public string Comment { get; set; }
+            msgOut.JsonPayload = JsonConvert.SerializeObject(heartbeatResponse);
+            Logger.LogTrace("Heartbeat => Response serialized");
 
-        public int LastTransactionId { get; set; }
-
-        public int ConnectorId { get; set; }
-
-        public double MeterStart { get; set; }
-
-        public double? MeterStop { get; set; }
-
-        public DateTime? StartTime { get; set; }
-
-        public DateTime? StopTime { get; set; }
+            WriteMessageLog(CurrentChargePoint?.ChargePointId, null, msgIn.Action, null, errorCode);
+            return errorCode;
+        }
     }
 }

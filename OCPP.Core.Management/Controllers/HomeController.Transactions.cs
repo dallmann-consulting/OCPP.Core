@@ -69,8 +69,9 @@ namespace OCPP.Core.Management.Controllers
                 using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
                 {
                     Logger.LogTrace("Transactions: Loading charge points...");
+                    tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
                     // search selected charge point
-                    foreach(ChargePoint cp in tlvm.ChargePoints)
+                    foreach (ChargePoint cp in tlvm.ChargePoints)
                     {
                         if (cp.ChargePointId == Id)
                         {
@@ -85,7 +86,6 @@ namespace OCPP.Core.Management.Controllers
 
                     // load charge tags for name resolution
                     Logger.LogTrace("Transactions: Loading charge tags...");
-                    tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
                     List<ChargeTag> chargeTags = dbContext.ChargeTags.ToList<ChargeTag>();
                     tlvm.ChargeTags = new Dictionary<string, ChargeTag>();
                     if (chargeTags != null)
