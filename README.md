@@ -150,7 +150,7 @@ Click "Connect"
 	
 
 **Attention:**
-The simulator seems to have a _little bug_ in processing a "startTransaction" response.
+The simulator seems to have _little bugs_ in processing responses.
 
 ```
 ...
@@ -159,12 +159,13 @@ la = getLastAction();
 
 if (la == "startTransaction"){
 
-	ddata = ddata[2];
+	//ddata = ddata[2]; Bug1: do not modify content of ddata because is used later....
+	var dd = ddata[2];
 	logMsg("Data exchange successful!");
-	var array = $.map(ddata, function (value, index) {
+	var array = $.map(dd, function (value, index) {	// Bug1: use copy 'dd' here
 		return [value];
 	});
-	//var TransactionId = (array[0]); bug => the correct array index is 1
+	//var TransactionId = (array[0]); Bug2 => the correct array index is 1
 	var TransactionId = (array[1]);
 	sessionStorage.setItem('TransactionId', TransactionId);
 }
