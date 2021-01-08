@@ -41,7 +41,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Chargepoint
         /// </summary>
-        private ChargePoint CurrentChargePoint { get; set; }
+        private ChargePointStatus ChargePointStatus { get; set; }
 
         /// <summary>
         /// ILogger object
@@ -51,30 +51,18 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Constructor
         /// </summary>
-        public ControllerOCPP20(IConfiguration config, ILoggerFactory loggerFactory, string chargePointIdentifier)
+        public ControllerOCPP20(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus)
         {
             Configuration = config;
             Logger = loggerFactory.CreateLogger(typeof(ControllerOCPP20));
 
-            if (!string.IsNullOrWhiteSpace(chargePointIdentifier))
+            if (chargePointStatus != null)
             {
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
-                {
-                    CurrentChargePoint = dbContext.Find<ChargePoint>(chargePointIdentifier);
-                    if (CurrentChargePoint != null)
-                    {
-                        Logger.LogInformation("New Controller => Found chargepoint with identifier={0}", CurrentChargePoint.ChargePointId);
-                    }
-                    else
-                    {
-                        Logger.LogWarning("New Controller => Found no chargepoint with identifier={0}", chargePointIdentifier);
-                    }
-                }
+                ChargePointStatus = chargePointStatus;
             }
             else
             {
-                CurrentChargePoint = null;
-                Logger.LogWarning("New Controller => empty chargepoint identifier");
+                Logger.LogError("New ControllerOCPP20 => empty chargepoint status");
             }
         }
 
@@ -143,13 +131,13 @@ namespace OCPP.Core.Server
 
                     default:
                         errorCode = ErrorCodes.NotSupported;
-                        WriteMessageLog(CurrentChargePoint.ChargePointId, null, msgIn.Action, msgIn.JsonPayload, errorCode);
+                        WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
                         break;
                 }
             }
             else
             {
-                Logger.LogError("Protocol error => wrong message type", msgIn.MessageType);
+                Logger.LogError("ControllerOCPP20 => Protocol error: wrong message type", msgIn.MessageType);
                 errorCode = ErrorCodes.ProtocolError;
             }
 
@@ -158,7 +146,7 @@ namespace OCPP.Core.Server
                 // Inavlid message type => return type "4" (CALLERROR)
                 msgOut.MessageType = "4";
                 msgOut.ErrorCode = errorCode;
-                Logger.LogDebug("Return error code messge: ErrorCode={0}", errorCode);
+                Logger.LogDebug("ControllerOCPP20 => Return error code messge: ErrorCode={0}", errorCode);
             }
 
             return msgOut;

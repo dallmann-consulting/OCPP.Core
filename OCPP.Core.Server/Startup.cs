@@ -18,6 +18,7 @@
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
@@ -32,6 +33,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using OCPP.Core.Database;
 
 namespace OCPP.Core.Server
 {
@@ -42,6 +44,9 @@ namespace OCPP.Core.Server
 
         // RegExp for splitting ocpp message parts
         private static string MessageRegExp = "^\\[\\s*(\\d)\\s*,\\s*\"(\\w*)\"\\s*,\\s*\"(\\w*)\"\\s*,\\s*(.*)\\s*\\]$";  // ^\[\s*(\d)\s*,\s*"(\w*)"\s*,\s*"(\w*)"\s*,\s*(.*)\s*\]$
+
+        // Dictionary with status objects for each charge point
+        private ConcurrentDictionary<string, ChargePointStatus> _chargePointStatusDict = new ConcurrentDictionary<string, ChargePointStatus>();
 
         /// <summary>
         /// ILogger object
@@ -70,7 +75,7 @@ namespace OCPP.Core.Server
         {
             LoggerFactory = loggerFactory;
             ILogger logger = loggerFactory.CreateLogger(typeof(Startup));
-            logger.LogTrace("Configure(...)");
+            logger.LogTrace("Startup => Configure(...)");
 
             if (env.IsDevelopment())
             {
@@ -90,7 +95,9 @@ namespace OCPP.Core.Server
             // Handles a new connection request
             app.Use(async (context, next) =>
             {
-                logger.LogInformation("Websocket request: Path='{0}'", context.Request.Path);
+                logger.LogInformation("Startup => Websocket request: Path='{0}'", context.Request.Path);
+
+                ChargePointStatus chargePointStatus = null;
 
                 if (context.Request.Path.StartsWithSegments("/OCPP"))
                 {
@@ -106,8 +113,32 @@ namespace OCPP.Core.Server
                         // Last part is chargepoint identifier
                         chargepointIdentifier = parts[parts.Length - 1];
                     }
-                    logger.LogInformation("Chargepoint identifier = '{0}'", chargepointIdentifier);
+                    logger.LogInformation("Startup => Connection with chargepoint identifier = '{0}'", chargepointIdentifier);
 
+                    // Known chargepoint?
+                    if (!string.IsNullOrWhiteSpace(chargepointIdentifier))
+                    {
+                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                        {
+                            ChargePoint chargePoint = dbContext.Find<ChargePoint>(chargepointIdentifier);
+                            if (chargePoint != null)
+                            {
+                                logger.LogInformation("Startup => Found chargepoint with identifier={0}", chargePoint.ChargePointId);
+                                chargePointStatus = new ChargePointStatus(chargePoint);
+                            }
+                            else
+                            {
+                                logger.LogWarning("Startup => Found no chargepoint with identifier={0}", chargepointIdentifier);
+                            }
+                        }
+                    }
+                    
+                    if (chargePointStatus == null)
+                    {
+                        logger.LogTrace("Startup => no chargepoint: http 412");
+                        context.Response.StatusCode = 412;
+                        await next();
+                    }
 
                     if (context.WebSockets.IsWebSocketRequest)
                     {
@@ -130,39 +161,49 @@ namespace OCPP.Core.Server
                                 if (string.IsNullOrEmpty(protocols)) protocols += ",";
                                 protocols += p;
                             }
-                            logger.LogWarning("No supported sub-protocol in '{0}' from charge station '{1}'", protocols, chargepointIdentifier);
+                            logger.LogWarning("Startup => No supported sub-protocol in '{0}' from charge station '{1}'", protocols, chargepointIdentifier);
                             context.Response.StatusCode = 400;  // Bad Request
                         }
                         else
                         {
                             // Handle socket communication
-                            logger.LogTrace("Waiting for message...");
-                            using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync(subProtocol))
+                            logger.LogTrace("Startup => Waiting for message...");
+
+                            if (_chargePointStatusDict.TryAdd(chargepointIdentifier, chargePointStatus))
                             {
-                                logger.LogTrace("Receiving new message from charge point '{0}'", chargepointIdentifier);
-                                if (subProtocol == "ocpp2.0")
+                                using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync(subProtocol))
                                 {
-                                    // OCPP V2.0
-                                    await Receive20(chargepointIdentifier, context, webSocket);
+                                    logger.LogTrace("Startup => Receiving new message from charge point '{0}'", chargepointIdentifier);
+                                    if (subProtocol == "ocpp2.0")
+                                    {
+                                        // OCPP V2.0
+                                        await Receive20(chargePointStatus, context, webSocket);
+                                    }
+                                    else
+                                    {
+                                        // OCPP V1.6
+                                        await Receive16(chargePointStatus, context, webSocket);
+                                    }
                                 }
-                                else
-                                {
-                                    // OCPP V1.6
-                                    await Receive16(chargepointIdentifier, context, webSocket);
-                                }
+                            }
+                            else
+                            {
+                                logger.LogError ("Startup => Error storing status object in dictionary => refuse connecction");
+                                context.Response.StatusCode = 500;
+                                await next();
                             }
                         }
                     }
                     else
                     {
                         // no websocket request => failure
-                        logger.LogWarning("Non-Websocket request");
+                        logger.LogWarning("Startup => Non-Websocket request");
                         context.Response.StatusCode = 400;
                     }
                 }
                 else
                 {
-                    logger.LogWarning("Bad path request");
+                    logger.LogWarning("Startup => Bad path request");
                     await next();
                 }
 
@@ -173,10 +214,10 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Waits for new OCPP V1.6 messages on the open websocket connection and delegates processing to a controller
         /// </summary>
-        private async Task Receive16(string chargePointIdentifier, HttpContext context, WebSocket socket)
+        private async Task Receive16(ChargePointStatus chargePointStatus, HttpContext context, WebSocket socket)
         {
             ILogger logger = LoggerFactory.CreateLogger(typeof(Startup));
-            ControllerOCPP16 controller16 = new ControllerOCPP16(Configuration, LoggerFactory, chargePointIdentifier);
+            ControllerOCPP16 controller16 = new ControllerOCPP16(Configuration, LoggerFactory, chargePointStatus);
 
             byte[] buffer = new byte[1024 * 4];
             MemoryStream memStream = new MemoryStream(buffer.Length);
@@ -186,7 +227,7 @@ namespace OCPP.Core.Server
                 WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 if (result != null && result.MessageType != WebSocketMessageType.Close)
                 {
-                    logger.LogTrace("Receiving segment: {0} bytes (EndOfMessage={1} / MsgType={2})", result.Count, result.EndOfMessage, result.MessageType);
+                    logger.LogTrace("Startup.Receive16 => Receiving segment: {0} bytes (EndOfMessage={1} / MsgType={2})", result.Count, result.EndOfMessage, result.MessageType);
                     memStream.Write(buffer, 0, result.Count);
 
                     if (result.EndOfMessage)
@@ -214,7 +255,7 @@ namespace OCPP.Core.Server
                             string uniqueId = match.Groups[2].Value;
                             string action = match.Groups[3].Value;
                             string jsonPaylod = match.Groups[4].Value;
-                            logger.LogInformation("OCPP-Message: Type={0} / ID={1} / Action={2})", messageTypeId, uniqueId, action);
+                            logger.LogInformation("Startup.Receive16 => OCPP-Message: Type={0} / ID={1} / Action={2})", messageTypeId, uniqueId, action);
 
                             Messages_OCPP16.Message msgIn = new Messages_OCPP16.Message(messageTypeId, uniqueId, action, jsonPaylod);
                             Messages_OCPP16.Message msgOut = controller16.ProcessMessage(msgIn);
@@ -227,11 +268,11 @@ namespace OCPP.Core.Server
                             {
                                 ocppAnswer = string.Format("[{0},\"{1}\",\"{2}\",\"{3}\",{4}]", msgOut.MessageType, msgOut.UniqueId, msgOut.ErrorCode, msgOut.ErrorDescription, "{}");
                             }
-                            logger.LogInformation("OCPP-Response: {0}", ocppAnswer);
+                            logger.LogInformation("Startup.Receive16 => OCPP-Response: {0}", ocppAnswer);
                         }
                         else
                         {
-                            logger.LogWarning("Error in RegEx-Matching: Msg={0})", ocppMessage);
+                            logger.LogWarning("Startup.Receive16 => Error in RegEx-Matching: Msg={0})", ocppMessage);
                         }
 
                         if (string.IsNullOrEmpty(ocppAnswer))
@@ -253,20 +294,22 @@ namespace OCPP.Core.Server
                 }
                 else
                 {
-                    logger.LogInformation("Receive: unexpected result: CloseStatus={0} / MessageType={1}", result?.CloseStatus, result?.MessageType);
+                    logger.LogInformation("Startup.Receive16 => Receive: unexpected result: CloseStatus={0} / MessageType={1}", result?.CloseStatus, result?.MessageType);
                     await socket.CloseOutputAsync((WebSocketCloseStatus)3001, string.Empty, CancellationToken.None);
                 }
             }
-            logger.LogInformation("Websocket closed: State={0} / CloseStatus={1}", socket.State, socket.CloseStatus);
+            logger.LogInformation("Startup.Receive16 => Websocket closed: State={0} / CloseStatus={1}", socket.State, socket.CloseStatus);
+            ChargePointStatus dummy;
+            _chargePointStatusDict.Remove(chargePointStatus.Id, out dummy);
         }
 
         /// <summary>
         /// Waits for new OCPP V2.0 messages on the open websocket connection and delegates processing to a controller
         /// </summary>
-        private async Task Receive20(string chargePointIdentifier, HttpContext context, WebSocket socket)
+        private async Task Receive20(ChargePointStatus chargePointStatus, HttpContext context, WebSocket socket)
         {
             ILogger logger = LoggerFactory.CreateLogger(typeof(Startup));
-            ControllerOCPP20 controller20 = new ControllerOCPP20(Configuration, LoggerFactory, chargePointIdentifier);
+            ControllerOCPP20 controller20 = new ControllerOCPP20(Configuration, LoggerFactory, chargePointStatus);
 
             byte[] buffer = new byte[1024 * 4];
             MemoryStream memStream = new MemoryStream(buffer.Length);
@@ -276,7 +319,7 @@ namespace OCPP.Core.Server
                 WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 if (result != null && result.MessageType != WebSocketMessageType.Close)
                 {
-                    logger.LogTrace("Receiving segment: {0} bytes (EndOfMessage={1} / MsgType={2})", result.Count, result.EndOfMessage, result.MessageType);
+                    logger.LogTrace("Startup.Receive20 => Receiving segment: {0} bytes (EndOfMessage={1} / MsgType={2})", result.Count, result.EndOfMessage, result.MessageType);
                     memStream.Write(buffer, 0, result.Count);
 
                     if (result.EndOfMessage)
@@ -304,7 +347,7 @@ namespace OCPP.Core.Server
                             string uniqueId = match.Groups[2].Value;
                             string action = match.Groups[3].Value;
                             string jsonPaylod = match.Groups[4].Value;
-                            logger.LogInformation("OCPP-Message: Type={0} / ID={1} / Action={2})", messageTypeId, uniqueId, action);
+                            logger.LogInformation("Startup.Receive20 => OCPP-Message: Type={0} / ID={1} / Action={2})", messageTypeId, uniqueId, action);
 
                             Messages_OCPP20.Message msgIn = new Messages_OCPP20.Message(messageTypeId, uniqueId, action, jsonPaylod);
                             Messages_OCPP20.Message msgOut = controller20.ProcessMessage(msgIn);
@@ -317,11 +360,11 @@ namespace OCPP.Core.Server
                             {
                                 ocppAnswer = string.Format("[{0},\"{1}\",\"{2}\",\"{3}\",{4}]", msgOut.MessageType, msgOut.UniqueId, msgOut.ErrorCode, msgOut.ErrorDescription, "{}");
                             }
-                            logger.LogInformation("OCPP-Response: {0}", ocppAnswer);
+                            logger.LogInformation("Startup.Receive20 => OCPP-Response: {0}", ocppAnswer);
                         }
                         else
                         {
-                            logger.LogWarning("Error in RegEx-Matching: Msg={0})", ocppMessage);
+                            logger.LogWarning("Startup.Receive20 => Error in RegEx-Matching: Msg={0})", ocppMessage);
                         }
 
                         if (string.IsNullOrEmpty(ocppAnswer))
@@ -343,11 +386,13 @@ namespace OCPP.Core.Server
                 }
                 else
                 {
-                    logger.LogInformation("Receive: unexpected result: CloseStatus={0} / MessageType={1}", result?.CloseStatus, result?.MessageType);
+                    logger.LogInformation("Startup.Receive20 => Receive: unexpected result: CloseStatus={0} / MessageType={1}", result?.CloseStatus, result?.MessageType);
                     await socket.CloseOutputAsync((WebSocketCloseStatus)3001, string.Empty, CancellationToken.None);
                 }
             }
-            logger.LogInformation("Websocket closed: State={0} / CloseStatus={1}", socket.State, socket.CloseStatus);
+            logger.LogInformation("Startup.Receive20 => Websocket closed: State={0} / CloseStatus={1}", socket.State, socket.CloseStatus);
+            ChargePointStatus dummy;
+            _chargePointStatusDict.Remove(chargePointStatus.Id, out dummy);
         }
     }
 }

@@ -54,7 +54,7 @@ namespace OCPP.Core.Server
                 bootNotificationResponse.CustomData = new CustomDataType();
                 bootNotificationResponse.CustomData.VendorId = VendorId;
 
-                if (CurrentChargePoint != null)
+                if (ChargePointStatus != null)
                 {
                     // Known charge station => accept
                     bootNotificationResponse.Status = RegistrationStatusEnumType.Accepted;
@@ -74,7 +74,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(CurrentChargePoint.ChargePointId, null, msgIn.Action, bootReason, errorCode);
+            WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, bootReason, errorCode);
             return errorCode;
         }
     }

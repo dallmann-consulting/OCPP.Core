@@ -44,7 +44,7 @@ namespace OCPP.Core.Server
                 bootNotificationResponse.CurrentTime = DateTime.Now;
                 bootNotificationResponse.Interval = 300;    // 300 seconds
 
-                if (CurrentChargePoint != null)
+                if (ChargePointStatus != null)
                 {
                     // Known charge station => accept
                     bootNotificationResponse.Status = BootNotificationResponseStatus.Accepted;
@@ -64,7 +64,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(CurrentChargePoint.ChargePointId, null, msgIn.Action, null, errorCode);
+            WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, null, errorCode);
             return errorCode;
         }
     }

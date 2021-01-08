@@ -43,10 +43,10 @@ namespace OCPP.Core.Server
                 DataTransferRequest dataTransferRequest = JsonConvert.DeserializeObject<DataTransferRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("DataTransfer => Message deserialized");
 
-                if (CurrentChargePoint != null)
+                if (ChargePointStatus != null)
                 {
                     // Known charge station
-                    msgWritten = WriteMessageLog(CurrentChargePoint.ChargePointId, null, msgIn.Action, string.Format("VendorId={0} / MessageId={1} / Data={2}", dataTransferRequest.VendorId, dataTransferRequest.MessageId, dataTransferRequest.Data), errorCode);
+                    msgWritten = WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, string.Format("VendorId={0} / MessageId={1} / Data={2}", dataTransferRequest.VendorId, dataTransferRequest.MessageId, dataTransferRequest.Data), errorCode);
                     dataTransferResponse.Status = DataTransferResponseStatus. UnknownVendorId;
                 }
                 else
@@ -66,7 +66,7 @@ namespace OCPP.Core.Server
 
             if (!msgWritten)
             {
-                WriteMessageLog(CurrentChargePoint.ChargePointId, null, msgIn.Action, null, errorCode);
+                WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, null, errorCode);
             }
             return errorCode;
         }

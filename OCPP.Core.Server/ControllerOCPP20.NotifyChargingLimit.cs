@@ -50,7 +50,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("NotifyChargingLimit => Message deserialized");
 
 
-                if (CurrentChargePoint != null)
+                if (ChargePointStatus != null)
                 {
                     // Known charge station
                     source = notifyChargingLimitRequest.ChargingLimit?.ChargingLimitSource.ToString();
@@ -95,7 +95,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.InternalError;
             }
 
-            WriteMessageLog(CurrentChargePoint.ChargePointId, connectorId, msgIn.Action, source, errorCode);
+            WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, source, errorCode);
             return errorCode;
         }
     }

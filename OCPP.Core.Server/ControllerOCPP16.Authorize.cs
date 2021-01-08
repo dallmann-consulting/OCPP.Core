@@ -89,7 +89,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(CurrentChargePoint?.ChargePointId, null,msgIn.Action, authorizeResponse.IdTagInfo?.Status.ToString(), errorCode);
+            WriteMessageLog(ChargePointStatus?.Id, null,msgIn.Action, authorizeResponse.IdTagInfo?.Status.ToString(), errorCode);
             return errorCode;
         }
     }

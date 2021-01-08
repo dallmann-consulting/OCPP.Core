@@ -49,10 +49,10 @@ namespace OCPP.Core.Server
 
                 connectorId = statusNotificationRequest.ConnectorId;
 
-                if (CurrentChargePoint != null)
+                if (ChargePointStatus != null)
                 {
                     // Known charge station
-                    msgWritten = WriteMessageLog(CurrentChargePoint.ChargePointId, connectorId, msgIn.Action, string.Format("Status={0}", statusNotificationRequest.ConnectorStatus), string.Empty);
+                    msgWritten = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Status={0}", statusNotificationRequest.ConnectorStatus), string.Empty);
                 }
                 else
                 {
@@ -71,7 +71,7 @@ namespace OCPP.Core.Server
 
             if (!msgWritten)
             {
-                WriteMessageLog(CurrentChargePoint.ChargePointId, connectorId, msgIn.Action, null, errorCode);
+                WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, null, errorCode);
             }
             return errorCode;
         }

@@ -49,7 +49,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("NotifyEVChargingSchedule => Message deserialized");
 
 
-                if (CurrentChargePoint != null)
+                if (ChargePointStatus != null)
                 {
                     // Known charge station
                     if (notifyEVChargingScheduleRequest.ChargingSchedule != null)
@@ -94,7 +94,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.InternalError;
             }
 
-            WriteMessageLog(CurrentChargePoint.ChargePointId, connectorId, msgIn.Action, periods.ToString(), errorCode);
+            WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, periods.ToString(), errorCode);
             return errorCode;
         }
     }

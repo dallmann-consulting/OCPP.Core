@@ -47,7 +47,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("LogStatusNotification => Message deserialized");
 
 
-                if (CurrentChargePoint != null)
+                if (ChargePointStatus != null)
                 {
                     // Known charge station
                     status = logStatusNotificationRequest.Status.ToString();
@@ -68,7 +68,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.InternalError;
             }
 
-            WriteMessageLog(CurrentChargePoint.ChargePointId, null, msgIn.Action, status, errorCode);
+            WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, status, errorCode);
             return errorCode;
         }
     }

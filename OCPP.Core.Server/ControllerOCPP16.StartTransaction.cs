@@ -80,7 +80,7 @@ namespace OCPP.Core.Server
                         try
                         {
                             Transaction transaction = new Transaction();
-                            transaction.ChargePointId = CurrentChargePoint?.ChargePointId;
+                            transaction.ChargePointId = ChargePointStatus?.Id;
                             transaction.ConnectorId = startTransactionRequest.ConnectorId;
                             transaction.StartTagId = idTag;
                             transaction.StartTime = startTransactionRequest.Timestamp;
@@ -93,7 +93,7 @@ namespace OCPP.Core.Server
                         }
                         catch (Exception exp)
                         {
-                            Logger.LogError(exp, "StartTransaction => Exception writing transaction: chargepoint={0} / tag={1}", CurrentChargePoint?.ChargePointId, idTag);
+                            Logger.LogError(exp, "StartTransaction => Exception writing transaction: chargepoint={0} / tag={1}", ChargePointStatus?.Id, idTag);
                             errorCode = ErrorCodes.InternalError;
                         }
                     }
@@ -113,7 +113,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(CurrentChargePoint?.ChargePointId, connectorId, msgIn.Action, startTransactionResponse.IdTagInfo?.Status.ToString(), errorCode);
+            WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, startTransactionResponse.IdTagInfo?.Status.ToString(), errorCode);
             return errorCode;
         }
     }

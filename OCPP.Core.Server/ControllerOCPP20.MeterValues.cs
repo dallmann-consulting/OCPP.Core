@@ -48,7 +48,7 @@ namespace OCPP.Core.Server
 
                 connectorId = meterValueRequest.EvseId;
 
-                if (CurrentChargePoint != null)
+                if (ChargePointStatus != null)
                 {
                     // Known charge station
 
@@ -78,7 +78,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.InternalError;
             }
 
-            WriteMessageLog(CurrentChargePoint.ChargePointId, connectorId, msgIn.Action, null, errorCode);
+            WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, null, errorCode);
             return errorCode;
         }
     }

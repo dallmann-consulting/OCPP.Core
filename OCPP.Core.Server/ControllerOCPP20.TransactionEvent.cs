@@ -88,7 +88,7 @@ namespace OCPP.Core.Server
 
                                 Transaction transaction = new Transaction();
                                 transaction.Uid = transactionEventRequest.TransactionInfo.TransactionId;
-                                transaction.ChargePointId = CurrentChargePoint?.ChargePointId;
+                                transaction.ChargePointId = ChargePointStatus?.Id;
                                 transaction.ConnectorId = connectorId;
                                 transaction.StartTagId = idTag;
                                 transaction.StartTime = transactionEventRequest.Timestamp;
@@ -101,7 +101,7 @@ namespace OCPP.Core.Server
                             }
                             catch (Exception exp)
                             {
-                                Logger.LogError(exp, "StartTransaction => Exception writing transaction: chargepoint={0} / tag={1}", CurrentChargePoint?.ChargePointId, idTag);
+                                Logger.LogError(exp, "StartTransaction => Exception writing transaction: chargepoint={0} / tag={1}", ChargePointStatus?.Id, idTag);
                                 errorCode = ErrorCodes.InternalError;
                             }
                         }
@@ -125,7 +125,7 @@ namespace OCPP.Core.Server
                                 .OrderByDescending(t => t.TransactionId)
                                 .FirstOrDefault();
                             if (transaction == null ||
-                                transaction.ChargePointId != CurrentChargePoint.ChargePointId ||
+                                transaction.ChargePointId != ChargePointStatus.Id ||
                                 transaction.StopTime.HasValue)
                             {
                                 // unknown transaction id or already stopped transaction
@@ -133,7 +133,7 @@ namespace OCPP.Core.Server
                                 Logger.LogWarning("UpdateTransaction => Unknown or closed transaction uid={0}", transactionEventRequest.TransactionInfo?.TransactionId);
                                 // find latest transaction for this charge point
                                 transaction = dbContext.Transactions
-                                    .Where(t => t.ChargePointId == CurrentChargePoint.ChargePointId)
+                                    .Where(t => t.ChargePointId == ChargePointStatus.Id)
                                     .OrderByDescending(t => t.TransactionId)
                                     .FirstOrDefault();
 
@@ -148,7 +148,7 @@ namespace OCPP.Core.Server
                                 }
                                 else
                                 {
-                                    Logger.LogTrace("UpdateTransaction => Found no transaction for charge point '{0}'", CurrentChargePoint.ChargePointId);
+                                    Logger.LogTrace("UpdateTransaction => Found no transaction for charge point '{0}'", ChargePointStatus.Id);
                                 }
                             }
 
@@ -165,8 +165,8 @@ namespace OCPP.Core.Server
                             }
                             else
                             {
-                                Logger.LogError("UpdateTransaction => Unknown transaction: uid='{0}' / chargepoint='{1}' / tag={2}", transactionEventRequest.TransactionInfo?.TransactionId, CurrentChargePoint?.ChargePointId, idTag);
-                                WriteMessageLog(CurrentChargePoint?.ChargePointId, null, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest)), errorCode);
+                                Logger.LogError("UpdateTransaction => Unknown transaction: uid='{0}' / chargepoint='{1}' / tag={2}", transactionEventRequest.TransactionInfo?.TransactionId, ChargePointStatus?.Id, idTag);
+                                WriteMessageLog(ChargePointStatus?.Id, null, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest)), errorCode);
                                 errorCode = ErrorCodes.PropertyConstraintViolation;
                             }
                         }
@@ -215,7 +215,7 @@ namespace OCPP.Core.Server
                                 .OrderByDescending(t => t.TransactionId)
                                 .FirstOrDefault();
                             if (transaction == null ||
-                                transaction.ChargePointId != CurrentChargePoint.ChargePointId ||
+                                transaction.ChargePointId != ChargePointStatus.Id ||
                                 transaction.StopTime.HasValue)
                             {
                                 // unknown transaction id or already stopped transaction
@@ -223,7 +223,7 @@ namespace OCPP.Core.Server
                                 Logger.LogWarning("EndTransaction => Unknown or closed transaction uid={0}", transactionEventRequest.TransactionInfo?.TransactionId);
                                 // find latest transaction for this charge point
                                 transaction = dbContext.Transactions
-                                    .Where(t => t.ChargePointId == CurrentChargePoint.ChargePointId)
+                                    .Where(t => t.ChargePointId == ChargePointStatus.Id)
                                     .OrderByDescending(t => t.TransactionId)
                                     .FirstOrDefault();
 
@@ -238,7 +238,7 @@ namespace OCPP.Core.Server
                                 }
                                 else
                                 {
-                                    Logger.LogTrace("EndTransaction => Found no transaction for charge point '{0}'", CurrentChargePoint.ChargePointId);
+                                    Logger.LogTrace("EndTransaction => Found no transaction for charge point '{0}'", ChargePointStatus.Id);
                                 }
                             }
 
@@ -285,8 +285,8 @@ namespace OCPP.Core.Server
                             }
                             else
                             {
-                                Logger.LogError("EndTransaction => Unknown transaction: uid='{0}' / chargepoint='{1}' / tag={2}", transactionEventRequest.TransactionInfo?.TransactionId, CurrentChargePoint?.ChargePointId, idTag);
-                                WriteMessageLog(CurrentChargePoint?.ChargePointId, null, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest)), errorCode);
+                                Logger.LogError("EndTransaction => Unknown transaction: uid='{0}' / chargepoint='{1}' / tag={2}", transactionEventRequest.TransactionInfo?.TransactionId, ChargePointStatus?.Id, idTag);
+                                WriteMessageLog(ChargePointStatus?.Id, null, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest)), errorCode);
                                 errorCode = ErrorCodes.PropertyConstraintViolation;
                             }
                         }
@@ -308,7 +308,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(CurrentChargePoint?.ChargePointId, connectorId, msgIn.Action, transactionEventResponse.IdTokenInfo.Status.ToString(), errorCode);
+            WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, transactionEventResponse.IdTokenInfo.Status.ToString(), errorCode);
             return errorCode;
         }
 

@@ -47,7 +47,7 @@ namespace OCPP.Core.Server
                 ClearedChargingLimitRequest clearedChargingLimitRequest = JsonConvert.DeserializeObject<ClearedChargingLimitRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("ClearedChargingLimit => Message deserialized");
 
-                if (CurrentChargePoint != null)
+                if (ChargePointStatus != null)
                 {
                     // Known charge station
                     source = clearedChargingLimitRequest.ChargingLimitSource.ToString();
@@ -69,7 +69,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.InternalError;
             }
 
-            WriteMessageLog(CurrentChargePoint.ChargePointId, connectorId, msgIn.Action, source, errorCode);
+            WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, source, errorCode);
             return errorCode;
         }
     }

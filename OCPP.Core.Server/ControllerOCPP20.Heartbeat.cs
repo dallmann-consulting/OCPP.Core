@@ -44,7 +44,7 @@ namespace OCPP.Core.Server
             msgOut.JsonPayload = JsonConvert.SerializeObject(heartbeatResponse);
             Logger.LogTrace("Heartbeat => Response serialized");
 
-            WriteMessageLog(CurrentChargePoint?.ChargePointId, null, msgIn.Action, null, errorCode);
+            WriteMessageLog(ChargePointStatus?.Id, null, msgIn.Action, null, errorCode);
             return errorCode;
         }
     }
