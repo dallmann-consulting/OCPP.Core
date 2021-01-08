@@ -126,6 +126,9 @@
   <data name="ExpiryDate" xml:space="preserve">
     <value>Expires</value>
   </data>
+  <data name="GroupName" xml:space="preserve">
+    <value>Group</value>
+  </data>
   <data name="TagId" xml:space="preserve">
     <value>RFID-Key</value>
   </data>

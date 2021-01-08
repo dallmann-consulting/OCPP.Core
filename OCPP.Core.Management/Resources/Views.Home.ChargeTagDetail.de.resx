@@ -141,6 +141,12 @@
   <data name="FieldMaxLength" xml:space="preserve">
     <value>Max. {0} Zeichen</value>
   </data>
+  <data name="GroupNameLabel" xml:space="preserve">
+    <value>Gruppe</value>
+  </data>
+  <data name="GroupNamePlaceholder" xml:space="preserve">
+    <value>Teil der Gruppe</value>
+  </data>
   <data name="RequiredField" xml:space="preserve">
     <value>Pflichtfeld</value>
   </data>

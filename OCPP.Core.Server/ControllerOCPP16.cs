@@ -29,6 +29,8 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
+        protected const string SimpleTimeStampFormat = "yyyy.MM.ddTHH:mm:ss";
+
         /// <summary>
         /// Configuration context for reading app settings
         /// </summary>

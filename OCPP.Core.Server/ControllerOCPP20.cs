@@ -29,6 +29,8 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP20
     {
+        protected const string SimpleTimeStampFormat = "yyyy.MM.ddTHH:mm:ss";
+
         private const string VendorId = "dallmann consulting GmbH";
 
         /// <summary>
@@ -106,11 +108,6 @@ namespace OCPP.Core.Server
                     case "TransactionEvent":
                         errorCode = HandleTransactionEvent(msgIn, msgOut);
                         break;
-                    /*
-                    case "StopTransaction":
-                        errorCode = HandleStopTransaction(msgIn, msgOut);
-                        break;
-                    */
 
                     case "MeterValues":
                         errorCode = HandleMeterValues(msgIn, msgOut);
@@ -122,6 +119,26 @@ namespace OCPP.Core.Server
 
                     case "DataTransfer":
                         errorCode = HandleDataTransfer(msgIn, msgOut);
+                        break;
+
+                    case "LogStatusNotification":
+                        errorCode = HandleLogStatusNotification(msgIn, msgOut);
+                        break;
+
+                    case "FirmwareStatusNotification":
+                        errorCode = HandleFirmwareStatusNotification(msgIn, msgOut);
+                        break;
+
+                    case "ClearedChargingLimit":
+                        errorCode = HandleClearedChargingLimit(msgIn, msgOut);
+                        break;
+
+                    case "NotifyChargingLimit":
+                        errorCode = HandleNotifyChargingLimit(msgIn, msgOut);
+                        break;
+
+                    case "NotifyEVChargingSchedule":
+                        errorCode = HandleNotifyEVChargingSchedule(msgIn, msgOut);
                         break;
 
                     default:

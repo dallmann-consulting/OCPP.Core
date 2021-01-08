@@ -91,7 +91,7 @@ namespace OCPP.Core.Server
 
                                 if (transaction != null)
                                 {
-                                    Logger.LogTrace("StopTransaction => Last transaction id={0} / Start='{1}' / Stop='{2}'", transaction.TransactionId, transaction.StartTime.ToString("dd.MM.yyyyTHH:mm:ss"), transaction?.StopTime?.ToString("dd.MM.yyyyTHH:mm:ss"));
+                                    Logger.LogTrace("StopTransaction => Last transaction id={0} / Start='{1}' / Stop='{2}'", transaction.TransactionId, transaction.StartTime.ToString(SimpleTimeStampFormat), transaction?.StopTime?.ToString(SimpleTimeStampFormat));
                                     if (transaction.StopTime.HasValue)
                                     {
                                         Logger.LogTrace("StopTransaction => Last transaction (id={0}) is already closed ", transaction.TransactionId);
@@ -106,11 +106,40 @@ namespace OCPP.Core.Server
 
                             if (transaction != null)
                             {
-                                transaction.StopTagId = idTag;
-                                transaction.MeterStop = stopTransactionRequest.MeterStop;
-                                transaction.StopReason = stopTransactionRequest.Reason.ToString();
-                                transaction.StopTime = stopTransactionRequest.Timestamp;
-                                dbContext.SaveChanges();
+                                // check current tag against start tag
+                                bool valid = true;
+                                if (!string.Equals(transaction.StartTagId, idTag, StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    // tags are different => same group?
+                                    ChargeTag startTag = dbContext.Find<ChargeTag>(transaction.StartTagId);
+                                    if (startTag != null)
+                                    {
+                                        if (!string.Equals(startTag.ParentTagId, ct?.ParentTagId, StringComparison.InvariantCultureIgnoreCase))
+                                        {
+                                            Logger.LogInformation("StopTransaction => Start-Tag ('{0}') and End-Tag ('{1}') do not match: Invalid!", transaction.StartTagId, ct?.TagId);
+                                            stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                                            valid = false;
+                                        }
+                                        else
+                                        {
+                                            Logger.LogInformation("StopTransaction => Different RFID-Tags but matching group ('{0}')", ct?.ParentTagId);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Logger.LogError("StopTransaction => Start-Tag not found: '{0}'", transaction.StartTagId);
+                                        // assume "valid" and allow to end the transaction
+                                    }
+                                }
+
+                                if (valid)
+                                {
+                                    transaction.StopTagId = idTag;
+                                    transaction.MeterStop = stopTransactionRequest.MeterStop;
+                                    transaction.StopReason = stopTransactionRequest.Reason.ToString();
+                                    transaction.StopTime = stopTransactionRequest.Timestamp;
+                                    dbContext.SaveChanges();
+                                }
                             }
                             else
                             {

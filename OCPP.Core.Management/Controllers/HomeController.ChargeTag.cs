@@ -106,6 +106,7 @@ namespace OCPP.Core.Management.Controllers
                                 ChargeTag newTag = new ChargeTag();
                                 newTag.TagId = ctvm.TagId;
                                 newTag.TagName = ctvm.TagName;
+                                newTag.ParentTagId = ctvm.ParentTagId;
                                 newTag.ExpiryDate = ctvm.ExpiryDate;
                                 newTag.Blocked = ctvm.Blocked;
                                 dbContext.ChargeTags.Add(newTag);
@@ -122,6 +123,7 @@ namespace OCPP.Core.Management.Controllers
                         {
                             // Save existing tag
                             currentChargeTag.TagName = ctvm.TagName;
+                            currentChargeTag.ParentTagId = ctvm.ParentTagId;
                             currentChargeTag.ExpiryDate = ctvm.ExpiryDate;
                             currentChargeTag.Blocked = ctvm.Blocked;
                             dbContext.SaveChanges();
@@ -141,6 +143,7 @@ namespace OCPP.Core.Management.Controllers
                         {
                             ctvm.TagId = currentChargeTag.TagId;
                             ctvm.TagName = currentChargeTag.TagName;
+                            ctvm.ParentTagId = currentChargeTag.ParentTagId;
                             ctvm.ExpiryDate = currentChargeTag.ExpiryDate;
                             ctvm.Blocked = (currentChargeTag.Blocked != null) && currentChargeTag.Blocked.Value;
                         }

@@ -13,6 +13,7 @@
             <tr>
                 <th class="th-sm">@Localizer["TagId"]</th>
                 <th class="th-sm">@Localizer["TagName"]</th>
+                <th class="th-sm">@Localizer["GroupName"]</th>
                 <th class="th-sm">@Localizer["ExpiryDate"]</th>
                 <th class="th-sm">@Localizer["Blocked"]</th>
             </tr>
@@ -25,6 +26,7 @@
                     <tr class="table-row" data-href='@Url.Action("ChargeTag", Constants.HomeController, new { id = tag.TagId })'>
                         <td>@tag.TagId</td>
                         <td>@tag.TagName</td>
+                        <td>@tag.ParentTagId</td>
                         <td>@((tag.ExpiryDate != null) ? tag.ExpiryDate.Value.ToString(ViewBag.DatePattern) : "-")</td>
                         <td>@((tag.Blocked == true) ? "1" : "0")</td>
                     </tr>

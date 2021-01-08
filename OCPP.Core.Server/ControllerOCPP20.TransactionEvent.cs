@@ -139,7 +139,7 @@ namespace OCPP.Core.Server
 
                                 if (transaction != null)
                                 {
-                                    Logger.LogTrace("UpdateTransaction => Last transaction id={0} / Start='{1}' / Stop='{2}'", transaction.TransactionId, transaction.StartTime.ToString("dd.MM.yyyyTHH:mm:ss"), transaction?.StopTime?.ToString("dd.MM.yyyyTHH:mm:ss"));
+                                    Logger.LogTrace("UpdateTransaction => Last transaction id={0} / Start='{1}' / Stop='{2}'", transaction.TransactionId, transaction.StartTime.ToString(SimpleTimeStampFormat), transaction?.StopTime?.ToString(SimpleTimeStampFormat));
                                     if (transaction.StopTime.HasValue)
                                     {
                                         Logger.LogTrace("UpdateTransaction => Last transaction (id={0}) is already closed ", transaction.TransactionId);
@@ -166,7 +166,7 @@ namespace OCPP.Core.Server
                             else
                             {
                                 Logger.LogError("UpdateTransaction => Unknown transaction: uid='{0}' / chargepoint='{1}' / tag={2}", transactionEventRequest.TransactionInfo?.TransactionId, CurrentChargePoint?.ChargePointId, idTag);
-                                WriteMessageLog(CurrentChargePoint?.ChargePointId, transaction.ConnectorId, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest)), errorCode);
+                                WriteMessageLog(CurrentChargePoint?.ChargePointId, null, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest)), errorCode);
                                 errorCode = ErrorCodes.PropertyConstraintViolation;
                             }
                         }
@@ -229,7 +229,7 @@ namespace OCPP.Core.Server
 
                                 if (transaction != null)
                                 {
-                                    Logger.LogTrace("EndTransaction => Last transaction id={0} / Start='{1}' / Stop='{2}'", transaction.TransactionId, transaction.StartTime.ToString("dd.MM.yyyyTHH:mm:ss"), transaction?.StopTime?.ToString("dd.MM.yyyyTHH:mm:ss"));
+                                    Logger.LogTrace("EndTransaction => Last transaction id={0} / Start='{1}' / Stop='{2}'", transaction.TransactionId, transaction.StartTime.ToString(SimpleTimeStampFormat), transaction?.StopTime?.ToString(SimpleTimeStampFormat));
                                     if (transaction.StopTime.HasValue)
                                     {
                                         Logger.LogTrace("EndTransaction => Last transaction (id={0}) is already closed ", transaction.TransactionId);
@@ -244,20 +244,49 @@ namespace OCPP.Core.Server
 
                             if (transaction != null)
                             {
-                                // write current meter value in "stop" value
-                                double meterValue = GetMeterValue(transactionEventRequest);
-                                Logger.LogInformation("EndTransaction => MeterValue='{0}'", meterValue);
+                                // check current tag against start tag
+                                bool valid = true;
+                                if (!string.Equals(transaction.StartTagId, idTag, StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    // tags are different => same group?
+                                    ChargeTag startTag = dbContext.Find<ChargeTag>(transaction.StartTagId);
+                                    if (startTag != null)
+                                    {
+                                        if (!string.Equals(startTag.ParentTagId, ct?.ParentTagId, StringComparison.InvariantCultureIgnoreCase))
+                                        {
+                                            Logger.LogInformation("EndTransaction => Start-Tag ('{0}') and End-Tag ('{1}') do not match: Invalid!", transaction.StartTagId, ct?.TagId);
+                                            transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                                            valid = false;
+                                        }
+                                        else
+                                        {
+                                            Logger.LogInformation("EndTransaction => Different RFID-Tags but matching group ('{0}')", ct?.ParentTagId);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Logger.LogError("EndTransaction => Start-Tag not found: '{0}'", transaction.StartTagId);
+                                        // assume "valid" and allow to end the transaction
+                                    }
+                                }
 
-                                transaction.StopTime = transactionEventRequest.Timestamp;
-                                transaction.MeterStop = meterValue;
-                                transaction.StopTagId = idTag;
-                                transaction.StopReason = transactionEventRequest.TriggerReason.ToString();
-                                dbContext.SaveChanges();
+                                if (valid)
+                                {
+                                    // write current meter value in "stop" value
+                                    double meterValue = GetMeterValue(transactionEventRequest);
+                                    Logger.LogInformation("EndTransaction => MeterValue='{0}'", meterValue);
+
+                                    transaction.StopTime = transactionEventRequest.Timestamp;
+                                    transaction.MeterStop = meterValue;
+                                    transaction.StopTagId = idTag;
+                                    transaction.StopReason = transactionEventRequest.TriggerReason.ToString();
+                                    dbContext.SaveChanges();
+                                }
                             }
                             else
                             {
                                 Logger.LogError("EndTransaction => Unknown transaction: uid='{0}' / chargepoint='{1}' / tag={2}", transactionEventRequest.TransactionInfo?.TransactionId, CurrentChargePoint?.ChargePointId, idTag);
-                                WriteMessageLog(CurrentChargePoint?.ChargePointId, transaction.ConnectorId, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest)), errorCode);
+                                WriteMessageLog(CurrentChargePoint?.ChargePointId, null, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest)), errorCode);
                                 errorCode = ErrorCodes.PropertyConstraintViolation;
                             }
                         }

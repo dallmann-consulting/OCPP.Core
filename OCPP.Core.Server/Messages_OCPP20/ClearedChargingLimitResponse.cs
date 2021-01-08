@@ -17,34 +17,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using OCPP.Core.Database;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace OCPP.Core.Management.Models
+namespace OCPP.Core.Server.Messages_OCPP20
 {
-    public class ChargeTagViewModel
+#pragma warning disable // Disable all warnings
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.3.1.0 (Newtonsoft.Json v9.0.0.0)")]
+    public partial class ClearedChargingLimitResponse
     {
-        public List<ChargeTag> ChargeTags { get; set; }
-
-        public string CurrentTagId { get; set; }
-
-
-        [Required, StringLength(50)]
-        public string TagId { get; set; }
-
-        [Required, StringLength(200)]
-        public string TagName { get; set; }
-
-        [StringLength(50)]
-        public string ParentTagId { get; set; }
-
-        [DataType(DataType.Date)]
-        public DateTime? ExpiryDate { get; set; }
-
-        public bool Blocked { get; set; }
+        [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public CustomDataType CustomData { get; set; }
     }
 }
