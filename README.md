@@ -5,7 +5,7 @@ OCPP.Core is as an OCPP ([Open ChargePoint Protocol](https://en.wikipedia.org/wi
 
 
 ### Status
-Currently it only supports OCPP1.6J (JSON/REST).
+Currently it supports OCPP1.6J and 2.0(JSON/REST).
 
 OCPP.Core has only been tested with a simulator so far. My wallbox is not yet installed :-)
 
@@ -14,6 +14,8 @@ OCPP.Core has only been tested with a simulator so far. My wallbox is not yet in
 
 
 The OCPP-Server currently handles the following messages:
+
+OCPP V1.6:
 * BootNotification
 * Heartbeat
 * Authorize
@@ -23,6 +25,19 @@ The OCPP-Server currently handles the following messages:
 * StatusNotification
 * DataTransfer
 
+OCPP V2.0:
+* BootNotification
+* Heartbeat
+* Authorize
+* TransactionEvent
+* MeterValues
+* StatusNotification
+* DataTransfer
+* LogStatusNotification
+* FirmwareStatusNotification
+* ClearedChargingLimit
+* NotifyChargingLimit
+* NotifyEVChargingSchedule
 
 ### Management Web-UI
 The Web-UI has an overview page with all charge stations and its availabilty.
