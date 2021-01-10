@@ -47,7 +47,7 @@ namespace OCPP.Core.Server
                 connectorId = startTransactionRequest.ConnectorId;
 
                 startTransactionResponse.IdTagInfo.ParentIdTag = string.Empty;
-                startTransactionResponse.IdTagInfo.ExpiryDate = DateTime.Now;
+                startTransactionResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow;
                 try
                 {
                     using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
@@ -83,7 +83,7 @@ namespace OCPP.Core.Server
                             transaction.ChargePointId = ChargePointStatus?.Id;
                             transaction.ConnectorId = startTransactionRequest.ConnectorId;
                             transaction.StartTagId = idTag;
-                            transaction.StartTime = startTransactionRequest.Timestamp;
+                            transaction.StartTime = startTransactionRequest.Timestamp.UtcDateTime;
                             transaction.MeterStart = startTransactionRequest.MeterStart;
                             transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();
                             dbContext.Add<Transaction>(transaction);

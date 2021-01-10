@@ -36,7 +36,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
             /// </summary>
             [Newtonsoft.Json.JsonProperty("timeBase", Required = Newtonsoft.Json.Required.Always)]
             [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-            public System.DateTime TimeBase { get; set; }
+            public System.DateTimeOffset TimeBase { get; set; }
 
             [Newtonsoft.Json.JsonProperty("chargingSchedule", Required = Newtonsoft.Json.Required.Always)]
             [System.ComponentModel.DataAnnotations.Required]

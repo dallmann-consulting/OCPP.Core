@@ -99,10 +99,10 @@
                     <tr>
                         <td>@t.ChargePointId</td>
                         <td>@t.ConnectorId</td>
-                        <td>@string.Format("{0} {1}", t.StartTime.ToShortDateString(), t.StartTime.ToShortTimeString())</td>
+                        <td>@string.Format("{0} {1}", t.StartTime.ToLocalTime().ToShortDateString(), t.StartTime.ToLocalTime().ToShortTimeString())</td>
                         <td>@startTag</td>
                         <td>@t.MeterStart</td>
-                        <td>@((t.StopTime != null) ? string.Format("{0} {1}", t.StopTime.Value.ToShortDateString(), t.StopTime.Value.ToShortTimeString()) : string.Empty)</td>
+                        <td>@((t.StopTime != null) ? string.Format("{0} {1}", t.StopTime.Value.ToLocalTime().ToShortDateString(), t.StopTime.Value.ToLocalTime().ToShortTimeString()) : string.Empty)</td>
                         <td>@stopTag</td>
                         <td>@((t.MeterStop != null) ? t.MeterStop.ToString() : string.Empty)</td>
                         <td>@((t.MeterStop != null) ? (t.MeterStop - t.MeterStart).ToString() : string.Empty)</td>

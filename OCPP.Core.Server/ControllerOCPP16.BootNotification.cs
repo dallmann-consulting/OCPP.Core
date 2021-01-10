@@ -41,7 +41,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("BootNotification => Message deserialized");
 
                 BootNotificationResponse bootNotificationResponse = new BootNotificationResponse();
-                bootNotificationResponse.CurrentTime = DateTime.Now;
+                bootNotificationResponse.CurrentTime = DateTimeOffset.UtcNow;
                 bootNotificationResponse.Interval = 300;    // 300 seconds
 
                 if (ChargePointStatus != null)

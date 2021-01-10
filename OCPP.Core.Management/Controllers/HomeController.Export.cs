@@ -105,7 +105,7 @@ namespace OCPP.Core.Management.Controllers
                     {
                         Logger.LogTrace("Export: Loading charge point transactions...");
                         tlvm.Transactions = dbContext.Transactions
-                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId && t.StartTime >= DateTime.Now.AddDays(-1 * days))
+                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId && t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
                                             .OrderByDescending(t => t.TransactionId)
                                             .ToList<Transaction>();
                     }
@@ -172,13 +172,13 @@ namespace OCPP.Core.Management.Controllers
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(t.ConnectorId.ToString()));
                     csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(t.StartTime.ToString("yyyy-MM-dd HH:mm:ss")));
+                    csv.Append(EscapeCsvValue(t.StartTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(startTag));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(t.MeterStart.ToString()));
                     csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(((t.StopTime != null) ? t.StopTime.Value.ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)));
+                    csv.Append(EscapeCsvValue(((t.StopTime != null) ? t.StopTime.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(stopTag));
                     csv.Append(CSV_Seperator);

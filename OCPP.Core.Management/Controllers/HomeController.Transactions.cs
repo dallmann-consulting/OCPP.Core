@@ -100,7 +100,7 @@ namespace OCPP.Core.Management.Controllers
                     {
                         Logger.LogTrace("Transactions: Loading charge point transactions...");
                         tlvm.Transactions = dbContext.Transactions
-                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId && t.StartTime >= DateTime.Now.AddDays(-1 * days))
+                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId && t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
                                             .OrderByDescending(t => t.TransactionId)
                                             .ToList<Transaction>();
                     }

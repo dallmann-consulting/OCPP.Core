@@ -58,7 +58,7 @@ namespace OCPP.Core.Server
                         {
                             // Concat all periods and write them in messag log...
 
-                            DateTime timeBase = notifyEVChargingScheduleRequest.TimeBase;
+                            DateTimeOffset timeBase = notifyEVChargingScheduleRequest.TimeBase;
                             foreach (ChargingSchedulePeriodType period in notifyEVChargingScheduleRequest.ChargingSchedule?.ChargingSchedulePeriod)
                             {
                                 if (periods.Length > 0)
@@ -66,8 +66,8 @@ namespace OCPP.Core.Server
                                     periods.Append(" | ");
                                 }
 
-                                DateTime time = timeBase.AddSeconds(period.StartPeriod);
-                                periods.Append(string.Format("{0}: {1}{2}", time.ToString(SimpleTimeStampFormat), period.Limit, notifyEVChargingScheduleRequest.ChargingSchedule.ChargingRateUnit.ToString()));
+                                DateTimeOffset time = timeBase.AddSeconds(period.StartPeriod);
+                                periods.Append(string.Format("{0}: {1}{2}", time.ToString("O"), period.Limit, notifyEVChargingScheduleRequest.ChargingSchedule.ChargingRateUnit.ToString()));
 
                                 if (period.NumberPhases > 0)
                                 {

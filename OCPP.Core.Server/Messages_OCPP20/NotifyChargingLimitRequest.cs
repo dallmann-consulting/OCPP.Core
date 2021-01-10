@@ -143,7 +143,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// Starting point of an absolute schedule. If absent the schedule will be relative to start of charging.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("startSchedule", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.DateTime StartSchedule { get; set; }
+        public System.DateTimeOffset StartSchedule { get; set; }
 
         /// <summary>Charging_ Schedule. Duration. Elapsed_ Time
         /// urn:x-oca:ocpp:uid:1:569236

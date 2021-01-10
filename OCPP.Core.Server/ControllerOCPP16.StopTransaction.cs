@@ -91,7 +91,7 @@ namespace OCPP.Core.Server
 
                                 if (transaction != null)
                                 {
-                                    Logger.LogTrace("StopTransaction => Last transaction id={0} / Start='{1}' / Stop='{2}'", transaction.TransactionId, transaction.StartTime.ToString(SimpleTimeStampFormat), transaction?.StopTime?.ToString(SimpleTimeStampFormat));
+                                    Logger.LogTrace("StopTransaction => Last transaction id={0} / Start='{1}' / Stop='{2}'", transaction.TransactionId, transaction.StartTime.ToString("O"), transaction?.StopTime?.ToString("o"));
                                     if (transaction.StopTime.HasValue)
                                     {
                                         Logger.LogTrace("StopTransaction => Last transaction (id={0}) is already closed ", transaction.TransactionId);
@@ -137,7 +137,7 @@ namespace OCPP.Core.Server
                                     transaction.StopTagId = idTag;
                                     transaction.MeterStop = stopTransactionRequest.MeterStop;
                                     transaction.StopReason = stopTransactionRequest.Reason.ToString();
-                                    transaction.StopTime = stopTransactionRequest.Timestamp;
+                                    transaction.StopTime = stopTransactionRequest.Timestamp.UtcDateTime;
                                     dbContext.SaveChanges();
                                 }
                             }

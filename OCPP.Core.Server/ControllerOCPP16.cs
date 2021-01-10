@@ -29,7 +29,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        protected const string SimpleTimeStampFormat = "yyyy.MM.ddTHH:mm:ss";
+        //protected const string SimpleTimeStampFormat = "yyyy.MM.ddTHH:mm:ss";
 
         /// <summary>
         /// Configuration context for reading app settings
@@ -151,7 +151,7 @@ namespace OCPP.Core.Server
                             MessageLog msgLog = new MessageLog();
                             msgLog.ChargePointId = chargePointId;
                             msgLog.ConnectorId = connectorId;
-                            msgLog.LogTime = DateTime.Now;
+                            msgLog.LogTime = DateTime.UtcNow;
                             msgLog.Message = message;
                             msgLog.Result = result;
                             msgLog.ErrorCode = errorCode;

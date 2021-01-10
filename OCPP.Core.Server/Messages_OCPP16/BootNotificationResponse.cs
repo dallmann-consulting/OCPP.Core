@@ -31,7 +31,7 @@ namespace OCPP.Core.Server.Messages_OCPP16
 
         [Newtonsoft.Json.JsonProperty("currentTime", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-        public System.DateTime CurrentTime { get; set; }
+        public System.DateTimeOffset CurrentTime { get; set; }
 
         /// <summary>
         /// Heartbeat interval in seconds

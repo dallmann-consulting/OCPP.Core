@@ -44,7 +44,7 @@ namespace OCPP.Core.Server
                 Logger.LogInformation("BootNotification => Reason={0}", bootReason);
 
                 BootNotificationResponse bootNotificationResponse = new BootNotificationResponse();
-                bootNotificationResponse.CurrentTime = DateTime.Now;
+                bootNotificationResponse.CurrentTime = DateTimeOffset.UtcNow;
                 bootNotificationResponse.Interval = 300;    // 300 seconds
 
                 bootNotificationResponse.StatusInfo = new StatusInfoType();

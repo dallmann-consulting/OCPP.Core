@@ -43,7 +43,7 @@ namespace OCPP.Core.Server
                 string idTag = authorizeRequest.IdTag;
 
                 authorizeResponse.IdTagInfo.ParentIdTag = string.Empty;
-                authorizeResponse.IdTagInfo.ExpiryDate = DateTime.Now;
+                authorizeResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow;
                 try
                 {
                     using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))

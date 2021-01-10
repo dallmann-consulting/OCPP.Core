@@ -40,7 +40,7 @@ namespace OCPP.Core.Server.Messages_OCPP16
     public partial class IdTagInfo
     {
         [Newtonsoft.Json.JsonProperty("expiryDate", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.DateTime ExpiryDate { get; set; }
+        public System.DateTimeOffset ExpiryDate { get; set; }
 
         [Newtonsoft.Json.JsonProperty("parentIdTag", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.StringLength(20)]

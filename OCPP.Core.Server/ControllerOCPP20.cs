@@ -29,7 +29,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP20
     {
-        protected const string SimpleTimeStampFormat = "yyyy.MM.ddTHH:mm:ss";
+        //protected const string SimpleTimeStampFormat = "yyyy.MM.ddTHH:mm:ss";
 
         private const string VendorId = "dallmann consulting GmbH";
 
@@ -169,7 +169,7 @@ namespace OCPP.Core.Server
                             MessageLog msgLog = new MessageLog();
                             msgLog.ChargePointId = chargePointId;
                             msgLog.ConnectorId = connectorId;
-                            msgLog.LogTime = DateTime.Now;
+                            msgLog.LogTime = DateTime.UtcNow;
                             msgLog.Message = message;
                             msgLog.Result = result;
                             msgLog.ErrorCode = errorCode;

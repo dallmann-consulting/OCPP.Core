@@ -39,7 +39,7 @@ namespace OCPP.Core.Server
             heartbeatResponse.CustomData = new CustomDataType();
             heartbeatResponse.CustomData.VendorId = VendorId;
 
-            heartbeatResponse.CurrentTime = DateTime.Now;
+            heartbeatResponse.CurrentTime = DateTimeOffset.UtcNow;
 
             msgOut.JsonPayload = JsonConvert.SerializeObject(heartbeatResponse);
             Logger.LogTrace("Heartbeat => Response serialized");
