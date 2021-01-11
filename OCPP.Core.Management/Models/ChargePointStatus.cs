@@ -17,6 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+using OCPP.Core.Database;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,26 +25,42 @@ using System.Threading.Tasks;
 
 namespace OCPP.Core.Management.Models
 {
-    public class ChargePointsOverviewViewModel
+    public class ChargePointStatus
     {
-        public string ChargePointId { get; set; }
+        public ChargePointStatus()
+        {
+        }
 
+        [Newtonsoft.Json.JsonProperty("id")]
+        public string Id { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("name")]
         public string Name { get; set; }
 
-        public string Comment { get; set; }
+        [Newtonsoft.Json.JsonProperty("protocol")]
+        public string Protocol { get; set; }
 
-        public int LastTransactionId { get; set; }
+        public ConnectorStatus EVSE1Status { get; set; }
 
-        public int ConnectorId { get; set; }
+        public ConnectorStatus EVSE2Status { get; set; }
+    }
 
-        public double MeterStart { get; set; }
 
-        public double? MeterStop { get; set; }
+    public enum ConnectorStatus
+    {
+        [System.Runtime.Serialization.EnumMember(Value = @"")]
+        Undefined = 0,
 
-        public DateTime? StartTime { get; set; }
+        [System.Runtime.Serialization.EnumMember(Value = @"Available")]
+        Available = 1,
 
-        public DateTime? StopTime { get; set; }
+        [System.Runtime.Serialization.EnumMember(Value = @"Occupied")]
+        Occupied = 2,
 
-        public ConnectorStatus ConnectorStatus { get; set; }
+        [System.Runtime.Serialization.EnumMember(Value = @"Unavailable")]
+        Unavailable = 3,
+
+        [System.Runtime.Serialization.EnumMember(Value = @"Faulted")]
+        Faulted = 4
     }
 }

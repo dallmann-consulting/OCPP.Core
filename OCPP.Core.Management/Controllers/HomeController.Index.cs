@@ -21,12 +21,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
@@ -47,7 +50,7 @@ namespace OCPP.Core.Management.Controllers
         }
 
         [Authorize]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             Logger.LogTrace("Index: Loading charge points with latest transactions...");
 
@@ -62,6 +65,49 @@ namespace OCPP.Core.Management.Controllers
                                       .DefaultIfEmpty()
                                       .Take(1)
                                       select new { cp, t };
+
+                    ChargePointStatus[] statusList = null;
+
+                    string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
+                    if (!string.IsNullOrEmpty(serverApiUrl))
+                    {
+                        try
+                        {
+                            using (var httpClient = new HttpClient())
+                            {
+                                if (!serverApiUrl.EndsWith('/'))
+                                {
+                                    serverApiUrl += "/";
+                                }
+                                Uri uri = new Uri(serverApiUrl);
+                                uri = new Uri(uri, "Status");
+                                httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
+                                HttpResponseMessage response = await httpClient.GetAsync(uri);
+                                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                                {
+                                    string jsonData = await response.Content.ReadAsStringAsync();
+                                    if (!string.IsNullOrEmpty(jsonData))
+                                    {
+                                        statusList = JsonConvert.DeserializeObject<ChargePointStatus[]>(jsonData);
+                                    }
+                                    else
+                                    {
+                                        Logger.LogError("Index: Result of status web request is empty");
+                                    }
+                                }
+                                else
+                                {
+                                    Logger.LogError("Index: Result of status web request => httpStatus={0}", response.StatusCode);
+                                }
+                            }
+
+                            Logger.LogInformation("Index: Result of status web request => Length={0}", statusList?.Length);
+                        }
+                        catch (Exception exp)
+                        {
+                            Logger.LogError(exp, "Index: Error in status web request => {0}", exp.Message);
+                        }
+                    }
 
                     int i = 0;
                     foreach (var cp in chargeData)
@@ -80,6 +126,9 @@ namespace OCPP.Core.Management.Controllers
                             cpovm.MeterStop = cp.t.MeterStop;
                             cpovm.StartTime = cp.t.StartTime;
                             cpovm.StopTime = cp.t.StopTime;
+
+                            // default status: active transaction or not?
+                            cpovm.ConnectorStatus = (cpovm.StopTime.HasValue) ? ConnectorStatus.Available : ConnectorStatus.Occupied;
                         }
                         else
                         {
@@ -87,12 +136,31 @@ namespace OCPP.Core.Management.Controllers
                             cpovm.MeterStop = -1;
                             cpovm.StartTime = null;
                             cpovm.StopTime = null;
+
+                            // default status: Available
+                            cpovm.ConnectorStatus = ConnectorStatus.Available;
                         }
                         chargePoints.Add(cpovm);
+
+                        if (statusList != null)
+                        {
+                            foreach (ChargePointStatus cpStatus in statusList)
+                            {
+                                if (cpStatus.Id.Equals(cpovm.ChargePointId, StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    if (cpStatus.EVSE1Status != ConnectorStatus.Undefined)
+                                    {
+                                        // TODO: display multiple connectors
+                                        Logger.LogTrace("Index: Charge point '{0}' => Override status '{1}' to '{2}'", cpovm.ChargePointId, cpovm.ConnectorStatus, cpStatus.EVSE1Status);
+                                        cpovm.ConnectorStatus = cpStatus.EVSE1Status;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
                     }
 
                     Logger.LogInformation("Index: Found {0} charge points", i);
-
                 }
             }
             catch (Exception exp)

@@ -33,6 +33,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using OCPP.Core.Database;
 
 namespace OCPP.Core.Server
@@ -132,7 +133,7 @@ namespace OCPP.Core.Server
                             }
                         }
                     }
-                    
+
                     if (chargePointStatus == null)
                     {
                         logger.LogTrace("Startup => no chargepoint: http 412");
@@ -169,6 +170,7 @@ namespace OCPP.Core.Server
                             // Handle socket communication
                             logger.LogTrace("Startup => Waiting for message...");
 
+                            chargePointStatus.Protocol = subProtocol;
                             if (_chargePointStatusDict.TryAdd(chargepointIdentifier, chargePointStatus))
                             {
                                 using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync(subProtocol))
@@ -188,7 +190,7 @@ namespace OCPP.Core.Server
                             }
                             else
                             {
-                                logger.LogError ("Startup => Error storing status object in dictionary => refuse connecction");
+                                logger.LogError("Startup => Error storing status object in dictionary => refuse connecction");
                                 context.Response.StatusCode = 500;
                                 await next();
                             }
@@ -199,6 +201,25 @@ namespace OCPP.Core.Server
                         // no websocket request => failure
                         logger.LogWarning("Startup => Non-Websocket request");
                         context.Response.StatusCode = 400;
+                    }
+                }
+                else if (context.Request.Path.Equals("/API/Status"))
+                {
+                    try
+                    {
+                        List<ChargePointStatus> statusList = new List<ChargePointStatus>();
+                        foreach (ChargePointStatus status in _chargePointStatusDict.Values)
+                        {
+                            statusList.Add(status);
+                        }
+                        string jsonStatus = JsonConvert.SerializeObject(statusList);
+                        context.Response.ContentType = "application/json";
+                        await context.Response.WriteAsync(jsonStatus);
+                    }
+                    catch (Exception exp)
+                    {
+                        logger.LogError(exp, "Startup API => Error: {0}", exp.Message);
+                        context.Response.StatusCode = 500;
                     }
                 }
                 else

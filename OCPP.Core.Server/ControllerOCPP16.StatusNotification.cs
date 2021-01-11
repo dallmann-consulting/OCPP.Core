@@ -35,7 +35,7 @@ namespace OCPP.Core.Server
             string errorCode = null;
             StatusNotificationResponse statusNotificationResponse = new StatusNotificationResponse();
 
-            int? connectorId = null;
+            int connectorId = 0;
             bool msgWritten = false;
 
             try
@@ -46,15 +46,41 @@ namespace OCPP.Core.Server
 
                 connectorId = statusNotificationRequest.ConnectorId;
 
-                if (ChargePointStatus != null)
+                // Write raw status in DB
+                msgWritten = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Info={0} / Status={1} / ", statusNotificationRequest.Info, statusNotificationRequest.Status), statusNotificationRequest.ErrorCode.ToString());
+
+                ConnectorStatus newStatus = ConnectorStatus.Undefined;
+
+                switch (statusNotificationRequest.Status)
                 {
-                    // Known charge station
-                    msgWritten = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Info={0} / Status={1} / ", statusNotificationRequest.Info, statusNotificationRequest.Status), statusNotificationRequest.ErrorCode.ToString());
+                    case StatusNotificationRequestStatus.Available:
+                        newStatus = ConnectorStatus.Available;
+                        break;
+                    case StatusNotificationRequestStatus.Preparing:
+                    case StatusNotificationRequestStatus.Charging:
+                    case StatusNotificationRequestStatus.SuspendedEVSE:
+                    case StatusNotificationRequestStatus.SuspendedEV:
+                    case StatusNotificationRequestStatus.Finishing:
+                    case StatusNotificationRequestStatus.Reserved:
+                        newStatus = ConnectorStatus.Occupied;
+                        break;
+                    case StatusNotificationRequestStatus.Unavailable:
+                        newStatus = ConnectorStatus.Unavailable;
+                        break;
+                    case StatusNotificationRequestStatus.Faulted:
+                        newStatus = ConnectorStatus.Faulted;
+                        break;
+
                 }
-                else
+                Logger.LogInformation("StatusNotification => ChargePoint={0} / Connector={1} / newStatus={2}", ChargePointStatus?.Id, connectorId, newStatus.ToString());
+
+                if (connectorId <= 1)
                 {
-                    // Unknown charge station
-                    errorCode = ErrorCodes.GenericError;
+                    ChargePointStatus.EVSE1Status = newStatus;
+                }
+                else if (connectorId == 2)
+                {
+                    ChargePointStatus.EVSE2Status = newStatus;
                 }
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(statusNotificationResponse);
@@ -62,7 +88,7 @@ namespace OCPP.Core.Server
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "StatusNotification => Exception: {0}", exp.Message);
+                Logger.LogError(exp, "StatusNotification => ChargePoint={0} / Exception: {1}", ChargePointStatus.Id, exp.Message);
                 errorCode = ErrorCodes.InternalError;
             }
 

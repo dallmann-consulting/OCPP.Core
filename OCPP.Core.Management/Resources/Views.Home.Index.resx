@@ -129,4 +129,10 @@
   <data name="Charging" xml:space="preserve">
     <value>Charging</value>
   </data>
+  <data name="Faulted" xml:space="preserve">
+    <value>Faulted</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
 </root>

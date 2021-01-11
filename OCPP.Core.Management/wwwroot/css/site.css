@@ -89,6 +89,10 @@ body {
     background-color: #FFB6C1;
 }
 
+.unavailableColor {
+    background-color: #B0B0B0;
+}
+
 a {
     color: #000;
 }

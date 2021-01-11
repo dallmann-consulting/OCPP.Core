@@ -129,4 +129,10 @@
   <data name="Charging" xml:space="preserve">
     <value>Ladevorgang</value>
   </data>
+  <data name="Faulted" xml:space="preserve">
+    <value>Defekt</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Nicht verfügbar</value>
+  </data>
 </root>

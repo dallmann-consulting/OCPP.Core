@@ -38,7 +38,7 @@ namespace OCPP.Core.Server
             statusNotificationResponse.CustomData = new CustomDataType();
             statusNotificationResponse.CustomData.VendorId = VendorId;
 
-            int? connectorId = null;
+            int connectorId = 0;
             bool msgWritten = false;
 
             try
@@ -49,15 +49,36 @@ namespace OCPP.Core.Server
 
                 connectorId = statusNotificationRequest.ConnectorId;
 
-                if (ChargePointStatus != null)
+                // Write raw status in DB
+                msgWritten = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Status={0}", statusNotificationRequest.ConnectorStatus), string.Empty);
+
+                ConnectorStatus newStatus = ConnectorStatus.Undefined;
+
+                switch (statusNotificationRequest.ConnectorStatus)
                 {
-                    // Known charge station
-                    msgWritten = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Status={0}", statusNotificationRequest.ConnectorStatus), string.Empty);
+                    case ConnectorStatusEnumType.Available:
+                        newStatus = ConnectorStatus.Available;
+                        break;
+                    case ConnectorStatusEnumType.Occupied:
+                    case ConnectorStatusEnumType.Reserved:
+                        newStatus = ConnectorStatus.Occupied;
+                        break;
+                    case ConnectorStatusEnumType.Unavailable:
+                        newStatus = ConnectorStatus.Unavailable;
+                        break;
+                    case ConnectorStatusEnumType.Faulted:
+                        newStatus = ConnectorStatus.Faulted;
+                        break;
                 }
-                else
+                Logger.LogInformation("StatusNotification => ChargePoint={0} / Connector={1} / newStatus={2}", ChargePointStatus?.Id, connectorId, newStatus.ToString());
+
+                if (connectorId <= 1)
                 {
-                    // Unknown charge station
-                    errorCode = ErrorCodes.GenericError;
+                    ChargePointStatus.EVSE1Status = newStatus;
+                }
+                else if (connectorId == 2)
+                {
+                    ChargePointStatus.EVSE2Status = newStatus;
                 }
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(statusNotificationResponse);
@@ -65,7 +86,7 @@ namespace OCPP.Core.Server
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "StatusNotification => Exception: {0}", exp.Message);
+                Logger.LogError(exp, "StatusNotification => ChargePoint={0} / Exception: {1}", ChargePointStatus.Id, exp.Message);
                 errorCode = ErrorCodes.InternalError;
             }
 
