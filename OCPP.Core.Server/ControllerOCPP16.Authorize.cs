@@ -43,7 +43,7 @@ namespace OCPP.Core.Server
                 string idTag = authorizeRequest.IdTag;
 
                 authorizeResponse.IdTagInfo.ParentIdTag = string.Empty;
-                authorizeResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow;
+                authorizeResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow.AddMinutes(5);   // default: 5 minutes
                 try
                 {
                     using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
@@ -51,7 +51,10 @@ namespace OCPP.Core.Server
                         ChargeTag ct = dbContext.Find<ChargeTag>(idTag);
                         if (ct != null)
                         {
-                            authorizeResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.HasValue ? ct.ExpiryDate.Value : new DateTime(2999, 12, 31);
+                            if (ct.ExpiryDate.HasValue)
+                            {
+                                authorizeResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
+                            }
                             authorizeResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
                             if (ct.Blocked.HasValue && ct.Blocked.Value)
                             {

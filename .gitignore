@@ -338,3 +338,5 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+/OCPP.Core.Server/Messages_OCPP16/ResetResponse.cs
+/OCPP.Core.Server/Messages_OCPP16/ResetRequest.cs

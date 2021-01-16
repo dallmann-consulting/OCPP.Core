@@ -21,6 +21,7 @@ using OCPP.Core.Database;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 
 namespace OCPP.Core.Server
@@ -49,6 +50,8 @@ namespace OCPP.Core.Server
         public ConnectorStatus EVSE1Status { get; set; }
 
         public ConnectorStatus EVSE2Status { get; set; }
+
+        public WebSocket WebSocket { get; set; }
     }
 
 
