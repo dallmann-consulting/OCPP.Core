@@ -30,7 +30,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        public string HandleBootNotification(Message msgIn, Message msgOut)
+        public string HandleBootNotification(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
 

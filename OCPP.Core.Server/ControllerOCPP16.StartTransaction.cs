@@ -30,7 +30,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        public string HandleStartTransaction(Message msgIn, Message msgOut)
+        public string HandleStartTransaction(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
             StartTransactionResponse startTransactionResponse = new StartTransactionResponse();

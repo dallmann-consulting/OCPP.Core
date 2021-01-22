@@ -18,16 +18,15 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
-namespace OCPP.Core.Server.Messages_OCPP20
+namespace OCPP.Core.Server
 {
     /// <summary>
     /// Warpper object for OCPP Message
     /// </summary>
-    public class Message
+    public class OCPPMessage
     {
         /// <summary>
         /// Message type
@@ -60,16 +59,23 @@ namespace OCPP.Core.Server.Messages_OCPP20
         public string ErrorDescription { get; set; }
 
         /// <summary>
+        /// TaskCompletionSource for asynchronous API result
+        /// </summary>
+        [JsonIgnore]
+        public TaskCompletionSource<string> TaskCompletionSource { get; set; }
+
+
+        /// <summary>
         /// Empty constructor
         /// </summary>
-        public Message()
+        public OCPPMessage()
         {
         }
 
         /// <summary>
         /// Constructor
         /// </summary>
-        public Message(string messageType, string uniqueId, string action, string jsonPayload)
+        public OCPPMessage(string messageType, string uniqueId, string action, string jsonPayload)
         {
             MessageType = messageType;
             UniqueId = uniqueId;

@@ -30,7 +30,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        public string HandleDataTransfer(Message msgIn, Message msgOut)
+        public string HandleDataTransfer(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
             DataTransferResponse dataTransferResponse = new DataTransferResponse();

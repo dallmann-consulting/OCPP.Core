@@ -30,7 +30,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP20
     {
-        public string HandleStatusNotification(Message msgIn, Message msgOut)
+        public string HandleStatusNotification(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
             StatusNotificationResponse statusNotificationResponse = new StatusNotificationResponse();

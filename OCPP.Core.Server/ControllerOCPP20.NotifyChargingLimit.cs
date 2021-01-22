@@ -31,7 +31,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP20
     {
-        public string HandleNotifyChargingLimit(Message msgIn, Message msgOut)
+        public string HandleNotifyChargingLimit(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
 

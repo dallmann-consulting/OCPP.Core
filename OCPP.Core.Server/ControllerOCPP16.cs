@@ -20,6 +20,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
@@ -67,60 +68,52 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Processes the charge point message and returns the answer message
         /// </summary>
-        public Message ProcessMessage(Message msgIn)
+        public OCPPMessage ProcessRequest(OCPPMessage msgIn)
         {
-            Message msgOut = new Message();
+            OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "3";
             msgOut.UniqueId = msgIn.UniqueId;
 
             string errorCode = null;
 
-            if (msgIn.MessageType == "2")
+            switch (msgIn.Action)
             {
-                switch (msgIn.Action)
-                {
-                    case "BootNotification":
-                        errorCode = HandleBootNotification(msgIn, msgOut);
-                        break;
+                case "BootNotification":
+                    errorCode = HandleBootNotification(msgIn, msgOut);
+                    break;
 
-                    case "Heartbeat":
-                        errorCode = HandleHeartBeat(msgIn, msgOut);
-                        break;
+                case "Heartbeat":
+                    errorCode = HandleHeartBeat(msgIn, msgOut);
+                    break;
 
-                    case "Authorize":
-                        errorCode = HandleAuthorize(msgIn, msgOut);
-                        break;
+                case "Authorize":
+                    errorCode = HandleAuthorize(msgIn, msgOut);
+                    break;
 
-                    case "StartTransaction":
-                        errorCode = HandleStartTransaction(msgIn, msgOut);
-                        break;
+                case "StartTransaction":
+                    errorCode = HandleStartTransaction(msgIn, msgOut);
+                    break;
 
-                    case "StopTransaction":
-                        errorCode = HandleStopTransaction(msgIn, msgOut);
-                        break;
+                case "StopTransaction":
+                    errorCode = HandleStopTransaction(msgIn, msgOut);
+                    break;
 
-                    case "MeterValues":
-                        errorCode = HandleMeterValues(msgIn, msgOut);
-                        break;
+                case "MeterValues":
+                    errorCode = HandleMeterValues(msgIn, msgOut);
+                    break;
 
-                    case "StatusNotification":
-                        errorCode = HandleStatusNotification(msgIn, msgOut);
-                        break;
+                case "StatusNotification":
+                    errorCode = HandleStatusNotification(msgIn, msgOut);
+                    break;
 
-                    case "DataTransfer":
-                        errorCode = HandleDataTransfer(msgIn, msgOut);
-                        break;
+                case "DataTransfer":
+                    errorCode = HandleDataTransfer(msgIn, msgOut);
+                    break;
 
-                    default:
-                        errorCode = ErrorCodes.NotSupported;
-                        WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
-                        break;
-                }
-            }
-            else
-            {
-                Logger.LogError("ControllerOCPP16 => Protocol error: wrong message type", msgIn.MessageType);
-                errorCode = ErrorCodes.ProtocolError;
+                default:
+                    errorCode = ErrorCodes.NotSupported;
+                    WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
+                    break;
             }
 
             if (!string.IsNullOrEmpty(errorCode))
@@ -132,6 +125,25 @@ namespace OCPP.Core.Server
             }
 
             return msgOut;
+        }
+
+
+        /// <summary>
+        /// Processes the charge point message and returns the answer message
+        /// </summary>
+        public void ProcessAnswer(OCPPMessage msgIn, OCPPMessage msgOut)
+        {
+            // The response (msgIn) has no action => check action in original request (msgOut)
+            switch (msgOut.Action)
+            {
+                case "Reset":
+                    HandleReset(msgIn, msgOut);
+                    break;
+
+                default:
+                    WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");
+                    break;
+            }
         }
 
         /// <summary>

@@ -17,12 +17,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using OCPP.Core.Database;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.WebSockets;
-using System.Threading.Tasks;
+using Newtonsoft.Json;
+using OCPP.Core.Database;
 
 namespace OCPP.Core.Server
 {
@@ -38,19 +36,38 @@ namespace OCPP.Core.Server
             Name = chargePoint.Name;
         }
 
+        /// <summary>
+        /// ID of chargepoint
+        /// </summary>
         [Newtonsoft.Json.JsonProperty("id")]
         public string Id { get; set; }
 
+        /// <summary>
+        /// Name of chargepoint
+        /// </summary>
         [Newtonsoft.Json.JsonProperty("name")]
         public string Name { get; set; }
 
+        /// <summary>
+        /// OCPP protocol version
+        /// </summary>
         [Newtonsoft.Json.JsonProperty("protocol")]
         public string Protocol { get; set; }
 
+        /// <summary>
+        /// Status of first (or only) charge connector
+        /// </summary>
         public ConnectorStatus EVSE1Status { get; set; }
 
+        /// <summary>
+        /// Status of second  charge connector (currently not used)
+        /// </summary>
         public ConnectorStatus EVSE2Status { get; set; }
 
+        /// <summary>
+        /// WebSocket for internal processing
+        /// </summary>
+        [JsonIgnore]
         public WebSocket WebSocket { get; set; }
     }
 

@@ -16,10 +16,14 @@ namespace OCPP.Core.Server
     public partial class OCPPMiddleware
     {
         // Supported OCPP protocols (in order)
-        private static readonly string[] SupportedProtocols = { "ocpp2.0", "ocpp1.6" /*, "ocpp1.5" */};
+        private const string Protocol_OCPP16 = "ocpp1.6";
+        private const string Protocol_OCPP20 = "ocpp2.0";
+        private static readonly string[] SupportedProtocols = { Protocol_OCPP20, Protocol_OCPP16 /*, "ocpp1.5" */};
 
         // RegExp for splitting ocpp message parts
-        private static string MessageRegExp = "^\\[\\s*(\\d)\\s*,\\s*\"(\\w*)\"\\s*,\\s*\"(\\w*)\"\\s*,\\s*(.*)\\s*\\]$";  // ^\[\s*(\d)\s*,\s*"(\w*)"\s*,\s*"(\w*)"\s*,\s*(.*)\s*\]$
+        // ^\[\s*(\d)\s*,\s*\"(\w*)\"\s*,(?:\s*\"(\w*)\"\s*,)?\s*(.*)\s*\]$
+        // Third block is optional, because responses don't have an action
+        private static string MessageRegExp = "^\\[\\s*(\\d)\\s*,\\s*\"(\\w*)\"\\s*,(?:\\s*\"(\\w*)\"\\s*,)?\\s*(.*)\\s*\\]$";
 
         private readonly RequestDelegate _next;
         private readonly ILoggerFactory _logFactory;
@@ -29,6 +33,8 @@ namespace OCPP.Core.Server
         // Dictionary with status objects for each charge point
         private static ConcurrentDictionary<string, ChargePointStatus> _chargePointStatusDict = new ConcurrentDictionary<string, ChargePointStatus>();
 
+        // Dictionary for processing asynchronous API calls
+        private Dictionary<string, OCPPMessage> _requestQueue = new Dictionary<string, OCPPMessage>();
 
         public OCPPMiddleware(RequestDelegate next, ILoggerFactory logFactory, IConfiguration configuration)
         {
@@ -119,15 +125,15 @@ namespace OCPP.Core.Server
                                     _logger.LogTrace("OCPPMiddleware => WebSocket connection with charge point '{0}'", chargepointIdentifier);
                                     chargePointStatus.WebSocket = webSocket;
 
-                                    if (subProtocol == "ocpp2.0")
+                                    if (subProtocol == Protocol_OCPP20)
                                     {
                                         // OCPP V2.0
-                                        await Receive20(chargePointStatus, context, webSocket);
+                                        await Receive20(chargePointStatus, context);
                                     }
                                     else
                                     {
                                         // OCPP V1.6
-                                        await Receive16(chargePointStatus, context, webSocket);
+                                        await Receive16(chargePointStatus, context);
                                     }
                                 }
                             }
@@ -159,7 +165,10 @@ namespace OCPP.Core.Server
 
                 if (urlParts.Length >= 3)
                 {
-                    if (urlParts[2] == "Status")
+                    string cmd = urlParts[2];
+                    string urlChargePointId = (urlParts.Length >= 4) ? urlParts[3] : null;
+
+                    if (cmd == "Status")
                     {
                         try
                         {
@@ -174,34 +183,42 @@ namespace OCPP.Core.Server
                         }
                         catch (Exception exp)
                         {
-                            _logger.LogError(exp, "OCPPMiddleware API => Error: {0}", exp.Message);
+                            _logger.LogError(exp, "OCPPMiddleware => Error: {0}", exp.Message);
                             context.Response.StatusCode = 500;
                         }
                     }
-                    /*
-                    else if (urlParts[2] == "SoftReset")
+                    else if (cmd == "Reset")
                     {
                         try
                         {
-                            
-
                             ChargePointStatus status = null;
-                            if (_chargePointStatusDict.TryGetValue("", out status))
+                            if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                             {
-                                // Send message to charge point
+                                // Send message to chargepoint
+                                if (status.Protocol == Protocol_OCPP20)
+                                {
+                                    // OCPP V2.0
+                                    await Reset20(status, context);
+                                }
+                                else
+                                {
+                                    // OCPP V1.6
+                                    await Reset16(status, context);
+                                }
                             }
-
-
-                            context.Response.ContentType = "application/json";
-                            await context.Response.WriteAsync("Test");
+                            else
+                            {
+                                // Unknown chargepoint
+                                _logger.LogError("OCPPMiddleware SoftReset => Unknown chargepoint: {0}", urlChargePointId);
+                                context.Response.StatusCode = 500;
+                            }
                         }
                         catch (Exception exp)
                         {
-                            _logger.LogError(exp, "Startup SoftReset => Error: {0}", exp.Message);
+                            _logger.LogError(exp, "OCPPMiddleware SoftReset => Error: {0}", exp.Message);
                             context.Response.StatusCode = 500;
                         }
                     }
-                    */
                 }
             }
             else

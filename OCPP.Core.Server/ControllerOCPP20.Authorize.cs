@@ -30,7 +30,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP20
     {
-        public string HandleAuthorize(Message msgIn, Message msgOut)
+        public string HandleAuthorize(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
             AuthorizeResponse authorizeResponse = new AuthorizeResponse();

@@ -30,7 +30,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP20
     {
-        public string HandleTransactionEvent(Message msgIn, Message msgOut)
+        public string HandleTransactionEvent(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
             TransactionEventResponse transactionEventResponse = new TransactionEventResponse();

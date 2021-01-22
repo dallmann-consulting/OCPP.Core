@@ -31,7 +31,7 @@ namespace OCPP.Core.Server
     {
         //protected const string SimpleTimeStampFormat = "yyyy.MM.ddTHH:mm:ss";
 
-        private const string VendorId = "dallmann consulting GmbH";
+        public const string VendorId = "dallmann consulting GmbH";
 
         /// <summary>
         /// Configuration context for reading app settings
@@ -69,9 +69,9 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Processes the charge point message and returns the answer message
         /// </summary>
-        public Message ProcessMessage(Message msgIn)
+        public OCPPMessage ProcessRequest(OCPPMessage msgIn)
         {
-            Message msgOut = new Message();
+            OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "3";
             msgOut.UniqueId = msgIn.UniqueId;
 
@@ -150,6 +150,24 @@ namespace OCPP.Core.Server
             }
 
             return msgOut;
+        }
+
+        /// <summary>
+        /// Processes the charge point message and returns the answer message
+        /// </summary>
+        public void ProcessAnswer(OCPPMessage msgIn, OCPPMessage msgOut)
+        {
+            // The response (msgIn) has no action => check action in original request (msgOut)
+            switch (msgOut.Action)
+            {
+                case "Reset":
+                    HandleReset(msgIn, msgOut);
+                    break;
+
+                default:
+                    WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");
+                    break;
+            }
         }
 
         /// <summary>

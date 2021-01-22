@@ -30,7 +30,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        public string HandleMeterValues(Message msgIn, Message msgOut)
+        public string HandleMeterValues(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
             MeterValuesResponse meterValuesResponse = new MeterValuesResponse();

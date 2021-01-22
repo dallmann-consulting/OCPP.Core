@@ -30,7 +30,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP20
     {
-        public string HandleLogStatusNotification(Message msgIn, Message msgOut)
+        public string HandleLogStatusNotification(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
 
