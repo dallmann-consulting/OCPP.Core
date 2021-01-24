@@ -59,7 +59,7 @@
             <div class="row">
                 <div class="col-sm-2 align-self-center">
                     <div class="form-group">
-                        <label class="inline-label" for="Name">@Localizer["CommentLabel"]</label>
+                        <label class="inline-label" for="Comment">@Localizer["CommentLabel"]</label>
                     </div>
                 </div>
                 <div class="col-sm-6">
@@ -69,6 +69,53 @@
                 </div>
                 <div class="col-sm-2">
                     <span class="field-validation-valid text-danger" data-valmsg-for="Comment" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+
+
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="Username">@Localizer["UsernameLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 50)" data-val-length-max="50" id="Username" maxlength="50" name="Username" placeholder="@Localizer["UsernamePlaceholder"]" type="text" value="@Model.Username" />
+                    </div>
+                </div>
+                <div class="col-sm-2">
+                    <span class="field-validation-valid text-danger" data-valmsg-for="Username" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="Password">@Localizer["PasswordLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 50)" data-val-length-max="50" id="Password" maxlength="50" name="Password" placeholder="@Localizer["PasswordPlaceholder"]" type="text" value="@Model.Password" />
+                    </div>
+                </div>
+                <div class="col-sm-2">
+                    <span class="field-validation-valid text-danger" data-valmsg-for="Password" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="ClientCertThumb">@Localizer["ClientCertThumbLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 100)" data-val-length-max="100" id="ClientCertThumb" maxlength="100" name="ClientCertThumb" placeholder="@Localizer["ClientCertThumbPlaceholder"]" type="text" value="@Model.ClientCertThumb" />
+                    </div>
+                </div>
+                <div class="col-sm-2">
+                    <span class="field-validation-valid text-danger" data-valmsg-for="ClientCertThumb" data-valmsg-replace="true"></span>
                 </div>
             </div>
 

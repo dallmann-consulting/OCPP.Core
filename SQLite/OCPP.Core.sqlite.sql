@@ -4,6 +4,9 @@ CREATE TABLE IF NOT EXISTS "ChargePoint" (
 	"ChargePointId"	TEXT NOT NULL UNIQUE,
 	"Name"	TEXT,
 	"Comment"	TEXT,
+	"Username"	TEXT,
+	"Password"	TEXT,
+	"ClientCertThumb"	TEXT,
 	PRIMARY KEY("ChargePointId")
 );
 DROP TABLE IF EXISTS "ChargeTags";

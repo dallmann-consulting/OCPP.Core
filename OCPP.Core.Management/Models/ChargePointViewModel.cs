@@ -41,5 +41,14 @@ namespace OCPP.Core.Management.Models
 
         [StringLength(100)]
         public string Comment { get; set; }
+
+        [StringLength(50)]
+        public string Username { get; set; }
+
+        [StringLength(50)]
+        public string Password { get; set; }
+
+        [StringLength(100)]
+        public string ClientCertThumb { get; set; }
     }
 }

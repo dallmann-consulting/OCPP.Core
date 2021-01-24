@@ -126,6 +126,12 @@
   <data name="ChargePointIdPlaceholder" xml:space="preserve">
     <value>Charge point ID</value>
   </data>
+  <data name="ClientCertThumbLabel" xml:space="preserve">
+    <value>Client-Certificate</value>
+  </data>
+  <data name="ClientCertThumbPlaceholder" xml:space="preserve">
+    <value>Client-Certificate (Thumbprint)</value>
+  </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>
@@ -153,6 +159,12 @@
   <data name="NamePlaceholder" xml:space="preserve">
     <value>Charge point name</value>
   </data>
+  <data name="PasswordLabel" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="PasswordPlaceholder" xml:space="preserve">
+    <value>Charge point password</value>
+  </data>
   <data name="RequiredField" xml:space="preserve">
     <value>Required</value>
   </data>
@@ -167,5 +179,11 @@
   </data>
   <data name="TitleReset" xml:space="preserve">
     <value>Restart</value>
+  </data>
+  <data name="UsernameLabel" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="UsernamePlaceholder" xml:space="preserve">
+    <value>Charge point username</value>
   </data>
 </root>

@@ -9,6 +9,9 @@ CREATE TABLE [dbo].[ChargePoint](
 	[ChargePointId] [nvarchar](100) NOT NULL,
 	[Name] [nvarchar](100) NULL,
 	[Comment] [nvarchar](200) NULL,
+	[Username] [nvarchar](50) NULL,
+	[Password] [nvarchar](50) NULL,
+	[ClientCertThumb] [nvarchar](100) NULL,
  CONSTRAINT [PK_ChargePoint_1] PRIMARY KEY CLUSTERED 
 (
 	[ChargePointId] ASC

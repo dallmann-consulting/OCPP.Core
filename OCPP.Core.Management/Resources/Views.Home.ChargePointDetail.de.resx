@@ -126,6 +126,12 @@
   <data name="ChargePointIdPlaceholder" xml:space="preserve">
     <value>Kennung der Ladestation</value>
   </data>
+  <data name="ClientCertThumbLabel" xml:space="preserve">
+    <value>Client-Zertifikat</value>
+  </data>
+  <data name="ClientCertThumbPlaceholder" xml:space="preserve">
+    <value>Fingerabdruck des Client-Zertifikates (Thumbprint)</value>
+  </data>
   <data name="Close" xml:space="preserve">
     <value>Schließen</value>
   </data>
@@ -153,6 +159,12 @@
   <data name="NamePlaceholder" xml:space="preserve">
     <value>Bezeichnung der Ladestation</value>
   </data>
+  <data name="PasswordLabel" xml:space="preserve">
+    <value>Passwort</value>
+  </data>
+  <data name="PasswordPlaceholder" xml:space="preserve">
+    <value>Passwort der Ladestation</value>
+  </data>
   <data name="RequiredField" xml:space="preserve">
     <value>Pflichtfeld</value>
   </data>
@@ -167,5 +179,11 @@
   </data>
   <data name="TitleReset" xml:space="preserve">
     <value>Neustart</value>
+  </data>
+  <data name="UsernameLabel" xml:space="preserve">
+    <value>Benutzername</value>
+  </data>
+  <data name="UsernamePlaceholder" xml:space="preserve">
+    <value>Benutzername der Ladestation</value>
   </data>
 </root>

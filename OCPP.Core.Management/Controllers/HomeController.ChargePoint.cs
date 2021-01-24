@@ -19,14 +19,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
@@ -105,6 +101,9 @@ namespace OCPP.Core.Management.Controllers
                                 newChargePoint.ChargePointId = cpvm.ChargePointId;
                                 newChargePoint.Name = cpvm.Name;
                                 newChargePoint.Comment = cpvm.Comment;
+                                newChargePoint.Username = cpvm.Username;
+                                newChargePoint.Password = cpvm.Password;
+                                newChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
                                 dbContext.ChargePoints.Add(newChargePoint);
                                 dbContext.SaveChanges();
                                 Logger.LogInformation("ChargePoint: New => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
@@ -121,6 +120,10 @@ namespace OCPP.Core.Management.Controllers
                             Logger.LogTrace("ChargePoint: Saving charge point '{0}'", Id);
                             currentChargePoint.Name = cpvm.Name;
                             currentChargePoint.Comment = cpvm.Comment;
+                            currentChargePoint.Username = cpvm.Username;
+                            currentChargePoint.Password = cpvm.Password;
+                            currentChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
+
                             dbContext.SaveChanges();
                             Logger.LogInformation("ChargePoint: Edit => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
                         }
@@ -140,6 +143,9 @@ namespace OCPP.Core.Management.Controllers
                             cpvm.ChargePointId = currentChargePoint.ChargePointId;
                             cpvm.Name = currentChargePoint.Name;
                             cpvm.Comment = currentChargePoint.Comment;
+                            cpvm.Username = currentChargePoint.Username;
+                            cpvm.Password = currentChargePoint.Password;
+                            cpvm.ClientCertThumb = currentChargePoint.ClientCertThumb;
                         }
 
                         string viewName = (!string.IsNullOrEmpty(cpvm.ChargePointId) || Id == "@") ? "ChargePointDetail" : "ChargePointList";
