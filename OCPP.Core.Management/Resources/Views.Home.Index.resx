@@ -123,6 +123,12 @@
   <data name="ChargekWh" xml:space="preserve">
     <value>{0} kWh</value>
   </data>
+  <data name="ChargePointOffline" xml:space="preserve">
+    <value>Charge station is offline</value>
+  </data>
+  <data name="ChargePointOnline" xml:space="preserve">
+    <value>Charge station is online</value>
+  </data>
   <data name="ChargeTime" xml:space="preserve">
     <value>{0} hours {1} minutes</value>
   </data>

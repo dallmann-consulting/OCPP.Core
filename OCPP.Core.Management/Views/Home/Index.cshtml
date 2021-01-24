@@ -53,9 +53,23 @@
                     {
                         <p class="card-text">@chargeTime</p>
                     }
-                    @if (!string.IsNullOrEmpty(lastCharge))
+                    else if (!string.IsNullOrEmpty(lastCharge))
                     {
                         <p class="card-text">@lastCharge</p>
+                    }
+                    else
+                    {
+                        <p class="card-text">&nbsp;</p>
+                    }
+                </div>
+                <div class="card-footer text-muted text-right">
+                    @if (cpvm.Online)
+                    {
+                        <i class="fas fa-link" title="@Localizer["ChargePointOnline"]"></i>
+                    }
+                    else
+                    {
+                        <i class="fas fa-unlink" title="@Localizer["ChargePointOffline"]"></i>
                     }
                 </div>
             </a>

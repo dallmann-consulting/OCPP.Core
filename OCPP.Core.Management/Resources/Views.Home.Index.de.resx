@@ -118,10 +118,16 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Available" xml:space="preserve">
-    <value>Verfügbar</value>
+    <value>Frei</value>
   </data>
   <data name="ChargekWh" xml:space="preserve">
     <value>{0} kWh</value>
+  </data>
+  <data name="ChargePointOffline" xml:space="preserve">
+    <value>Die Ladestation ist Offline</value>
+  </data>
+  <data name="ChargePointOnline" xml:space="preserve">
+    <value>Die Ladestation ist Online</value>
   </data>
   <data name="ChargeTime" xml:space="preserve">
     <value>{0} Stunden {1} Minuten</value>

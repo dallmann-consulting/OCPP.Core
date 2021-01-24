@@ -160,6 +160,9 @@ namespace OCPP.Core.Management.Controllers
                             {
                                 if (cpStatus.Id.Equals(cpovm.ChargePointId, StringComparison.InvariantCultureIgnoreCase))
                                 {
+                                    // ChargePoint in statuslist => online
+                                    cpovm.Online = true;
+
                                     if (cpStatus.EVSE1Status != ConnectorStatus.Undefined)
                                     {
                                         // TODO: display multiple connectors

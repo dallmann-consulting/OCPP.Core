@@ -45,5 +45,7 @@ namespace OCPP.Core.Management.Models
         public DateTime? StopTime { get; set; }
 
         public ConnectorStatus ConnectorStatus { get; set; }
+
+        public bool Online { get; set; }
     }
 }
