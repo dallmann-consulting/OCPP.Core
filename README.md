@@ -24,6 +24,7 @@ OCPP V1.6:
 * MeterValues
 * StatusNotification
 * DataTransfer
+* Reset
 
 OCPP V2.0:
 * BootNotification
@@ -38,6 +39,7 @@ OCPP V2.0:
 * ClearedChargingLimit
 * NotifyChargingLimit
 * NotifyEVChargingSchedule
+* Reset
 
 ### Management Web-UI
 The Web-UI has an overview page with all charge stations and its availabilty.
@@ -116,6 +118,13 @@ Referenced Packages:
 	]
 	```
 	Administrators can create and edit charge points and tags. Users can see all charge points and transactions.
+
+
+	The Management-UI needs the URL to the OCPP server for internal communication. The internal API is secured by key:
+	```
+	"ServerApiUrl": "http://localhost:8081/API",
+	"ApiKey": "....",
+	```	
 
 3. Build & Run
 	* Make sure you installed the .NET-Core SDK.
