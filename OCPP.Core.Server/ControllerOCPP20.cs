@@ -164,6 +164,10 @@ namespace OCPP.Core.Server
                     HandleReset(msgIn, msgOut);
                     break;
 
+                case "UnlockConnector":
+                    HandleUnlockConnector(msgIn, msgOut);
+                    break;
+
                 default:
                     WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");
                     break;

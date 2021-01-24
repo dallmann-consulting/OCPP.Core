@@ -35,32 +35,20 @@ namespace OCPP.Core.Management.Controllers
 {
     public partial class ApiController : BaseController
     {
-        private readonly IStringLocalizer<ApiController> _localizer;
-
-        public ApiController(
-            UserManager userManager,
-            IStringLocalizer<ApiController> localizer,
-            ILoggerFactory loggerFactory,
-            IConfiguration config) : base(userManager, loggerFactory, config)
-        {
-            _localizer = localizer;
-            Logger = loggerFactory.CreateLogger<HomeController>();
-        }
-
         [Authorize]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public async Task<IActionResult> Reset(string Id)
+        public async Task<IActionResult> UnlockConnector(string Id)
         {
             if (User != null && !User.IsInRole(Constants.AdminRoleName))
             {
-                Logger.LogWarning("Reset: Request by non-administrator: {0}", User?.Identity?.Name);
+                Logger.LogWarning("UnlockConnector: Request by non-administrator: {0}", User?.Identity?.Name);
                 return StatusCode((int)HttpStatusCode.Unauthorized);
             }
 
             int httpStatuscode = (int)HttpStatusCode.OK;
             string resultContent = string.Empty;
 
-            Logger.LogTrace("Reset: Request to restart chargepoint '{0}'", Id);
+            Logger.LogTrace("UnlockConnector: Request to unlock chargepoint '{0}'", Id);
             if (!string.IsNullOrEmpty(Id))
             {
                 try
@@ -83,7 +71,7 @@ namespace OCPP.Core.Management.Controllers
                                             serverApiUrl += "/";
                                         }
                                         Uri uri = new Uri(serverApiUrl);
-                                        uri = new Uri(uri, $"Reset/{Uri.EscapeUriString(Id)}");
+                                        uri = new Uri(uri, $"UnlockConnector/{Uri.EscapeUriString(Id)}");
                                         httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
 
                                         // API-Key authentication?
@@ -93,7 +81,7 @@ namespace OCPP.Core.Management.Controllers
                                         }
                                         else
                                         {
-                                            Logger.LogWarning("Reset: No API-Key configured!");
+                                            Logger.LogWarning("UnlockConnector: No API-Key configured!");
                                         }
 
                                         HttpResponseMessage response = await httpClient.GetAsync(uri);
@@ -105,63 +93,65 @@ namespace OCPP.Core.Management.Controllers
                                                 try
                                                 {
                                                     dynamic jsonObject = JsonConvert.DeserializeObject(jsonResult);
-                                                    Logger.LogInformation("Reset: Result of API request is '{0}'", jsonResult);
+                                                    Logger.LogInformation("UnlockConnector: Result of API request is '{0}'", jsonResult);
                                                     string status = jsonObject.status;
                                                     switch (status)
                                                     {
-                                                        case "Accepted":
-                                                            resultContent = _localizer["ResetAccepted"];
+                                                        case "Unlocked":
+                                                            resultContent = _localizer["UnlockConnectorAccepted"];
                                                             break;
-                                                        case "Rejected":
-                                                            resultContent = _localizer["ResetRejected"];
+                                                        case "UnlockFailed":
+                                                        case "OngoingAuthorizedTransaction":
+                                                        case "UnknownConnector":
+                                                            resultContent = _localizer["UnlockConnectorFailed"];
                                                             break;
-                                                        case "Scheduled":
-                                                            resultContent = _localizer["ResetScheduled"];
+                                                        case "NotSupported":
+                                                            resultContent = _localizer["UnlockConnectorNotSupported"];
                                                             break;
                                                         default:
-                                                            resultContent = string.Format(_localizer["ResetUnknownStatus"], status);
+                                                            resultContent = string.Format(_localizer["UnlockConnectorUnknownStatus"], status);
                                                             break;
                                                     }
                                                 }
                                                 catch (Exception exp)
                                                 {
-                                                    Logger.LogError(exp, "Reset: Error in JSON result => {0}", exp.Message);
+                                                    Logger.LogError(exp, "UnlockConnector: Error in JSON result => {0}", exp.Message);
                                                     httpStatuscode = (int)HttpStatusCode.OK;
-                                                    resultContent = _localizer["ResetError"];
+                                                    resultContent = _localizer["UnlockConnectorError"];
                                                 }
                                             }
                                             else
                                             {
-                                                Logger.LogError("Reset: Result of API request is empty");
+                                                Logger.LogError("UnlockConnector: Result of API request is empty");
                                                 httpStatuscode = (int)HttpStatusCode.OK;
-                                                resultContent = _localizer["ResetError"];
+                                                resultContent = _localizer["UnlockConnectorError"];
                                             }
                                         }
                                         else if (response.StatusCode == HttpStatusCode.NotFound)
                                         {
                                             // Chargepoint offline
                                             httpStatuscode = (int)HttpStatusCode.OK;
-                                            resultContent = _localizer["ResetOffline"];
+                                            resultContent = _localizer["UnlockConnectorOffline"];
                                         }
                                         else
                                         {
-                                            Logger.LogError("Reset: Result of API  request => httpStatus={0}", response.StatusCode);
+                                            Logger.LogError("UnlockConnector: Result of API  request => httpStatus={0}", response.StatusCode);
                                             httpStatuscode = (int)HttpStatusCode.OK;
-                                            resultContent = _localizer["ResetError"];
+                                            resultContent = _localizer["UnlockConnectorError"];
                                         }
                                     }
                                 }
                                 catch (Exception exp)
                                 {
-                                    Logger.LogError(exp, "Reset: Error in API request => {0}", exp.Message);
+                                    Logger.LogError(exp, "UnlockConnector: Error in API request => {0}", exp.Message);
                                     httpStatuscode = (int)HttpStatusCode.OK;
-                                    resultContent = _localizer["ResetError"];
+                                    resultContent = _localizer["UnlockConnectorError"];
                                 }
                             }
                         }
                         else
                         {
-                            Logger.LogWarning("Reset: Error loading charge point '{0}' from database", Id);
+                            Logger.LogWarning("UnlockConnector: Error loading charge point '{0}' from database", Id);
                             httpStatuscode = (int)HttpStatusCode.OK;
                             resultContent = _localizer["UnknownChargepoint"];
                         }
@@ -169,9 +159,9 @@ namespace OCPP.Core.Management.Controllers
                 }
                 catch (Exception exp)
                 {
-                    Logger.LogError(exp, "Reset: Error loading charge point from database");
+                    Logger.LogError(exp, "UnlockConnector: Error loading charge point from database");
                     httpStatuscode = (int)HttpStatusCode.OK;
-                    resultContent = _localizer["ResetError"];
+                    resultContent = _localizer["UnlockConnectorError"];
                 }
             }
 

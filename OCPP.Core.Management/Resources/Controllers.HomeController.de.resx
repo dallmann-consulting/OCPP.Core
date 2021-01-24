@@ -138,27 +138,6 @@
   <data name="Connector" xml:space="preserve">
     <value>Anschluss</value>
   </data>
-  <data name="ResetAccepted" xml:space="preserve">
-    <value>Die Ladestation wird neu gestartet.</value>
-  </data>
-  <data name="ResetError" xml:space="preserve">
-    <value>Es ist ein Fehler aufgetreten.</value>
-  </data>
-  <data name="ResetOffline" xml:space="preserve">
-    <value>Die Ladestation ist Offline und kann nicht neu gestartet werden.</value>
-  </data>
-  <data name="ResetRejected" xml:space="preserve">
-    <value>Die Ladestation hat die Anfrage abgelehnt.</value>
-  </data>
-  <data name="ResetScheduled" xml:space="preserve">
-    <value>Die Ladestation wird später neu gestartet.</value>
-  </data>
-  <data name="ResetUnknownChargepoint" xml:space="preserve">
-    <value>Die Ladestation wurde nicht gefunden.</value>
-  </data>
-  <data name="ResetUnknownStatus" xml:space="preserve">
-    <value>Die Ladestation lieferte ein unerwartetes Ergebnis: '{0}'</value>
-  </data>
   <data name="StartMeter" xml:space="preserve">
     <value>Beginn-Zähler</value>
   </data>

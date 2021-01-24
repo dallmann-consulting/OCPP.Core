@@ -117,85 +117,43 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Cancel" xml:space="preserve">
-    <value>Abbrechen</value>
+  <data name="ResetAccepted" xml:space="preserve">
+    <value>Die Ladestation wird neu gestartet.</value>
   </data>
-  <data name="ChargePointIdLabel" xml:space="preserve">
-    <value>Kennung</value>
-  </data>
-  <data name="ChargePointIdPlaceholder" xml:space="preserve">
-    <value>Kennung der Ladestation</value>
-  </data>
-  <data name="ClientCertThumbLabel" xml:space="preserve">
-    <value>Client-Zertifikat</value>
-  </data>
-  <data name="ClientCertThumbPlaceholder" xml:space="preserve">
-    <value>Fingerabdruck des Client-Zertifikates (Thumbprint)</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>Schließen</value>
-  </data>
-  <data name="CommentLabel" xml:space="preserve">
-    <value>Notiz</value>
-  </data>
-  <data name="CommentPlaceholder" xml:space="preserve">
-    <value>Anmerkung zur Ladestation</value>
-  </data>
-  <data name="DialogReset" xml:space="preserve">
-    <value>Soll die Ladestation '{0}' wirklich neu gestartet werden?</value>
-  </data>
-  <data name="DialogUnlockConnector" xml:space="preserve">
-    <value>Soll die Ladestation '{0}' wirklich entsperrt werden?</value>
-  </data>
-  <data name="EditChargePoint" xml:space="preserve">
-    <value>Ladestation bearbeiten</value>
-  </data>
-  <data name="ErrorReset" xml:space="preserve">
+  <data name="ResetError" xml:space="preserve">
     <value>Es ist ein Fehler aufgetreten.</value>
   </data>
-  <data name="ErrorUnlock" xml:space="preserve">
+  <data name="ResetOffline" xml:space="preserve">
+    <value>Die Ladestation ist Offline und kann nicht neu gestartet werden.</value>
+  </data>
+  <data name="ResetRejected" xml:space="preserve">
+    <value>Die Ladestation hat die Anfrage abgelehnt.</value>
+  </data>
+  <data name="ResetScheduled" xml:space="preserve">
+    <value>Die Ladestation wird später neu gestartet.</value>
+  </data>
+  <data name="ResetUnknownStatus" xml:space="preserve">
+    <value>Die Ladestation lieferte ein unerwartetes Ergebnis: '{0}'</value>
+  </data>
+  <data name="UnknownChargepoint" xml:space="preserve">
+    <value>Die Ladestation wurde nicht gefunden.</value>
+  </data>
+  <data name="UnlockConnectorAccepted" xml:space="preserve">
+    <value>Die Ladestation wurde entsperrt.</value>
+  </data>
+  <data name="UnlockConnectorError" xml:space="preserve">
     <value>Es ist ein Fehler aufgetreten.</value>
   </data>
-  <data name="ExecuteReset" xml:space="preserve">
-    <value>Neustart der Ladestation wird ausgelöst...</value>
+  <data name="UnlockConnectorFailed" xml:space="preserve">
+    <value>Die Ladestation konnte nicht entsperrt werden.</value>
   </data>
-  <data name="ExecuteUnlock" xml:space="preserve">
-    <value>Entsperrung der Ladestation wird ausgelöst...</value>
+  <data name="UnlockConnectorNotSupported" xml:space="preserve">
+    <value>Die Ladestation unterstützt keine Entsperrung.</value>
   </data>
-  <data name="NameLabel" xml:space="preserve">
-    <value>Bezeichnung</value>
+  <data name="UnlockConnectorOffline" xml:space="preserve">
+    <value>Die Ladestation ist Offline und kann nicht entsperrt werden.</value>
   </data>
-  <data name="NamePlaceholder" xml:space="preserve">
-    <value>Bezeichnung der Ladestation</value>
-  </data>
-  <data name="PasswordLabel" xml:space="preserve">
-    <value>Passwort</value>
-  </data>
-  <data name="PasswordPlaceholder" xml:space="preserve">
-    <value>Passwort der Ladestation</value>
-  </data>
-  <data name="RequiredField" xml:space="preserve">
-    <value>Pflichtfeld</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>Speichern</value>
-  </data>
-  <data name="SaveNew" xml:space="preserve">
-    <value>Anlegen</value>
-  </data>
-  <data name="Title" xml:space="preserve">
-    <value>Management</value>
-  </data>
-  <data name="TitleReset" xml:space="preserve">
-    <value>Neustart</value>
-  </data>
-  <data name="TitleUnlockConnector" xml:space="preserve">
-    <value>Entsperren</value>
-  </data>
-  <data name="UsernameLabel" xml:space="preserve">
-    <value>Benutzername</value>
-  </data>
-  <data name="UsernamePlaceholder" xml:space="preserve">
-    <value>Benutzername der Ladestation</value>
+  <data name="UnlockConnectorUnknownStatus" xml:space="preserve">
+    <value>Die Ladestation lieferte ein unerwartetes Ergebnis: '{0}'</value>
   </data>
 </root>

@@ -108,7 +108,7 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
-        /// Waits for new OCPP V2.0 messages on the open websocket connection and delegates processing to a controller
+        /// Sends a (Soft-)Reset to the chargepoint
         /// </summary>
         private async Task Reset20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
         {
@@ -125,6 +125,43 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "Reset";
+            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.JsonPayload = jsonResetRequest;
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
+
+            // store HttpContext with MsgId for later answer processing (=> send anwer to API caller)
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            // Send OCPP message with optional logging/dump
+            await SendOcpp20Message(msgOut, logger, chargePointStatus.WebSocket);
+
+            // Wait for asynchronous chargepoint response and processing
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            // 
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        /// <summary>
+        /// Sends a Unlock-Request to the chargepoint
+        /// </summary>
+        private async Task UnlockConnector20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
+            ControllerOCPP20 controller20 = new ControllerOCPP20(_configuration, _logFactory, chargePointStatus);
+
+            Messages_OCPP20.UnlockConnectorRequest unlockConnectorRequest = new Messages_OCPP20.UnlockConnectorRequest();
+            unlockConnectorRequest.EvseId = 0;
+            unlockConnectorRequest.CustomData = new CustomDataType();
+            unlockConnectorRequest.CustomData.VendorId = ControllerOCPP20.VendorId;
+
+            string jsonResetRequest = JsonConvert.SerializeObject(unlockConnectorRequest);
+
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = "UnlockConnector";
             msgOut.UniqueId = Guid.NewGuid().ToString("N");
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();

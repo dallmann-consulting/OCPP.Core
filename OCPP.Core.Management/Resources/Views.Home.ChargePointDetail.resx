@@ -144,14 +144,23 @@
   <data name="DialogReset" xml:space="preserve">
     <value>Should the charging station '{0}' really be restarted?</value>
   </data>
+  <data name="DialogUnlockConnector" xml:space="preserve">
+    <value>Should the charging station '{0}' really be unlocked?</value>
+  </data>
   <data name="EditChargePoint" xml:space="preserve">
     <value>Edit charge point</value>
   </data>
   <data name="ErrorReset" xml:space="preserve">
     <value>An error occured.</value>
   </data>
+  <data name="ErrorUnlock" xml:space="preserve">
+    <value>An error occured.</value>
+  </data>
   <data name="ExecuteReset" xml:space="preserve">
     <value>Restart of the charging station is triggered...</value>
+  </data>
+  <data name="ExecuteUnlock" xml:space="preserve">
+    <value>Unlock of the charging station is triggered...</value>
   </data>
   <data name="NameLabel" xml:space="preserve">
     <value>Name</value>
@@ -179,6 +188,9 @@
   </data>
   <data name="TitleReset" xml:space="preserve">
     <value>Restart</value>
+  </data>
+  <data name="TitleUnlockConnector" xml:space="preserve">
+    <value>Unlock</value>
   </data>
   <data name="UsernameLabel" xml:space="preserve">
     <value>Username</value>
