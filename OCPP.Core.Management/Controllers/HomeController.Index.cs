@@ -69,6 +69,7 @@ namespace OCPP.Core.Management.Controllers
                     ChargePointStatus[] statusList = null;
 
                     string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
+                    string apiKeyConfig = base.Config.GetValue<string>("ApiKey");
                     if (!string.IsNullOrEmpty(serverApiUrl))
                     {
                         try
@@ -82,6 +83,17 @@ namespace OCPP.Core.Management.Controllers
                                 Uri uri = new Uri(serverApiUrl);
                                 uri = new Uri(uri, "Status");
                                 httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
+
+                                // API-Key authentication?
+                                if (!string.IsNullOrWhiteSpace(apiKeyConfig))
+                                {
+                                    httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKeyConfig);
+                                }
+                                else
+                                {
+                                    Logger.LogWarning("Index: No API-Key configured!");
+                                }
+
                                 HttpResponseMessage response = await httpClient.GetAsync(uri);
                                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                                 {

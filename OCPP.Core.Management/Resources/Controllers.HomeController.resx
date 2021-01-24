@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ChargePointId" xml:space="preserve">
-    <value>Charge point</value>
+    <value>Charging station</value>
   </data>
   <data name="ChargeSum" xml:space="preserve">
     <value>Charged</value>
@@ -131,6 +131,27 @@
   </data>
   <data name="Connector" xml:space="preserve">
     <value>Connector</value>
+  </data>
+  <data name="ResetAccepted" xml:space="preserve">
+    <value>The charging station is being restarted.</value>
+  </data>
+  <data name="ResetError" xml:space="preserve">
+    <value>An error has occurred.</value>
+  </data>
+  <data name="ResetOffline" xml:space="preserve">
+    <value>The charging station is offline and cannot be restarted.</value>
+  </data>
+  <data name="ResetRejected" xml:space="preserve">
+    <value>The charging station has rejected the request.</value>
+  </data>
+  <data name="ResetScheduled" xml:space="preserve">
+    <value>The charging station has scheduled the restart.</value>
+  </data>
+  <data name="ResetUnknownChargepoint" xml:space="preserve">
+    <value>The charging station was not found.</value>
+  </data>
+  <data name="ResetUnknownStatus" xml:space="preserve">
+    <value>The charging station returned an unexpected result: '{0}'</value>
   </data>
   <data name="StartMeter" xml:space="preserve">
     <value>Start-Meter</value>

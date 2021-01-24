@@ -117,11 +117,17 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
   <data name="ChargePointIdLabel" xml:space="preserve">
     <value>Kennung</value>
   </data>
   <data name="ChargePointIdPlaceholder" xml:space="preserve">
     <value>Kennung der Ladestation</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Schließen</value>
   </data>
   <data name="CommentLabel" xml:space="preserve">
     <value>Notiz</value>
@@ -129,8 +135,17 @@
   <data name="CommentPlaceholder" xml:space="preserve">
     <value>Anmerkung zur Ladestation</value>
   </data>
+  <data name="DialogReset" xml:space="preserve">
+    <value>Soll die Ladestation '{0}' wirklich neu gestartet werden?</value>
+  </data>
   <data name="EditChargePoint" xml:space="preserve">
     <value>Ladestation bearbeiten</value>
+  </data>
+  <data name="ErrorReset" xml:space="preserve">
+    <value>Es ist ein Fehler aufgetreten.</value>
+  </data>
+  <data name="ExecuteReset" xml:space="preserve">
+    <value>Neustart der Ladestation wird ausgelöst...</value>
   </data>
   <data name="NameLabel" xml:space="preserve">
     <value>Bezeichnung</value>
@@ -149,5 +164,8 @@
   </data>
   <data name="Title" xml:space="preserve">
     <value>Management</value>
+  </data>
+  <data name="TitleReset" xml:space="preserve">
+    <value>Neustart</value>
   </data>
 </root>

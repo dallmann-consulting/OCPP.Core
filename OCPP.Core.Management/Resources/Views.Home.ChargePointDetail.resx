@@ -117,11 +117,17 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
   <data name="ChargePointIdLabel" xml:space="preserve">
     <value>ID</value>
   </data>
   <data name="ChargePointIdPlaceholder" xml:space="preserve">
     <value>Charge point ID</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
   </data>
   <data name="CommentLabel" xml:space="preserve">
     <value>Comment</value>
@@ -129,8 +135,17 @@
   <data name="CommentPlaceholder" xml:space="preserve">
     <value>Charge point comment</value>
   </data>
+  <data name="DialogReset" xml:space="preserve">
+    <value>Should the charging station '{0}' really be restarted?</value>
+  </data>
   <data name="EditChargePoint" xml:space="preserve">
     <value>Edit charge point</value>
+  </data>
+  <data name="ErrorReset" xml:space="preserve">
+    <value>An error occured.</value>
+  </data>
+  <data name="ExecuteReset" xml:space="preserve">
+    <value>Restart of the charging station is triggered...</value>
   </data>
   <data name="NameLabel" xml:space="preserve">
     <value>Name</value>
@@ -149,5 +164,8 @@
   </data>
   <data name="Title" xml:space="preserve">
     <value>Management</value>
+  </data>
+  <data name="TitleReset" xml:space="preserve">
+    <value>Restart</value>
   </data>
 </root>
