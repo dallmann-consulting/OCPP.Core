@@ -25,6 +25,7 @@ OCPP V1.6:
 * StatusNotification
 * DataTransfer
 * Reset
+* UnlockConnector
 
 OCPP V2.0:
 * BootNotification
@@ -40,6 +41,7 @@ OCPP V2.0:
 * NotifyChargingLimit
 * NotifyEVChargingSchedule
 * Reset
+* UnlockConnector
 
 ### Management Web-UI
 The Web-UI has an overview page with all charge stations and its availabilty.
@@ -160,8 +162,12 @@ Create new charge tag:
 The Web-UI is localized in English and German language
 
 ### Check OCPP-Server
-An easy way to test the OCPP-Server is the 
-[OCPP1.6 Simple Chargebox Simulator](https://github.com/victormunoz/OCPP-1.6-Chargebox-Simulator)
+An easy way to test the OCPP-Server are simulators:
+* [OCPP1.6 Simple Chargebox Simulator](https://github.com/victormunoz/OCPP-1.6-Chargebox-Simulator)
+* [OCPP-2.0-CP-Simulator](https://github.com/JavaIsJavaScript/OCPP-2.0-CP-Simulator)
+
+Attention: Both simulators have bugs in certain actions
+
 
 Enter "ws://localhost:8081/OCPP/station42" as the central station URL.
 "station42" is the ID of the charge point you created in the previous step.
@@ -174,7 +180,7 @@ Click "Connect"
 	
 
 **Attention:**
-The simulator seems to have _little bugs_ in processing responses.
+The OCPP 1.6 simulator seems to have _little bugs_ in processing responses.
 
 ```
 ...
