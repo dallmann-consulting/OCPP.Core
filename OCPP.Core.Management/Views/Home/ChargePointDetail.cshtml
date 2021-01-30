@@ -134,30 +134,35 @@
                     <button type="submit" class="btn btn-primary">@Localizer[(Model.CurrentId == "@") ? "SaveNew" : "Save"].Value</button>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-sm-1">
-                    &nbsp;
+            @if (!string.IsNullOrWhiteSpace(Model.ChargePointId))
+            {
+                <div class="row">
+                    <div class="col-sm-1">
+                        &nbsp;
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-1">
-                    &nbsp;
+                <div class="row">
+                    <div class="col-sm-1">
+                        &nbsp;
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-2">
-                    <button type="button" class="btn btn-info" id="btnReset" title="@Localizer["TitleReset"]" onclick="ResetChargepoint()"><i class="fas fa-redo"></i> @Localizer["TitleReset"]</button>
+                <div class="row">
+                    <div class="col-sm-2">
+                        <button type="button" class="btn btn-info" id="btnReset" title="@Localizer["TitleReset"]" onclick="ResetChargepoint()"><i class="fas fa-redo"></i> @Localizer["TitleReset"]</button>
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="button" class="btn btn-info" id="btnUnlock" title="@Localizer["TitleUnlockConnector"]" onclick="UnlockConnector()"><i class="fas fa-lock-open"></i> @Localizer["TitleUnlockConnector"]</button>
+                    </div>
                 </div>
-                <div class="col-sm-2">
-                    <button type="button" class="btn btn-info" id="btnUnlock" title="@Localizer["TitleUnlockConnector"]" onclick="UnlockConnector()"><i class="fas fa-lock-open"></i> @Localizer["TitleUnlockConnector"]</button>
-                </div>
-            </div>
+            }
         </div>
     }
 
 
     @section scripts {
-        <script>
+        @if (!string.IsNullOrWhiteSpace(Model.ChargePointId))
+        {
+            <script>
             function ResetChargepoint() {
                 var dialog = new BootstrapDialog({
                     title: '@Localizer["TitleReset"]',
@@ -253,6 +258,7 @@
                 });
                 dialog.open();
             }
-        </script>
+            </script>
+        }
     }
 }
