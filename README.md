@@ -44,7 +44,7 @@ OCPP V2.0:
 * UnlockConnector
 
 ### Management Web-UI
-The Web-UI has an overview page with all charge stations and its availabilty.
+The Web-UI is already **localized in English and German**. It has an overview page with all charge stations and its availabilty.
 
 ![Overview](images/Overview.png)
 
