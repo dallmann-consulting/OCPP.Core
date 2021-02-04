@@ -119,10 +119,10 @@ Referenced Packages:
 		}
 	]
 	```
-	Administrators can create and edit charge points and tags. Users can see all charge points and transactions.
+	Administrators can create and edit chargepoints and tags. Users can see all chargepoints and transactions.
 
 
-	The Management-UI needs the URL to the OCPP server for internal communication. The internal API is secured by key:
+	The Management-UI needs the URL to the OCPP server for internal communication. The internal API is secured by a key:
 	```
 	"ServerApiUrl": "http://localhost:8081/API",
 	"ApiKey": "....",
@@ -144,15 +144,18 @@ You should see the login screen. Enter the configured admin account.
 ![Login](images/Login.png)
 
 
-Open the "Administration" menu and create a charge point with ID "station42" and a charge tag.
+Open the "Administration" menu and create a chargepoint with ID "station42" and a charge tag.
 
 Administration menu:
 
 ![Menu](images/Menu.png)
 
-Create new charge point:
+Create new chargepoint:
 
 ![NewChargePoint](images/NewChargePoint.png)
+
+Optionally, you can add authentication data for this chargepoint: Username/Passwort for basic authentication and/or a certificate thumbprint for a client certificate.
+When you're editing a chargepoint you can send restart or unlock commands to the chargepoint here.
 
 Create new charge tag:
 
@@ -170,7 +173,7 @@ Attention: Both simulators have bugs in certain actions
 
 
 Enter "ws://localhost:8081/OCPP/station42" as the central station URL.
-"station42" is the ID of the charge point you created in the previous step.
+"station42" is the ID of the chargepoint you created in the previous step.
 
 Enter the charge tag ID you entered before as "Tag".
 
