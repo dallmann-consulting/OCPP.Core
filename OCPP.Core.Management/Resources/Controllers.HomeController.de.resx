@@ -138,6 +138,9 @@
   <data name="Connector" xml:space="preserve">
     <value>Anschluss</value>
   </data>
+  <data name="ErrorOCPPServer" xml:space="preserve">
+    <value>Es konnte kein aktueller Status vom OCPP-Server abgerufen werden.</value>
+  </data>
   <data name="StartMeter" xml:space="preserve">
     <value>Beginn-Zähler</value>
   </data>

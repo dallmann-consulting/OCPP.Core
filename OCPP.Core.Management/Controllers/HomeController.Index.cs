@@ -72,6 +72,7 @@ namespace OCPP.Core.Management.Controllers
                     string apiKeyConfig = base.Config.GetValue<string>("ApiKey");
                     if (!string.IsNullOrEmpty(serverApiUrl))
                     {
+                        bool serverError = false;
                         try
                         {
                             using (var httpClient = new HttpClient())
@@ -105,11 +106,13 @@ namespace OCPP.Core.Management.Controllers
                                     else
                                     {
                                         Logger.LogError("Index: Result of status web request is empty");
+                                        serverError = true;
                                     }
                                 }
                                 else
                                 {
                                     Logger.LogError("Index: Result of status web request => httpStatus={0}", response.StatusCode);
+                                    serverError = true;
                                 }
                             }
 
@@ -118,6 +121,12 @@ namespace OCPP.Core.Management.Controllers
                         catch (Exception exp)
                         {
                             Logger.LogError(exp, "Index: Error in status web request => {0}", exp.Message);
+                            serverError = true;
+                        }
+
+                        if (serverError)
+                        {
+                            ViewBag.ErrorMsg = _localizer["ErrorOCPPServer"];
                         }
                     }
 
