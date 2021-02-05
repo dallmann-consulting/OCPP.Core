@@ -128,7 +128,7 @@ Referenced Packages:
 	"ApiKey": "....",
 	```	
 
-3. Build & Run
+### Build & Run
 How to build and run the application is described [here](Installation.md)
 
 
