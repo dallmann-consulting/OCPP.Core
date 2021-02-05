@@ -40,6 +40,7 @@ You can simply start (double click) these executables. This will start the appli
 ***BUT BEFORE:***
 
 The Management Web-UI contains a few static files in a folder "wwwroot" in the project. You need to copy this folder to the compiler output directory:
+
 ![wwwroot](images/wwwroot.png)
 
 Most components (bootstrap, fontawsome ...) are loaded externally from the internet. So you won't notice any errors. But with the static files missing, you cannot open chargepoints or RFID-Tokens from the table view.
