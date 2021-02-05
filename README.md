@@ -129,12 +129,7 @@ Referenced Packages:
 	```	
 
 3. Build & Run
-	* Make sure you installed the .NET-Core SDK.
-	* Open a command shell and navigate to the root folder of the project.
-	* Execute the following command
-```dotnet build OCPP.Core.sln```
-	* Copy the 'wwwroot' folder to the build target directory (where the dlls are)
-	* Start both executables (=> Kestrel webserver)
+How to build and run the application is described [here](Installation.md)
 
 
 ### Check Web-UI
