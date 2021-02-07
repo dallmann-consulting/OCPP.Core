@@ -17,6 +17,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="localhost.pfx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="localhost.pfx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Karambolo.Extensions.Logging.File" Version="3.1.1" />
   </ItemGroup>
 

@@ -35,7 +35,19 @@ The compiler output for the two web projects (Server and Managment) contains an 
 
 ```OCPP.Core.Server.exe``` and ```OCPP.Core.Management.exe```
 
-You can simply start (double click) these executables. This will start the applications with the simple [Kestrel Web-Server](https://www.tektutorialshub.com/asp-net-core/asp-net-core-kestrel-web-server/). You will see a command shell where the active URL is shown and all logging output.
+You can simply start (double click) these executables. This will start the applications with the simple [Kestrel Web-Server](https://www.tektutorialshub.com/asp-net-core/asp-net-core-kestrel-web-server/).
+You will see a command shell where the active URLs are shown and all logging output.
+
+The appsettings.json files contain the following URL settings for the Kestrel server:
+
+ - OCPP.Server without SSL: "http://localhost:8081"
+ - OCPP.Server with SSL: "http://localhost:8091"
+ - OCPP.Management without SSL: "http://localhost:8082"
+ - OCPP.Management with SSL: "http://localhost:8092"
+ 
+ Both projects contain a self-signed certificate (.pfx file) for testing purposes.
+
+
 
 ***BUT BEFORE:***
 

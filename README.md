@@ -133,7 +133,7 @@ How to build and run the application is described [here](Installation.md)
 
 
 ### Check Web-UI
-Open the configured URL in a browser. The debug URL in the project is "http://localhost:9419/".
+Open the configured URL in a browser. The debug URL in the project is "http://localhost:8082/".
 You should see the login screen. Enter the configured admin account.
 
 ![Login](images/Login.png)
