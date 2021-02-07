@@ -40,12 +40,13 @@ You will see a command shell where the active URLs are shown and all logging out
 
 The appsettings.json files contain the following URL settings for the Kestrel server:
 
- - OCPP.Server without SSL: "http://localhost:8081"
- - OCPP.Server with SSL: "http://localhost:8091"
+ - OCPP.Server without SSL: "http://localhost:8081" => "ws://localhost:8081/OCPP/<chargepoint-ID>"
+ - OCPP.Server with SSL: "https://localhost:8091" => "wss://localhost:8091/OCPP/<chargepoint-ID>"
  - OCPP.Management without SSL: "http://localhost:8082"
- - OCPP.Management with SSL: "http://localhost:8092"
+ - OCPP.Management with SSL: "https://localhost:8092"
  
  Both projects contain a self-signed certificate (.pfx file) for testing purposes.
+
 
 
 
