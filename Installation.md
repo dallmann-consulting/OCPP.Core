@@ -1,5 +1,5 @@
 # OCPP.Core Build & Installation
-**Project Structure**
+
 OCPP.Core consists of three projects:
  - OCPP.Core.Server 
  - OCPP.Core.Management
@@ -31,7 +31,7 @@ You will hopefully see that all three projects were compiled without errors. You
 
 **Run with Kestrel (simple Web-Server)**
 
-The compiler output for the two web projects (Server and Managment) contains an equally named executables:
+The compiler output for the two web projects (Server and Managment) contain equally named executables:
 
 ```OCPP.Core.Server.exe``` and ```OCPP.Core.Management.exe```
 
@@ -55,7 +55,7 @@ The Management Web-UI contains a few static files in a folder "wwwroot" in the p
 
 ![wwwroot](images/wwwroot.png)
 
-Most components (bootstrap, fontawsome ...) are loaded externally from the internet. So you won't notice any errors. But with the static files missing, you cannot open chargepoints or RFID-Tokens from the table view.
+Most components (bootstrap, fontawesome ...) are loaded externally from the internet. So you won't notice any errors. But with the static files missing, you cannot open chargepoints or RFID-Tokens from the table view.
 
 **Run in IIS**
 
