@@ -389,6 +389,30 @@ namespace OCPP.Core.Server
                     }
                 }
             }
+            else if (context.Request.Path.StartsWithSegments("/"))
+            {
+                try
+                {
+                    bool showIndexInfo = _configuration.GetValue<bool>("ShowIndexInfo");
+                    if (showIndexInfo)
+                    {
+                        _logger.LogTrace("OCPPMiddleware => Index status page");
+
+                        context.Response.ContentType = "text/plain";
+                        await context.Response.WriteAsync(string.Format("Running...\r\n\r\n{0} chargepoints connected", _chargePointStatusDict.Values.Count));
+                    }
+                    else
+                    {
+                        _logger.LogInformation("OCPPMiddleware => Root path with deactivated index page");
+                        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    }
+                }
+                catch (Exception exp)
+                {
+                    _logger.LogError(exp, "OCPPMiddleware => Error: {0}", exp.Message);
+                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+            }
             else
             {
                 _logger.LogWarning("OCPPMiddleware => Bad path request");
