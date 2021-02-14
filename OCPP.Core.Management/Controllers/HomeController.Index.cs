@@ -190,6 +190,7 @@ namespace OCPP.Core.Management.Controllers
             catch (Exception exp)
             {
                 Logger.LogError(exp, "Index: Error loading charge points from database");
+                TempData["ErrMessage"] = exp.Message;
                 return RedirectToAction("Error", new { Id = "" });
             }
 
@@ -199,8 +200,7 @@ namespace OCPP.Core.Management.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            Logger.LogError("Index-Error: Error called!");
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View();
         }
     }
 }

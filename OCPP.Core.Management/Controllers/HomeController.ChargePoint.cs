@@ -39,6 +39,7 @@ namespace OCPP.Core.Management.Controllers
                 if (User != null && !User.IsInRole(Constants.AdminRoleName))
                 {
                     Logger.LogWarning("ChargePoint: Request by non-administrator: {0}", User?.Identity?.Name);
+                    TempData["ErrMsgKey"] = "AccessDenied";
                     return RedirectToAction("Error", new { Id = "" });
                 }
 
@@ -156,7 +157,8 @@ namespace OCPP.Core.Management.Controllers
             catch (Exception exp)
             {
                 Logger.LogError(exp, "ChargePoint: Error loading charge points from database");
-                return RedirectToAction("Error");
+                TempData["ErrMessage"] = exp.Message;
+                return RedirectToAction("Error", new { Id = "" });
             }
         }
     }
