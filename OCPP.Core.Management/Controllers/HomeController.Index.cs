@@ -54,7 +54,8 @@ namespace OCPP.Core.Management.Controllers
         {
             Logger.LogTrace("Index: Loading charge points with latest transactions...");
 
-            List<ChargePointsOverviewViewModel> chargePoints = new List<ChargePointsOverviewViewModel>();
+            OverviewViewModel overviewModel = new OverviewViewModel();
+            overviewModel.ChargePoints = new List<ChargePointsOverviewViewModel>();
             try
             {
                 using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
@@ -102,6 +103,7 @@ namespace OCPP.Core.Management.Controllers
                                     if (!string.IsNullOrEmpty(jsonData))
                                     {
                                         statusList = JsonConvert.DeserializeObject<ChargePointStatus[]>(jsonData);
+                                        overviewModel.ServerConnection = true;
                                     }
                                     else
                                     {
@@ -161,7 +163,7 @@ namespace OCPP.Core.Management.Controllers
                             // default status: Available
                             cpovm.ConnectorStatus = ConnectorStatus.Available;
                         }
-                        chargePoints.Add(cpovm);
+                        overviewModel.ChargePoints.Add(cpovm);
 
                         if (statusList != null)
                         {
@@ -194,7 +196,7 @@ namespace OCPP.Core.Management.Controllers
                 return RedirectToAction("Error", new { Id = "" });
             }
 
-            return View(chargePoints);
+            return View(overviewModel);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

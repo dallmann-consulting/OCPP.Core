@@ -130,7 +130,7 @@
     <value>Charge station is online</value>
   </data>
   <data name="ChargeTime" xml:space="preserve">
-    <value>{0} hours {1} minutes</value>
+    <value>{0}h {1}m</value>
   </data>
   <data name="Charging" xml:space="preserve">
     <value>Charging</value>

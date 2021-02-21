@@ -45,9 +45,16 @@ namespace OCPP.Core.Server
                         string dumpDir = _configuration.GetValue<string>("MessageDumpDir");
                         if (!string.IsNullOrWhiteSpace(dumpDir))
                         {
-                            // Write incoming message into dump directory
                             string path = Path.Combine(dumpDir, string.Format("{0}_ocpp16-in.txt", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-ffff")));
-                            File.WriteAllBytes(path, bMessage);
+                            try
+                            {
+                                // Write incoming message into dump directory
+                                File.WriteAllBytes(path, bMessage);
+                            }
+                            catch (Exception exp)
+                            {
+                                logger.LogError(exp, "Startup.Receive16 => Error dumping incoming message to path: '{0}'", path);
+                            }
                         }
 
                         string ocppMessage = UTF8Encoding.UTF8.GetString(bMessage);

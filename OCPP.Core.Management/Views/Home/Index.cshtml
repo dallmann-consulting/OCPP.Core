@@ -1,5 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Mvc.Localization
-@model List<ChargePointsOverviewViewModel>
+@model OverviewViewModel
 @inject IViewLocalizer Localizer
 @{
     ViewData["Title"] = @Localizer["Title"];
@@ -8,7 +8,7 @@
 @if (Model != null)
 {
     <div class="tilegrid">
-        @foreach (ChargePointsOverviewViewModel cpvm in Model)
+        @foreach (ChargePointsOverviewViewModel cpvm in Model.ChargePoints)
         {
 
             string chargePointName = string.IsNullOrWhiteSpace(cpvm.Name) ? cpvm.ChargePointId : cpvm.Name;
@@ -62,16 +62,19 @@
                             <p class="card-text">&nbsp;</p>
                         }
                     </div>
-                    <div class="card-footer text-muted text-right">
-                        @if (cpvm.Online)
-                        {
-                            <i class="fas fa-link" title="@Localizer["ChargePointOnline"]"></i>
-                        }
-                        else
-                        {
-                            <i class="fas fa-unlink" title="@Localizer["ChargePointOffline"]"></i>
-                        }
-                    </div>
+                    @if (Model.ServerConnection)
+                    {
+                        <div class="card-footer text-muted text-right">
+                            @if (cpvm.Online)
+                            {
+                                <i class="fas fa-link" title="@Localizer["ChargePointOnline"]"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-unlink" title="@Localizer["ChargePointOffline"]"></i>
+                            }
+                        </div>
+                    }
                 </a>
             </div>
         }

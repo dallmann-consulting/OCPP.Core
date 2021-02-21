@@ -130,7 +130,7 @@
     <value>Die Ladestation ist Online</value>
   </data>
   <data name="ChargeTime" xml:space="preserve">
-    <value>{0} Stunden {1} Minuten</value>
+    <value>{0} Std. {1} Min.</value>
   </data>
   <data name="Charging" xml:space="preserve">
     <value>Ladevorgang</value>
