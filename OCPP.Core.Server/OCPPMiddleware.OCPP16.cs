@@ -32,7 +32,7 @@ namespace OCPP.Core.Server
                 WebSocketReceiveResult result = await chargePointStatus.WebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 if (result != null && result.MessageType != WebSocketMessageType.Close)
                 {
-                    logger.LogTrace("Startup.Receive16 => Receiving segment: {0} bytes (EndOfMessage={1} / MsgType={2})", result.Count, result.EndOfMessage, result.MessageType);
+                    logger.LogTrace("OCPPMiddleware.Receive16 => Receiving segment: {0} bytes (EndOfMessage={1} / MsgType={2})", result.Count, result.EndOfMessage, result.MessageType);
                     memStream.Write(buffer, 0, result.Count);
 
                     if (result.EndOfMessage)
@@ -53,7 +53,7 @@ namespace OCPP.Core.Server
                             }
                             catch (Exception exp)
                             {
-                                logger.LogError(exp, "Startup.Receive16 => Error dumping incoming message to path: '{0}'", path);
+                                logger.LogError(exp, "OCPPMiddleware.Receive16 => Error dumping incoming message to path: '{0}'", path);
                             }
                         }
 
@@ -66,7 +66,7 @@ namespace OCPP.Core.Server
                             string uniqueId = match.Groups[2].Value;
                             string action = match.Groups[3].Value;
                             string jsonPaylod = match.Groups[4].Value;
-                            logger.LogInformation("Startup.Receive16 => OCPP-Message: Type={0} / ID={1} / Action={2})", messageTypeId, uniqueId, action);
+                            logger.LogInformation("OCPPMiddleware.Receive16 => OCPP-Message: Type={0} / ID={1} / Action={2})", messageTypeId, uniqueId, action);
 
                             OCPPMessage msgIn = new OCPPMessage(messageTypeId, uniqueId, action, jsonPaylod);
                             if (msgIn.MessageType == "2")
@@ -87,28 +87,28 @@ namespace OCPP.Core.Server
                                 }
                                 else
                                 {
-                                    logger.LogError("Startup.Receive16 => HttpContext from caller not found / Msg: {0}", ocppMessage);
+                                    logger.LogError("OCPPMiddleware.Receive16 => HttpContext from caller not found / Msg: {0}", ocppMessage);
                                 }
                             }
                             else
                             {
                                 // Unknown message type
-                                logger.LogError("Startup.Receive16 => Unknown message type: {0} / Msg: {1}", msgIn.MessageType, ocppMessage);
+                                logger.LogError("OCPPMiddleware.Receive16 => Unknown message type: {0} / Msg: {1}", msgIn.MessageType, ocppMessage);
                             }
                         }
                         else
                         {
-                            logger.LogWarning("Startup.Receive16 => Error in RegEx-Matching: Msg={0})", ocppMessage);
+                            logger.LogWarning("OCPPMiddleware.Receive16 => Error in RegEx-Matching: Msg={0})", ocppMessage);
                         }
                     }
                 }
                 else
                 {
-                    logger.LogInformation("Startup.Receive16 => WebSocket Closed: CloseStatus={0} / MessageType={1}", result?.CloseStatus, result?.MessageType);
+                    logger.LogInformation("OCPPMiddleware.Receive16 => WebSocket Closed: CloseStatus={0} / MessageType={1}", result?.CloseStatus, result?.MessageType);
                     await chargePointStatus.WebSocket.CloseOutputAsync((WebSocketCloseStatus)3001, string.Empty, CancellationToken.None);
                 }
             }
-            logger.LogInformation("Startup.Receive16 => Websocket closed: State={0} / CloseStatus={1}", chargePointStatus.WebSocket.State, chargePointStatus.WebSocket.CloseStatus);
+            logger.LogInformation("OCPPMiddleware.Receive16 => Websocket closed: State={0} / CloseStatus={1}", chargePointStatus.WebSocket.State, chargePointStatus.WebSocket.CloseStatus);
             ChargePointStatus dummy;
             _chargePointStatusDict.Remove(chargePointStatus.Id, out dummy);
         }
@@ -216,7 +216,14 @@ namespace OCPP.Core.Server
             {
                 // Write outgoing message into dump directory
                 string path = Path.Combine(dumpDir, string.Format("{0}_ocpp16-out.txt", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-ffff")));
-                File.WriteAllText(path, ocppTextMessage);
+                try
+                {
+                    File.WriteAllText(path, ocppTextMessage);
+                }
+                catch (Exception exp)
+                {
+                    logger.LogError(exp, "OCPPMiddleware.SendOcpp16Message=> Error dumping message to path: '{0}'", path);
+                }
             }
 
             byte[] binaryMessage = UTF8Encoding.UTF8.GetBytes(ocppTextMessage);
