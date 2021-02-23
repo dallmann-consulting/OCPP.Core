@@ -180,6 +180,32 @@ namespace OCPP.Core.Management.Controllers
                                         Logger.LogTrace("Index: Charge point '{0}' => Override status '{1}' to '{2}'", cpovm.ChargePointId, cpovm.ConnectorStatus, cpStatus.EVSE1Status);
                                         cpovm.ConnectorStatus = cpStatus.EVSE1Status;
                                     }
+
+                                    if (cpovm.ConnectorStatus == ConnectorStatus.Occupied)
+                                    {
+                                        ChargingData chargingData = cpStatus.ChargingDataEVSE1;
+                                        if (chargingData == null)
+                                        {
+                                            chargingData = cpStatus.ChargingDataEVSE2;
+                                        }
+                                        if (chargingData != null)
+                                        {
+                                            string currentCharge = string.Empty;
+                                            if (chargingData.ChargeRateKW != null)
+                                            {
+                                                currentCharge = string.Format("{0:0.0}kW", chargingData.ChargeRateKW.Value);
+                                            }
+                                            if (chargingData.SoC != null)
+                                            {
+                                                if (!string.IsNullOrWhiteSpace(currentCharge)) currentCharge += " | ";
+                                                currentCharge += string.Format("{0:0}%", chargingData.SoC.Value);
+                                            }
+                                            if (!string.IsNullOrWhiteSpace(currentCharge))
+                                            {
+                                                cpovm.CurrentChargeData = currentCharge;
+                                            }
+                                        }
+                                    }
                                     break;
                                 }
                             }

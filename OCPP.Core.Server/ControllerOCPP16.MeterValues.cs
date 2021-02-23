@@ -17,6 +17,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+
+/*
+ http://www.diva-portal.se/smash/get/diva2:838105/FULLTEXT01.pdf
+
+    Measurand values                    Description
+    Energy.Active.Import.Register       Energy imported by EV (Wh of kWh)
+    Power.Active.Import                 Instantaneous active power imported by EV (W or kW)
+    Current.Import                      Instantaneous current flow to EV (A)
+    Voltage                             AC RMS supply voltage (V)
+    Temperature                         Temperature reading inside the charge point 
+
+ <cs:meterValuesRequest>
+   <cs:connectorId>0</cs:connectorId>
+   <cs:transactionId>170</cs:transactionId>
+   <cs:values>
+     <cs:timestamp>2014-12-03T10:52:59.410Z</cs:timestamp>
+     <cs:value cs:measurand="Current.Import" cs:unit="Amp">41.384</cs:value>
+     <cs:value cs:measurand="Voltage" cs:unit="Volt">226.0</cs:value>
+     <cs:value cs:measurand="Power.Active.Import" cs:unit="W">7018</cs:value>
+     <cs:value cs:measurand="Energy.Active.Import.Register" cs:unit="Wh">2662</cs:value>
+     <cs:value cs:measurand="Temperature" cs:unit="Celsius">24</cs:value>
+   </cs:values>
+ </cs:meterValuesRequest>
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,18 +72,112 @@ namespace OCPP.Core.Server
 
                 if (ChargePointStatus != null)
                 {
-                    // Known charge station
-
+                    // Known charge station => process meter values
+                    double currentChargeKW = -1;
+                    double chargedAmountKWH = -1;
+                    double stateOfCharge = -1;
                     foreach (MeterValue meterValue in meterValueRequest.MeterValue)
                     {
                         foreach (SampledValue sampleValue in meterValue.SampledValue)
                         {
-                            //sampleValue.
                             Logger.LogTrace("MeterValues => Context={0} / Format={1} / Value={2} / Unit={3} / Location={4} / Measurand={5} / Phase={6}",
                                 sampleValue.Context, sampleValue.Format, sampleValue.Value, sampleValue.Unit, sampleValue.Location, sampleValue.Measurand, sampleValue.Phase);
+
+                            if (sampleValue.Measurand == SampledValueMeasurand.Power_Active_Import)
+                            {
+                                // current charging power
+                                if (double.TryParse(sampleValue.Value, out currentChargeKW))
+                                {
+                                    if (sampleValue.Unit == SampledValueUnit.W ||
+                                        sampleValue.Unit == SampledValueUnit.VA ||
+                                        sampleValue.Unit == SampledValueUnit.Var ||
+                                        sampleValue.Unit == null)
+                                    {
+                                        Logger.LogTrace("MeterValues => Charging '{0:0.0}' W", currentChargeKW);
+                                        // convert W => kW
+                                        currentChargeKW = currentChargeKW / 1000;
+                                    }
+                                    else if (sampleValue.Unit == SampledValueUnit.KW ||
+                                            sampleValue.Unit == SampledValueUnit.KVA ||
+                                            sampleValue.Unit == SampledValueUnit.Kvar)
+                                    {
+                                        // already kW => OK
+                                        Logger.LogTrace("MeterValues => Charging '{0:0.0}' kW", currentChargeKW);
+                                    }
+                                    else
+                                    {
+                                        Logger.LogWarning("MeterValues => Charging: unexpected unit: '{0}' (Value={1})", sampleValue.Unit, sampleValue.Value);
+                                    }
+                                }
+                                else
+                                {
+                                    Logger.LogError("MeterValues => Charging: invalid value '{0}' (Unit={1})", sampleValue.Value, sampleValue.Unit);
+                                }
+                            }
+                            else if (sampleValue.Measurand == SampledValueMeasurand.Energy_Active_Import_Register ||
+                                    sampleValue.Measurand == null)
+                            {
+                                // charged amount of energy
+                                if (double.TryParse(sampleValue.Value, out chargedAmountKWH))
+                                {
+                                    if (sampleValue.Unit == SampledValueUnit.Wh ||
+                                        sampleValue.Unit == SampledValueUnit.Varh ||
+                                        sampleValue.Unit == null)
+                                    {
+                                        Logger.LogTrace("MeterValues => Charged: '{0:0.0}' Wh", chargedAmountKWH);
+                                        // convert Wh => kWh
+                                        chargedAmountKWH = chargedAmountKWH / 1000;
+                                    }
+                                    else if (sampleValue.Unit == SampledValueUnit.KWh ||
+                                            sampleValue.Unit == SampledValueUnit.Kvarh)
+                                    {
+                                        // already kWh => OK
+                                        Logger.LogTrace("MeterValues => Charged: '{0:0.0}' kWh", chargedAmountKWH);
+                                    }
+                                    else
+                                    {
+                                        Logger.LogWarning("MeterValues => Charged: unexpected unit: '{0}' (Value={1})", sampleValue.Unit, sampleValue.Value);
+                                    }
+                                }
+                                else
+                                {
+                                    Logger.LogError("MeterValues => invalid value '{0}' (Unit={1})", sampleValue.Value, sampleValue.Unit);
+                                }
+                            }
+                            else if (sampleValue.Measurand == SampledValueMeasurand.SoC)
+                            {
+                                // state of charge (battery status)
+                                if (double.TryParse(sampleValue.Value, out stateOfCharge))
+                                {
+                                    Logger.LogTrace("MeterValues => SoC: '{0:0.0}'%", stateOfCharge);
+                                }
+                                else
+                                {
+                                    Logger.LogError("MeterValues => invalid value '{0}' (SoC)", sampleValue.Value);
+                                }
+                            }
                         }
                     }
 
+                    // write charging/meter data in chargepoint status
+                    ChargingData chargingData = null;
+                    if (currentChargeKW >= 0 || chargedAmountKWH >= 0 || stateOfCharge >= 0)
+                    {
+                        chargingData = new ChargingData();
+                        if (currentChargeKW >= 0) chargingData.ChargeRateKW = currentChargeKW;
+                        if (chargedAmountKWH >= 0) chargingData.ChargedEnergyKWH = chargedAmountKWH;
+                        if (stateOfCharge >= 0) chargingData.SoC = stateOfCharge;
+                    }
+                    if (connectorId > 1)
+                    {
+                        // second connector (odr higher!?)
+                        ChargePointStatus.ChargingDataEVSE2 = chargingData;
+                    }
+                    else
+                    {
+                        // first connector
+                        ChargePointStatus.ChargingDataEVSE1 = chargingData;
+                    }
                 }
                 else
                 {

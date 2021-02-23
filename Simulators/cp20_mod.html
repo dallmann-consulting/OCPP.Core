@@ -1,0 +1,955 @@
+<html>
+	<head>
+	<title>ChargePoint Simulator</title>
+		<style>
+			body {
+				background: #000;
+				color: white;
+			}
+			
+			button,
+			input,
+			select {
+				display: block;
+				width: 100%;
+				margin-bottom: 5px;
+				cursor: pointer;
+			}
+			
+			button {
+				background: #369;
+				color: #fff;
+				padding: 5px 0;
+				border: none;
+			}
+			
+			ul {
+				background: #000;
+				color: #eee;
+			}
+			
+			li {}
+			
+			#red,
+			#green,
+			#blue {
+				min-width: 10px;
+			}
+			
+			#red {
+				background-color: red;
+			}
+			
+			#green {
+				background-color: green;
+			}
+			
+			#blue {
+				background-color: blue;
+			}
+			
+			#yellow {
+				background-color: yellow;
+			}
+			
+			table,
+			th,
+			tr,
+			td {
+				border: 1px solid white;
+			}
+			
+			table {
+				margin: auto;
+			}
+			
+			form {
+				padding-top: 20px;
+			}
+			
+			.center {
+				text-align: center;
+			}
+		</style>
+	</head>
+	<body>
+		<select>
+			<option value="">
+				OCPP-J2.0
+			</option>
+		</select>
+		<input id="CP" type="text" placeholder="ChargePoint ID" value="ws://localhost:8081/OCPP/TestAAA" />
+		<button id="connect">Connect</button>
+		<button id="send">Authorize</button>
+		<button id="start">Start Transaction - EVDetected</button>
+		<button id="update">Update Transaction - EVDetected</button>
+		<button id="update_suspendedevse">Update Transaction - SuspendedEVSE</button>
+		<button id="update_suspendedev">Update Transaction - SuspendedEV</button>
+		<button id="update_charging">Update Transaction - Charging</button>
+		<button id="stop">Stop Transaction</button>
+		<button id="heartbeat">Heartbeat</button>
+		<button id="mv">Meter Values</button>
+		<button id="status">Status Notification</button>
+		<button id="data_transfer">Data Tranfer</button>
+		<button id="firmwarestatus">Firmware Status Notification</button>
+		<button id="clearedChargingLimit">Cleared Charging Limit</button>
+		<button id="logstatus_uploading">LogStatus Notification - Uploading</button>
+		<button id="logstatus_uploaded">LogStatus Notification - Uploaded</button>
+		<button id="notify_charging_limit">Notify Charging Limit - 10 A</button>
+		<button id="notify_ev_charging_schedule">Notify EV Charging Schedule - 10 A</button>
+
+
+		<div>
+			<span class="indicator" id="red">____</span>
+			<span class="indicator" id="green">____</span>
+			<span class="indicator" id="blue">____</span>
+			<span class="indicator" id="yellow">____</span>
+		</div>
+		<ul id="console"></ul>
+		<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+		<script>
+			$('.indicator').hide();
+			$('#red').show();
+
+			function formatDate(date) {
+
+				var day = String(date.getDate());
+				if (day.length < 2) {
+					day = ('0' + day.slice(-2));
+				}
+
+				var monthIndex = String(date.getMonth() + 1);
+				if (monthIndex.length < 2) {
+					monthIndex = ('0' + monthIndex.slice(-2));
+				}
+				var year = date.getFullYear();
+				var h = date.getHours();
+				if (h < 3) {
+					h = 24 - h;
+				}
+				h = String(h - 1);
+				if (h.length < 2) {
+					h = ('0' + h.slice(-2));
+				}
+				var m = String(date.getMinutes());
+
+				var s = String(date.getSeconds());
+				if (m.length < 2) {
+					m = ('0' + m.slice(-2));
+				}
+				if (s.length < 2) {
+					s = ('0' + s.slice(-2));
+				}
+				return year + '-' + monthIndex + '-' + day + "T" + h + ":" + m + ":" + s + "Z";
+			}
+
+			var c = 0;
+			var start_id = "";
+			var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+			var id = randonId();
+			var lastTranId;
+			var _websocket = null;
+
+			var connector_locked = false;
+
+			function randonId() {
+				id = "";
+				for (var i = 0; i < 36; i++) {
+					id += possible.charAt(Math.floor(Math.random() * possible.length));
+				}
+				return id;
+			}
+
+			function guid() {
+				function s4() {
+					return Math.floor((1 + Math.random()) * 0x10000)
+						.toString(16)
+						.substring(1);
+					}
+				return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+			}
+
+			function wsConnect() {
+
+				var wsurl = $('select').val();
+				var CP = $('#CP').val();
+
+				if (_websocket) {
+					$('#red').show();
+					_websocket.close(3001);
+				} else {
+					_websocket = new WebSocket(wsurl + "" + CP, ["ocpp2.0", "ocpp1.5"]);
+					_websocket.onopen = function(authorizationData) {
+
+						sessionStorage.setItem('LastAction', "BootNotification");
+						$('#yellow').show();
+						BootNotification();
+
+						$('#connect').text('Disconnect').css('background', 'green');
+
+					};
+
+					_websocket.onmessage = function(msg) {
+						c++;
+						var ddata = (JSON.parse(msg.data));
+
+						if (c == 1) {
+							var hb_interval = handleData(ddata);
+							sessionStorage.setItem("Confriguration", hb_interval);
+							startHB(hb_interval * 1000);
+						}
+
+						if (ddata[0] === 3) {
+							la = getLastAction();
+
+							if (la == "startTransaction") {
+
+								ddata = ddata[2];
+								logMsg("Data exchange successful!");
+								var array = $.map(ddata, function(value, index) {
+									return [value];
+								});
+								var TransactionId = (array[0]);
+								sessionStorage.setItem('TransactionId', TransactionId);
+							}
+							logMsg("Response recieved successfully!");
+						} else if ((JSON.parse(msg.data))[0] === 4) {
+							logMsg("Data exchange failed - JSON is not accepted!");
+						} else if ((JSON.parse(msg.data))[0] === 2) {
+							logMsg((JSON.parse(msg.data))[2]);
+							id = (JSON.parse(msg.data))[1];
+
+							switch (ddata[2]) {
+								case "ChangeAvailability":
+									var changeAvail = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(changeAvail);
+									break;
+								case "SetVariables":
+									var setVar = JSON.stringify([3, id, {
+										"setVariableResult": [{
+											"attributeStatus": "Accepted",
+											"component": {
+												"name": "AuthCtrlr"
+											},
+											"variable": {
+												"name": "variable name"
+											}
+										}]
+									}]);
+									_websocket.send(setVar);
+									break;
+								case "ClearCache":
+									var clearCache = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(clearCache);
+									break;
+								case "GetLog":
+									var getLog = JSON.stringify([3, id, {
+										"status": "Accepted",
+										"filename": "somefile.txt"
+									}]);
+									_websocket.send(getLog);
+									break;
+								case "RequestStartTransaction":
+									var reqStartTrans = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(reqStartTrans);
+									startTransaction();
+									break;
+								case "RequestStopTransaction":
+									var reqStopTrans = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(reqStopTrans);
+
+									var stop_id = (JSON.parse(msg.data)[3].transactionId);
+									stopTransaction(stop_id);
+									break;
+								case "Reset":
+									var ResetS = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(ResetS);
+									//location.reload();
+									break;
+								case "UnlockConnector":
+									var unlockCon = JSON.stringify([3, id, {
+										"status": "Unlocked"
+									}]);
+									_websocket.send(unlockCon);
+									connector_locked = false;
+									$('.indicator').hide();
+									$('#yellow').show();
+									logMsg("Connector status changed to: " + connector_locked);
+									statusNotification();
+									break;
+								case "UpdateFirmware":
+									var updFirm = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(updFirm);
+									break;
+								case "ReserveNow":
+									var resNow = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(resNow);
+									break;
+								case "CancelReservation":
+									var cancelRes = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(cancelRes);
+									break;
+								case "DataTransfer":
+									var dataTrans = JSON.stringify([3, id, {
+										"status": "Accepted",
+										"data": "some data"
+									}]);
+									_websocket.send(dataTrans);
+									break;
+								case "GetVariables":
+									var getVars = JSON.stringify([3, id, {
+										"getVariableResult": [{
+											"attributeStatus": "Accepted",
+											"attributeValue": "true",
+											"variable": {
+												"name": "SampledDataAvailable"
+											},
+											"component": {
+												"name": "DeviceDataCtrlr"
+											}
+										}, {
+											"attributeStatus": "Accepted",
+											"attributeValue": "360",
+											"variable": {
+												"name": "AlignedDataInterval"
+											},
+											"component": {
+												"name": "DeviceDataCtrlr"
+											}
+										}, {
+											"attributeStatus": "UnknownVariable",
+											"attributeValue": "10",
+											"variable": {
+												"name": "RestartDelay"
+											},
+											"component": {
+												"name": "DeviceDataCtrlr"
+											}
+										}]
+									}]);
+									_websocket.send(getVars);
+									break;
+								case "GetLocalListVersion":
+									var gLocList = JSON.stringify([3, id, {
+										"versionNumber": 0
+									}]);
+									_websocket.send(gLocList);
+									break;
+								case "SendLocalList":
+									var sendLocList = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(sendLocList);
+									break;
+								case "TriggerMessage":
+									var triggerMsg = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(triggerMsg);
+
+									var req_message = (JSON.parse(msg.data)[3].requestedMessage);
+									if (req_message == "BootNotification") {
+										BootNotification();
+									}
+									if (req_message == "LogStatusNotification") {}
+									if (req_message == "FirmwareStatusNotification") {
+										FirmwareStatusNotification();
+									}
+									if (req_message == "Heartbeat") {
+										send_heartbeat();
+									}
+									if (req_message == "MeterValues") {
+										meterValues();
+									}
+									if (req_message == "SignChargingStationCertificate") {}
+									if (req_message == "SignV2GCertificate") {}
+									if (req_message == "StatusNotification") {
+										statusNotification();
+									}
+									if (req_message == "TransactionEvent") {}
+									break;
+								case "GetCompositeSchedule":
+									var getComp = JSON.stringify([3, id, {
+										"status": 'Accepted',
+										"evseId": 0,
+										"schedule": {
+											"startDateTime": formatDate(new Date()),
+											"chargingSchedule": {
+												"duration": 86400,
+												"chargingRateUnit": "W",
+												"chargingSchedulePeriod": [{
+													"startPeriod": 0,
+													"limit": 11000,
+													"numberPhases": 3
+												}, {
+													"startPeriod": 28800,
+													"limit": 6000,
+													"numberPhases": 3
+												}, {
+													"startPeriod": 72000,
+													"limit": 11000,
+													"numberPhases": 3
+												}]
+											}
+										}
+									}]);
+									_websocket.send(getComp);
+									break;
+								case "ClearChargingProfile":
+									var clearChargPrfl = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(clearChargPrfl);
+									break;
+								case "SetChargingProfile":
+									var setChargPrlf = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(setChargPrlf);
+									break;
+								case "CertificateSigned":
+									var certSigned = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(certSigned);
+									break;
+								case "ClearDisplayMessage":
+									var clearDispMsg = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(clearDispMsg);
+									break;
+								case "ClearVariableMonitoring":
+									var clearVarMon = JSON.stringify([3, id, {
+										"clearMonitoringResult": [{
+											"id": 1,
+											"status": "Accepted"
+										}, {
+											"id": 2,
+											"status": "Rejected"
+										}, {
+											"id": 3,
+											"status": "NotFound"
+										}]
+									}]);
+									_websocket.send(clearVarMon);
+									break;
+								case "GetBaseReport":
+									var getBaseRep = JSON.stringify([3, id, {
+										"status": "Accepted"
+									}]);
+									_websocket.send(getBaseRep);
+									break;
+								case "CostUpdated":
+									var costUpdtd = JSON.stringify([3, id, {}]);
+									_websocket.send(costUpdtd);
+									break;
+								case "GetMonitoringReport":
+									var getMonRep = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(getMonRep);
+									break;
+								case "GetReport":
+									var getRep = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(getRep);
+									break;
+								case "SetMonitoringBase":
+									var setMonBase = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(setMonBase);
+									break;
+								case "SetMonitoringLevel":
+									var setMonLevel = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(setMonLevel);
+									break;
+								case "SetVariableMonitoring":
+									var setVarMon = JSON.stringify([3, id, {"setMonitoringResult": [{
+										"id": 1,
+										"type": "Periodic",
+										"severity": 9,
+										"status": "Accepted",
+										"component": {
+											"name": "some component"
+											},
+										"variable":{
+											"name": "some variable"
+											}
+									}]}]);
+									_websocket.send(setVarMon);
+									break;
+								case "UnpublishFirmware":
+									var unpFirm = JSON.stringify([3, id, {"status": "Unpublished"}]);
+									_websocket.send(unpFirm);
+									break;
+								case "CustomerInformation":
+									var custmrInfo = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(custmrInfo);
+									break;
+								case "SetDisplayMessage":
+									var setmessage = (JSON.parse(msg.data)[3].message.message.content);
+									logMsg("Display message: <b><i>" + setmessage + "</i></b>");
+									var setDispMsg = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(setDispMsg);
+									break;
+								case "DeleteCertificate":
+									var delCert = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(delCert);
+									break;
+								case "GetChargingProfiles":
+									var getChargPrfl = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(getChargPrfl);
+									break;
+								case "GetDisplayMessages":
+									var getDispMsg = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(getDispMsg);
+									break;
+								case "GetInstalledCertificateIds":
+									var getInstalledCertIds = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(getInstalledCertIds);
+									break;
+								case "GetTransactionStatus":
+									var getTranStat = JSON.stringify([3, id, {"messagesInQueue": "true"}]);
+									_websocket.send(getTranStat);
+									break;
+								case "InstallCertificate":
+									var installCert = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(installCert);
+									break;
+								case "NotifyCentralChargingNeeds":
+									var noCentChargNeed = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(noCentChargNeed);
+									break;
+								case "PublishFirmware":
+									var pubFirmware = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(pubFirmware);
+									break;
+								case "Renegotiate15118Schedule":
+									var renSchedule = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(renSchedule);
+									break;
+								case "SetNetworkProfile":
+									var setNetProfl = JSON.stringify([3, id, {"status": "Accepted"}]);
+									_websocket.send(setNetProfl);
+									break;
+								default:
+									var error = JSON.stringify([4, id]);
+									_websocket.send(error);
+									break;
+							}
+						}
+					};
+
+					_websocket.onclose = function(evt) {
+						$('#connect').text('Connect').css('background', '#369');
+						if (evt.code == 3001) {
+							logMsg('ws closed');
+							_websocket = null;
+						} else {
+							logMsg('ws connection error: ' + evt.code);
+							$('#console').html("");
+							_websocket = null;
+							wsConnect();
+						}
+						//
+					};
+
+					_websocket.onerror = function(evt) {
+						if (_websocket.readyState == 1) {
+							$('#red').show();
+							logMsg('ws normal error: ' + evt.type);
+						}
+					};
+				}
+			}
+
+			function logMsg(err) {
+				console.log(err);
+				$('#console').append('<li>' + err + '</li>');
+			}
+
+			function Authorize() {
+
+				sessionStorage.setItem('LastAction', "Authorize");
+				var Auth = JSON.stringify([2, id, "Authorize", {
+					"idToken": {
+						"idToken": "TAG1",
+						"type": "Central"
+					},
+					"evseId": [1,2,3,4] //Just to test
+				}]);
+				_websocket.send(Auth);
+
+			}
+
+			function FirmwareStatusNotification() {
+
+				sessionStorage.setItem('LastAction', "FirmwareStatusNotification");
+				var FirmStat = JSON.stringify([2, id, "FirmwareStatusNotification", {
+					"status": "Installed",
+					"requestId": "0"
+				}]);
+				_websocket.send(FirmStat);
+
+			}
+
+			function startTransaction(charge_state = "EVDetected") {
+				sessionStorage.setItem('LastAction', "startTransaction");
+				$('.indicator').hide();
+				$('#green').show();
+				connector_locked = true;
+				logMsg("Connector status changed to: " + connector_locked);
+				lastTranId = guid();
+				var strtT = JSON.stringify([2, id, "TransactionEvent", {
+					"eventType": "Started",
+					"timestamp": formatDate(new Date()),
+					"triggerReason": "Authorized",
+					"seqNo": 0,
+					"idToken": {
+						"idToken": "TAG1",
+						"type": "Central"
+					},
+					"evse": {
+						"id": 2,
+						"connectorId": 2
+					},
+					"transactionData": {
+						"id": lastTranId,
+						"remoteStartId": 0,
+						"chargingState": charge_state
+					},
+					"meterValue": [{
+						"timestamp": formatDate(new Date()),
+						"sampledValue": [{
+							"value": 0
+						}]
+					}]
+				}]);
+				_websocket.send(strtT);
+			}
+
+			function updateTransaction(charger_state = "EVDetected") {
+				sessionStorage.setItem('LastAction', "updateTransaction");
+				var updTrns = JSON.stringify([2, id, "TransactionEvent", {
+					"eventType": "Updated",
+					"timestamp": formatDate(new Date()),
+					"triggerReason": "MeterValuePeriodic",
+					"seqNo": 0,
+					"idToken": {
+						"idToken": "TAG1",
+						"type": "Central"
+					},
+					"evse": {
+						"id": 2,
+						"connectorId": 2
+					},
+					"transactionData": {
+						"id": lastTranId,
+						"remoteStartId": 0,
+						"chargingState": charger_state
+					},
+					"meterValue": [{
+						"timestamp": formatDate(new Date()),
+						"sampledValue": [{
+							"value": 10
+						}, {
+							"value": 15,
+							"context": "Sample.Periodic",
+							"measurand": "Energy.Reactive.Export.Register",
+							"phase": "L1",
+							"location": "EV",
+							"unitOfMeasure": {
+								"unit": "5"
+							}
+						}]
+					}]
+				}]);
+				_websocket.send(updTrns);
+			}
+
+			function stopTransaction(transaction_id = false) {
+				sessionStorage.setItem('LastAction', "stopTransaction");
+				transaction_id == false ? lastTranId = lastTranId : lastTranId = transaction_id;
+				$('.indicator').hide();
+				connector_locked = false;
+				logMsg("Connector status changed to: " + connector_locked);
+				$('#yellow').show();
+				var stpT = JSON.stringify([2, id, "TransactionEvent", {
+					"eventType": "Ended",
+					"timestamp": formatDate(new Date()),
+					"triggerReason": "Deauthorized",
+					"seqNo": 0,
+					"idToken": {
+						"idToken": "TAG1",
+						"type": "Central"
+					},
+					"evse": {
+						"id": 2,
+						"connectorId": 2
+					},
+					"transactionData": {
+						"id": lastTranId,
+						"remoteStartId": 0
+					},
+					"meterValue": [{
+						"timestamp": formatDate(new Date()),
+						"sampledValue": [{
+							"value": 20
+						}]
+					}]
+				}]);
+				_websocket.send(stpT);
+			}
+
+			function getConfiguration() {
+
+			}
+
+			function handleData(data, request = false) {
+				var lastAction = getLastAction();
+				if (lastAction = "BootNotification") {
+					data = data[2];
+					heartbeat_interval = data.interval;
+					return heartbeat_interval;
+				} else if (lastAction = "StartTransaction") {
+					return "StartTransaction";
+				} else if (1 == 2) {
+					alert("else");
+				}
+
+			}
+
+			function getLastAction() {
+				var LastAction = sessionStorage.getItem("LastAction");
+				return LastAction;
+			}
+
+			function BootNotification() {
+
+				var BN = JSON.stringify([2, id, "BootNotification", {
+					"chargingStation": {
+						"serialNumber": "avt.001.13.1",
+						"model": "AVT-Express",
+						"modem": {
+							"iccid": "MMCC IINN NNNN NNNN NN C x",
+							"imsi": "520031234567890"
+						},
+						"vendorName": "AVT-Company",
+						"firmwareVersion": "0.9.87"
+					},
+					"reason": "PowerUp"
+				}]);
+
+				logMsg('ws connected');
+
+				_websocket.send(BN);
+			}
+
+			function statusNotification() {
+				sessionStorage.setItem('LastAction', "StatusNotification");
+				var SN = JSON.stringify([2, id, "StatusNotification", {
+					"timestamp": formatDate(new Date()),
+					"connectorStatus": "Available",
+					"evseId": 2,
+					"connectorId": 2
+				}]);
+				_websocket.send(SN);
+			}
+
+			function meterValues() {
+				sessionStorage.setItem('LastAction', "MeterValues");
+				var MV = JSON.stringify([2, id, "MeterValues", {
+					"evseId": 2,
+					"meterValue": [{
+						"timestamp": formatDate(new Date()),
+						"sampledValue": [{
+							"value": "0",
+							"measurand": "Energy.Active.Import.Register"
+						}, {
+							"value": "7200",
+							"measurand": "Power_Active_Import"
+						}]
+					}, {
+						"timestamp": formatDate(new Date()),
+						"sampledValue": [{
+							"value": "800",
+							"measurand": "Energy.Active.Import.Register"
+						}, {
+							"value": "20",
+							"measurand": "Energy.Reactive.Import.Register"
+						}]
+					}, {
+						"timestamp": formatDate(new Date()),
+						"sampledValue": [{
+							"value": "42",
+							"measurand": "SoC"
+						}]
+					}]
+				}]);
+				_websocket.send(MV);
+			}
+
+			function startHB(interval) {
+				setInterval(send_heartbeat, interval);
+			}
+
+			function send_heartbeat() {
+				sessionStorage.setItem('LastAction', "Heartbeat");
+				var HB = JSON.stringify([2, id, "Heartbeat", {}]);
+				_websocket.send(HB);
+			}
+
+			function LogStatusNotification(upload_status = "Uploading") {
+				sessionStorage.setItem('LastAction', "LogStatusNotification");
+				var LSN = JSON.stringify([2, id, "LogStatusNotification", {
+					"status": upload_status,
+					"requestId": 1,
+				}]);
+				_websocket.send(LSN);
+			}
+
+			function NotifyChargingLimit(charge_limit = 10, limit_source = "SO") {
+				sessionStorage.setItem('LastAction', "NotifyChargingLimit");
+				var LSN = JSON.stringify([2, id, "NotifyChargingLimit", {
+					"evseId": 1,
+					"chargingLimit": {
+						"chargingLimitSource": limit_source,
+						"isGridCritical": "False",
+					},
+					"chargingSchedule": [charging_schedule(charge_limit)]
+				}]);
+				_websocket.send(LSN);
+			}
+			function NotifyEVChargingSchedule(charge_limit = 10, evse_id = 1) {
+				sessionStorage.setItem('LastAction', "NotifyEVChargingSchedule");
+				var NECS = JSON.stringify([2, id, "NotifyEVChargingSchedule", {
+					"evseId": evse_id,
+					"timeBase": formatDate(new Date()),
+					"chargingSchedule": charging_schedule(charge_limit)
+				}]);
+				_websocket.send(NECS);
+			}
+
+			function charging_schedule(charge_limit){
+				return {
+					"id": 0,
+					"chargingRateUnit": "A",
+					"chargingSchedulePeriod": [{
+						"startPeriod": 0,
+						"limit": charge_limit
+					}]
+				}
+			}
+
+			$('#connect').click(function() {
+				$('.indicator').hide();
+				$('#console').html("");
+				wsConnect();
+			});
+
+			$('#send').click(function() {
+				Authorize();
+
+			});
+
+			$('#start').click(function() {
+				startTransaction();
+
+			});
+
+			$('#update').click(function() {
+				updateTransaction();
+			});
+
+			$('#update_suspendedev').click(function() {
+				updateTransaction(charger_state = "SuspendedEV");
+			});
+
+			$('#update_suspendedevse').click(function() {
+				updateTransaction(charger_state = "SuspendedEVSE");
+			});
+
+			$('#update_charging').click(function() {
+				updateTransaction(charger_state = "Charging");
+			});
+			$('#stop').click(function() {
+				stopTransaction();
+			});
+
+			$('#firmwarestatus').click(function() {
+				FirmwareStatusNotification();
+			});
+
+			$('#mv').click(function() {
+				meterValues();
+			});
+			$('#heartbeat').click(function() {
+				send_heartbeat();
+
+			});
+
+			$('#status').click(function() {
+				statusNotification();
+			});
+
+			$('#data_transfer').click(function() {
+				sessionStorage.setItem('LastAction', "DataTransfer");
+				var DT = JSON.stringify([2, id, "DataTransfer", {
+					"vendorId": "rus.avt.cp",
+					"messageId": "GetChargeInstruction",
+					"data": ""
+				}]);
+				_websocket.send(DT);
+
+			});
+
+			$('#clearedChargingLimit').click(function() {
+				sessionStorage.setItem('LastAction', "ClearedChargingLimit");
+				var CCL = JSON.stringify([2, id, "ClearedChargingLimit", {
+					"chargingLimitSource": "Other",
+					"evseId": "2"
+				}]);
+				 _websocket.send(CCL);
+
+			});
+
+			$('#logstatus_uploading').click(function() {
+				LogStatusNotification();
+			});
+
+			$('#logstatus_uploaded').click(function() {
+				LogStatusNotification("Uploaded");
+			});
+
+			$('#notify_charging_limit').click(function() {
+				NotifyChargingLimit();
+			});
+
+			$('#notify_ev_charging_schedule').click(function() {
+				NotifyEVChargingSchedule();
+			});
+
+
+
+			$('#connect').on('change', function() {
+
+				if (_websocket) {
+					_websocket.close(3001);
+				}
+			});
+		</script>
+	</body>
+</html>

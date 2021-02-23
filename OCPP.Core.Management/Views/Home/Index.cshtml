@@ -17,7 +17,7 @@
             if (cpvm.StartTime != null && cpvm.StopTime == null)
             {
                 TimeSpan timeSpan = DateTime.UtcNow.Subtract(cpvm.StartTime.Value);
-                chargeTime = string.Format(Localizer["ChargeTime"].Value, Math.Floor(timeSpan.TotalHours), timeSpan.Minutes);
+                chargeTime = string.Format(Localizer["ChargeTime"].Value, (timeSpan.Days*24 + timeSpan.Hours), timeSpan.Minutes);
             }
 
             string cpIcon = "fa-plug";
@@ -64,14 +64,15 @@
                     </div>
                     @if (Model.ServerConnection)
                     {
-                        <div class="card-footer text-muted text-right">
+                        <div class="card-footer text-muted d-flex justify-content-between">
+                            <div>@cpvm.CurrentChargeData</div>
                             @if (cpvm.Online)
                             {
-                                <i class="fas fa-link" title="@Localizer["ChargePointOnline"]"></i>
+                                <div><i class="fas fa-link" title="@Localizer["ChargePointOnline"]"></i></div>
                             }
                             else
                             {
-                                <i class="fas fa-unlink" title="@Localizer["ChargePointOffline"]"></i>
+                                <div><i class="fas fa-unlink" title="@Localizer["ChargePointOffline"]"></i></div>
                             }
                         </div>
                     }

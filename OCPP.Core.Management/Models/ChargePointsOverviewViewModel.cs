@@ -70,5 +70,10 @@ namespace OCPP.Core.Management.Models
         /// Is this chargepoint currently connected to OCPP.Server?
         /// </summary>
         public bool Online { get; set; }
+
+        /// <summary>
+        /// Details about the current charge process
+        /// </summary>
+        public string CurrentChargeData { get; set; }
     }
 }

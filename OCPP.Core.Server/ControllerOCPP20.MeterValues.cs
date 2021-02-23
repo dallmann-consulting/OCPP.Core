@@ -50,18 +50,96 @@ namespace OCPP.Core.Server
 
                 if (ChargePointStatus != null)
                 {
-                    // Known charge station
-
+                    // Known charge station => process meter values
+                    double currentChargeKW = -1;
+                    double chargedAmountKWH = -1;
+                    double stateOfCharge = -1;
                     foreach (MeterValueType meterValue in meterValueRequest.MeterValue)
                     {
                         foreach (SampledValueType sampleValue in meterValue.SampledValue)
                         {
-                            //sampleValue.
                             Logger.LogTrace("MeterValues => Context={0} / SignedMeterValue={1} / Value={2} / Unit={3} / Location={4} / Measurand={5} / Phase={6}",
                                 sampleValue.Context, sampleValue.SignedMeterValue, sampleValue.Value, sampleValue.UnitOfMeasure, sampleValue.Location, sampleValue.Measurand, sampleValue.Phase);
+
+                            if (sampleValue.Measurand == MeasurandEnumType.Power_Active_Import)
+                            {
+                                // current charging power
+                                currentChargeKW = sampleValue.Value;
+                                if (sampleValue.UnitOfMeasure?.Unit == "W" ||
+                                    sampleValue.UnitOfMeasure?.Unit == "VA" ||
+                                    sampleValue.UnitOfMeasure?.Unit == "var" ||
+                                    sampleValue.UnitOfMeasure?.Unit == null ||
+                                    sampleValue.UnitOfMeasure == null)
+                                {
+                                    Logger.LogTrace("MeterValues => Charging '{0:0.0}' W", currentChargeKW);
+                                    // convert W => kW
+                                    currentChargeKW = currentChargeKW / 1000;
+                                }
+                                else if (sampleValue.UnitOfMeasure?.Unit == "KW" ||
+                                        sampleValue.UnitOfMeasure?.Unit == "kVA" ||
+                                        sampleValue.UnitOfMeasure?.Unit == "kvar")
+                                {
+                                    // already kW => OK
+                                    Logger.LogTrace("MeterValues => Charging '{0:0.0}' kW", currentChargeKW);
+                                }
+                                else
+                                {
+                                    Logger.LogWarning("MeterValues => Charging: unexpected unit: '{0}' (Value={1})", sampleValue.UnitOfMeasure?.Unit, sampleValue.Value);
+                                }
+                            }
+                            else if (sampleValue.Measurand == MeasurandEnumType.Energy_Active_Import_Register)
+                            {
+                                // charged amount of energy
+                                chargedAmountKWH = sampleValue.Value;
+                                if (sampleValue.UnitOfMeasure?.Unit == "Wh" ||
+                                    sampleValue.UnitOfMeasure?.Unit == "VAh" ||
+                                    sampleValue.UnitOfMeasure?.Unit == "varh" ||
+                                    (sampleValue.UnitOfMeasure == null || sampleValue.UnitOfMeasure.Unit == null))
+                                {
+                                    Logger.LogTrace("MeterValues => Charged: '{0:0.0}' Wh", chargedAmountKWH);
+                                    // convert Wh => kWh
+                                    chargedAmountKWH = chargedAmountKWH / 1000;
+                                }
+                                else if (sampleValue.UnitOfMeasure?.Unit == "kWh" ||
+                                        sampleValue.UnitOfMeasure?.Unit == "kVAh" ||
+                                        sampleValue.UnitOfMeasure?.Unit == "kvarh")
+                                {
+                                    // already kWh => OK
+                                    Logger.LogTrace("MeterValues => Charged: '{0:0.0}' kWh", chargedAmountKWH);
+                                }
+                                else
+                                {
+                                    Logger.LogWarning("MeterValues => Charged: unexpected unit: '{0}' (Value={1})", sampleValue.UnitOfMeasure?.Unit, sampleValue.Value);
+                                }
+                            }
+                            else if (sampleValue.Measurand == MeasurandEnumType.SoC)
+                            {
+                                // state of charge (battery status)
+                                stateOfCharge = chargedAmountKWH = sampleValue.Value;
+                                Logger.LogTrace("MeterValues => SoC: '{0:0.0}'%", stateOfCharge);
+                            }
                         }
                     }
 
+                    // write charging/meter data in chargepoint status
+                    ChargingData chargingData = null;
+                    if (currentChargeKW >= 0 || chargedAmountKWH >= 0 || stateOfCharge >= 0)
+                    {
+                        chargingData = new ChargingData();
+                        if (currentChargeKW >= 0) chargingData.ChargeRateKW = currentChargeKW;
+                        if (chargedAmountKWH >= 0) chargingData.ChargedEnergyKWH = chargedAmountKWH;
+                        if (stateOfCharge >= 0) chargingData.SoC = stateOfCharge;
+                    }
+                    if (connectorId > 1)
+                    {
+                        // second connector (odr higher!?)
+                        ChargePointStatus.ChargingDataEVSE2 = chargingData;
+                    }
+                    else
+                    {
+                        // first connector
+                        ChargePointStatus.ChargingDataEVSE1 = chargingData;
+                    }
                 }
                 else
                 {
