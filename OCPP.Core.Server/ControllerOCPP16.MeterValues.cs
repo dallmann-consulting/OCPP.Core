@@ -44,6 +44,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -86,7 +87,7 @@ namespace OCPP.Core.Server
                             if (sampleValue.Measurand == SampledValueMeasurand.Power_Active_Import)
                             {
                                 // current charging power
-                                if (double.TryParse(sampleValue.Value, out currentChargeKW))
+                                if (double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out currentChargeKW))
                                 {
                                     if (sampleValue.Unit == SampledValueUnit.W ||
                                         sampleValue.Unit == SampledValueUnit.VA ||
@@ -118,7 +119,7 @@ namespace OCPP.Core.Server
                                     sampleValue.Measurand == null)
                             {
                                 // charged amount of energy
-                                if (double.TryParse(sampleValue.Value, out chargedAmountKWH))
+                                if (double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out chargedAmountKWH))
                                 {
                                     if (sampleValue.Unit == SampledValueUnit.Wh ||
                                         sampleValue.Unit == SampledValueUnit.Varh ||
@@ -147,7 +148,7 @@ namespace OCPP.Core.Server
                             else if (sampleValue.Measurand == SampledValueMeasurand.SoC)
                             {
                                 // state of charge (battery status)
-                                if (double.TryParse(sampleValue.Value, out stateOfCharge))
+                                if (double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out stateOfCharge))
                                 {
                                     Logger.LogTrace("MeterValues => SoC: '{0:0.0}'%", stateOfCharge);
                                 }

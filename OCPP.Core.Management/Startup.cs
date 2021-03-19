@@ -76,12 +76,6 @@ namespace OCPP.Core.Management
                 m => new UserManager(Configuration)
                 );
             services.AddDistributedMemoryCache();
-
-            services.Configure<RequestLocalizationOptions>(
-                opts =>
-                {
-                    opts.DefaultRequestCulture = new RequestCulture("en");
-                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -101,6 +95,12 @@ namespace OCPP.Core.Management
             app.UseAuthentication();
             app.UseRouting();
             app.UseAuthorization();
+
+            var supportedCultures = new[] { "en", "de" };
+            var localizationOptions = new RequestLocalizationOptions().SetDefaultCulture(supportedCultures[0])
+                .AddSupportedCultures(supportedCultures)
+                .AddSupportedUICultures(supportedCultures);
+            app.UseRequestLocalization(localizationOptions);
 
             app.UseEndpoints(endpoints =>
             {

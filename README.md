@@ -48,6 +48,11 @@ The Web-UI is already **localized in English and German**. It has an overview pa
 
 ![Overview](images/Overview.png)
 
+Each tile shows details about the current charge process (if the charge station sends data).
+
+![Charging details](images/ChargingDetails.png)
+
+
 If you click on a charge station you get a list of the latest transactions and can download them as CSV.
 
 ![Overview](images/Transactions.png)
