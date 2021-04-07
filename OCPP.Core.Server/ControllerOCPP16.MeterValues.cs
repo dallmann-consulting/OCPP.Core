@@ -62,6 +62,7 @@ namespace OCPP.Core.Server
             MeterValuesResponse meterValuesResponse = new MeterValuesResponse();
 
             int? connectorId = null;
+            string msgMeterValue = string.Empty;
 
             try
             {
@@ -75,7 +76,7 @@ namespace OCPP.Core.Server
                 {
                     // Known charge station => process meter values
                     double currentChargeKW = -1;
-                    double chargedAmountKWH = -1;
+                    double meterKWH = -1;
                     double stateOfCharge = -1;
                     foreach (MeterValue meterValue in meterValueRequest.MeterValue)
                     {
@@ -119,30 +120,30 @@ namespace OCPP.Core.Server
                                     sampleValue.Measurand == null)
                             {
                                 // charged amount of energy
-                                if (double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out chargedAmountKWH))
+                                if (double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out meterKWH))
                                 {
                                     if (sampleValue.Unit == SampledValueUnit.Wh ||
                                         sampleValue.Unit == SampledValueUnit.Varh ||
                                         sampleValue.Unit == null)
                                     {
-                                        Logger.LogTrace("MeterValues => Charged: '{0:0.0}' Wh", chargedAmountKWH);
+                                        Logger.LogTrace("MeterValues => Value: '{0:0.0}' Wh", meterKWH);
                                         // convert Wh => kWh
-                                        chargedAmountKWH = chargedAmountKWH / 1000;
+                                        meterKWH = meterKWH / 1000;
                                     }
                                     else if (sampleValue.Unit == SampledValueUnit.KWh ||
                                             sampleValue.Unit == SampledValueUnit.Kvarh)
                                     {
                                         // already kWh => OK
-                                        Logger.LogTrace("MeterValues => Charged: '{0:0.0}' kWh", chargedAmountKWH);
+                                        Logger.LogTrace("MeterValues => Value: '{0:0.0}' kWh", meterKWH);
                                     }
                                     else
                                     {
-                                        Logger.LogWarning("MeterValues => Charged: unexpected unit: '{0}' (Value={1})", sampleValue.Unit, sampleValue.Value);
+                                        Logger.LogWarning("MeterValues => Value: unexpected unit: '{0}' (Value={1})", sampleValue.Unit, sampleValue.Value);
                                     }
                                 }
                                 else
                                 {
-                                    Logger.LogError("MeterValues => invalid value '{0}' (Unit={1})", sampleValue.Value, sampleValue.Unit);
+                                    Logger.LogError("MeterValues => Value: invalid value '{0}' (Unit={1})", sampleValue.Value, sampleValue.Unit);
                                 }
                             }
                             else if (sampleValue.Measurand == SampledValueMeasurand.SoC)
@@ -162,16 +163,16 @@ namespace OCPP.Core.Server
 
                     // write charging/meter data in chargepoint status
                     ChargingData chargingData = null;
-                    if (currentChargeKW >= 0 || chargedAmountKWH >= 0 || stateOfCharge >= 0)
+                    if (currentChargeKW >= 0 || meterKWH >= 0 || stateOfCharge >= 0)
                     {
                         chargingData = new ChargingData();
                         if (currentChargeKW >= 0) chargingData.ChargeRateKW = currentChargeKW;
-                        if (chargedAmountKWH >= 0) chargingData.ChargedEnergyKWH = chargedAmountKWH;
+                        if (meterKWH >= 0) chargingData.MeterKWH = meterKWH;
                         if (stateOfCharge >= 0) chargingData.SoC = stateOfCharge;
                     }
                     if (connectorId > 1)
                     {
-                        // second connector (odr higher!?)
+                        // second connector (or higher!?)
                         ChargePointStatus.ChargingDataEVSE2 = chargingData;
                     }
                     else

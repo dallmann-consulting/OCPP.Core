@@ -181,10 +181,16 @@ namespace OCPP.Core.Server
         {
             try
             {
-                bool dbMessageLog = Configuration.GetValue<bool>("DbMessageLog", false);
-                if (dbMessageLog)
+                int dbMessageLog = Configuration.GetValue<int>("DbMessageLog", 0);
+                if (dbMessageLog > 0 && !string.IsNullOrWhiteSpace(chargePointId))
                 {
-                    if (!string.IsNullOrWhiteSpace(chargePointId))
+                    bool doLog = (dbMessageLog > 1 ||
+                                    (message != "BootNotification" &&
+                                     message != "Heartbeat" &&
+                                     message != "DataTransfer" &&
+                                     message != "StatusNotification"));
+
+                    if (doLog)
                     {
                         using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
                         {

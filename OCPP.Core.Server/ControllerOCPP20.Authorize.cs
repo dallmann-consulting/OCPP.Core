@@ -35,12 +35,13 @@ namespace OCPP.Core.Server
             string errorCode = null;
             AuthorizeResponse authorizeResponse = new AuthorizeResponse();
 
+            string idTag = null;
             try
             {
                 Logger.LogTrace("Processing authorize request...");
                 AuthorizeRequest authorizeRequest = JsonConvert.DeserializeObject<AuthorizeRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("Authorize => Message deserialized");
-                string idTag = authorizeRequest.IdToken?.IdToken;
+                idTag = authorizeRequest.IdToken?.IdToken;
 
                 authorizeResponse.CustomData = new CustomDataType();
                 authorizeResponse.CustomData.VendorId = VendorId;
@@ -101,7 +102,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(ChargePointStatus?.Id, null,msgIn.Action, authorizeResponse.IdTokenInfo?.Status.ToString(), errorCode);
+            WriteMessageLog(ChargePointStatus?.Id, null, msgIn.Action, $"'{idTag}'=>{authorizeResponse.IdTokenInfo?.Status}", errorCode);
             return errorCode;
         }
     }

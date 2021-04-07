@@ -52,7 +52,7 @@ namespace OCPP.Core.Server
                 {
                     // Known charge station => process meter values
                     double currentChargeKW = -1;
-                    double chargedAmountKWH = -1;
+                    double meterKWH = -1;
                     double stateOfCharge = -1;
                     foreach (MeterValueType meterValue in meterValueRequest.MeterValue)
                     {
@@ -90,32 +90,32 @@ namespace OCPP.Core.Server
                             else if (sampleValue.Measurand == MeasurandEnumType.Energy_Active_Import_Register)
                             {
                                 // charged amount of energy
-                                chargedAmountKWH = sampleValue.Value;
+                                meterKWH = sampleValue.Value;
                                 if (sampleValue.UnitOfMeasure?.Unit == "Wh" ||
                                     sampleValue.UnitOfMeasure?.Unit == "VAh" ||
                                     sampleValue.UnitOfMeasure?.Unit == "varh" ||
                                     (sampleValue.UnitOfMeasure == null || sampleValue.UnitOfMeasure.Unit == null))
                                 {
-                                    Logger.LogTrace("MeterValues => Charged: '{0:0.0}' Wh", chargedAmountKWH);
+                                    Logger.LogTrace("MeterValues => Value: '{0:0.0}' Wh", meterKWH);
                                     // convert Wh => kWh
-                                    chargedAmountKWH = chargedAmountKWH / 1000;
+                                    meterKWH = meterKWH / 1000;
                                 }
                                 else if (sampleValue.UnitOfMeasure?.Unit == "kWh" ||
                                         sampleValue.UnitOfMeasure?.Unit == "kVAh" ||
                                         sampleValue.UnitOfMeasure?.Unit == "kvarh")
                                 {
                                     // already kWh => OK
-                                    Logger.LogTrace("MeterValues => Charged: '{0:0.0}' kWh", chargedAmountKWH);
+                                    Logger.LogTrace("MeterValues => Value: '{0:0.0}' kWh", meterKWH);
                                 }
                                 else
                                 {
-                                    Logger.LogWarning("MeterValues => Charged: unexpected unit: '{0}' (Value={1})", sampleValue.UnitOfMeasure?.Unit, sampleValue.Value);
+                                    Logger.LogWarning("MeterValues => Value: unexpected unit: '{0}' (Value={1})", sampleValue.UnitOfMeasure?.Unit, sampleValue.Value);
                                 }
                             }
                             else if (sampleValue.Measurand == MeasurandEnumType.SoC)
                             {
                                 // state of charge (battery status)
-                                stateOfCharge = chargedAmountKWH = sampleValue.Value;
+                                stateOfCharge = sampleValue.Value;
                                 Logger.LogTrace("MeterValues => SoC: '{0:0.0}'%", stateOfCharge);
                             }
                         }
@@ -123,11 +123,11 @@ namespace OCPP.Core.Server
 
                     // write charging/meter data in chargepoint status
                     ChargingData chargingData = null;
-                    if (currentChargeKW >= 0 || chargedAmountKWH >= 0 || stateOfCharge >= 0)
+                    if (currentChargeKW >= 0 || meterKWH >= 0 || stateOfCharge >= 0)
                     {
                         chargingData = new ChargingData();
                         if (currentChargeKW >= 0) chargingData.ChargeRateKW = currentChargeKW;
-                        if (chargedAmountKWH >= 0) chargingData.ChargedEnergyKWH = chargedAmountKWH;
+                        if (meterKWH >= 0) chargingData.MeterKWH = meterKWH;
                         if (stateOfCharge >= 0) chargingData.SoC = stateOfCharge;
                     }
                     if (connectorId > 1)

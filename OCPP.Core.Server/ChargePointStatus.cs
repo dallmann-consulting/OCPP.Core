@@ -95,9 +95,9 @@ namespace OCPP.Core.Server
         public double? ChargeRateKW { get; set; }
 
         /// <summary>
-        /// Charged energy in kWh
+        /// Current meter value in kWh
         /// </summary>
-        public double? ChargedEnergyKWH { get; set; }
+        public double? MeterKWH { get; set; }
 
         /// <summary>
         /// StateOfCharges in percent

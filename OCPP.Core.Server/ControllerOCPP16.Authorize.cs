@@ -35,12 +35,13 @@ namespace OCPP.Core.Server
             string errorCode = null;
             AuthorizeResponse authorizeResponse = new AuthorizeResponse();
 
+            string idTag = null;
             try
             {
                 Logger.LogTrace("Processing authorize request...");
                 AuthorizeRequest authorizeRequest = JsonConvert.DeserializeObject<AuthorizeRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("Authorize => Message deserialized");
-                string idTag = authorizeRequest.IdTag;
+                idTag = authorizeRequest.IdTag;
 
                 authorizeResponse.IdTagInfo.ParentIdTag = string.Empty;
                 authorizeResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow.AddMinutes(5);   // default: 5 minutes
@@ -92,7 +93,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(ChargePointStatus?.Id, null,msgIn.Action, authorizeResponse.IdTagInfo?.Status.ToString(), errorCode);
+            WriteMessageLog(ChargePointStatus?.Id, null,msgIn.Action, $"'{idTag}'=>{authorizeResponse.IdTagInfo?.Status}", errorCode);
             return errorCode;
         }
     }
