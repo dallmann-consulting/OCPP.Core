@@ -23,9 +23,9 @@ namespace OCPP.Core.Server
         private static readonly string[] SupportedProtocols = { Protocol_OCPP20, Protocol_OCPP16 /*, "ocpp1.5" */};
 
         // RegExp for splitting ocpp message parts
-        // ^\[\s*(\d)\s*,\s*\"(\w*)\"\s*,(?:\s*\"(\w*)\"\s*,)?\s*(.*)\s*\]$
+        // ^\[\s*(\d)\s*,\s*\"([^"]*)\"\s*,(?:\s*\"(\w*)\"\s*,)?\s*(.*)\s*\]$
         // Third block is optional, because responses don't have an action
-        private static string MessageRegExp = "^\\[\\s*(\\d)\\s*,\\s*\"(\\w*)\"\\s*,(?:\\s*\"(\\w*)\"\\s*,)?\\s*(.*)\\s*\\]$";
+        private static string MessageRegExp = "^\\[\\s*(\\d)\\s*,\\s*\"([^\"]*)\"\\s*,(?:\\s*\"(\\w*)\"\\s*,)?\\s*(.*)\\s*\\]$";
 
         private readonly RequestDelegate _next;
         private readonly ILoggerFactory _logFactory;
