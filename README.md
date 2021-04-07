@@ -100,7 +100,7 @@ Referenced Packages:
 	You can also log basic message information in the database.
 	```
   	"MessageDumpDir": "c:\\temp\\OCPP",
-	"DbMessageLog": true,
+	"DbMessageLog": 2,  //0=None, 1=Info, 2=Verbose (all)
 	```
 
 	* OCPP.Core.Management

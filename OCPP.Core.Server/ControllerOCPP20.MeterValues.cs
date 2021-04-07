@@ -39,6 +39,7 @@ namespace OCPP.Core.Server
             meterValuesResponse.CustomData.VendorId = VendorId;
 
             int? connectorId = null;
+            string msgMeterValue = string.Empty;
 
             try
             {
@@ -129,6 +130,8 @@ namespace OCPP.Core.Server
                         if (currentChargeKW >= 0) chargingData.ChargeRateKW = currentChargeKW;
                         if (meterKWH >= 0) chargingData.MeterKWH = meterKWH;
                         if (stateOfCharge >= 0) chargingData.SoC = stateOfCharge;
+
+                        msgMeterValue = $"Meter (kWh): {meterKWH} | Charge (kW): {currentChargeKW} | SoC (%): {stateOfCharge}";
                     }
                     if (connectorId > 1)
                     {
@@ -156,7 +159,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.InternalError;
             }
 
-            WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, null, errorCode);
+            WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, msgMeterValue, errorCode);
             return errorCode;
         }
     }
