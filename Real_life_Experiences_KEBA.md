@@ -8,29 +8,29 @@ So, from the point of view of the OCPP server, we have a single charging station
 
 Here is an extract of the first real messages:
 
-	```
-	[2,"a8141dd9-4904-4443-976b-bf032324a52e","BootNotification",{"chargePointVendor":"Keba AG","chargePointModel":"KC-P30-EC2401B2-M0R","chargePointSerialNumber":"dummy1","chargeBoxSerialNumber":"dummy1","firmwareVersion":"1.12.0"}]
-	...
-	[2,"40ebd0b0-11ba-4a09-ad19-7e7a0a0b25c5","StatusNotification",{"connectorId":1,"status":"Available","errorCode":"NoError","timestamp":"2021-04-07T07:52:10.462Z","vendorId":"1.12.0"}]
-	[2,"cee47d29-fc49-4517-af15-2958fc250f43","StatusNotification",{"connectorId":2,"status":"Available","errorCode":"NoError","timestamp":"2021-04-07T07:52:11.864Z","vendorId":"1.12.0"}]
-	[2,"3dfa7fe7-1cbf-44e2-9b30-cbb5b40da7db","StatusNotification",{"connectorId":3,"status":"Available","errorCode":"NoError","timestamp":"2021-04-07T07:52:12.672Z","vendorId":"1.12.0"}]	
-	[2,"5b1146f0-a252-4370-b498-8bb2fa41f62b","StatusNotification",{"connectorId":4,"status":"Available","errorCode":"NoError","timestamp":"2021-04-07T07:52:13.200Z","vendorId":"1.12.0"}]
-	...
-	[2,"6cbbd7f4-c9cc-4ca3-b2c4-87f7e113a8ae","MeterValues",{"connectorId":1,"meterValue":[{"timestamp":"2021-04-07T11:00:00.000Z","sampledValue":[{"value":"236.1","context":"Sample.Clock","format":"Raw","measurand":"Energy.Active.Import.Register","location":"Outlet","unit":"Wh"}]}]}]
-	[2,"db6bc0c5-7e43-4c24-a9e2-e18248057735","MeterValues",{"connectorId":2,"meterValue":[{"timestamp":"2021-04-07T11:00:00.000Z","sampledValue":[{"value":"162.3","context":"Sample.Clock","format":"Raw","measurand":"Energy.Active.Import.Register","location":"Outlet","unit":"Wh"}]}]}]
-	[2,"2468cc5a-403f-472c-a5c5-e88bc5f81c8e","MeterValues",{"connectorId":3,"meterValue":[{"timestamp":"2021-04-07T11:00:00.000Z","sampledValue":[{"value":"171.7","context":"Sample.Clock","format":"Raw","measurand":"Energy.Active.Import.Register","location":"Outlet","unit":"Wh"}]}]}]
-	[2,"69a5d1b3-4020-48f5-ad79-f6869b644cbd","MeterValues",{"connectorId":4,"meterValue":[{"timestamp":"2021-04-07T11:00:00.000Z","sampledValue":[{"value":"164.5","context":"Sample.Clock","format":"Raw","measurand":"Energy.Active.Import.Register","location":"Outlet","unit":"Wh"}]}]}]
-	[2,"19d6e3cf-535f-4b83-b1b0-7f16cee6e317","MeterValues",{"connectorId":0,"meterValue":[{"timestamp":"2021-04-07T11:00:00.000Z","sampledValue":[{"value":"734.6","context":"Sample.Clock","format":"Raw","measurand":"Energy.Active.Import.Register","location":"Outlet","unit":"Wh"}]}]}]
-	```
+```
+[2,"a8141dd9-4904-4443-976b-bf032324a52e","BootNotification",{"chargePointVendor":"Keba AG","chargePointModel":"KC-P30-EC2401B2-M0R","chargePointSerialNumber":"dummy1","chargeBoxSerialNumber":"dummy1","firmwareVersion":"1.12.0"}]
+...
+[2,"40ebd0b0-11ba-4a09-ad19-7e7a0a0b25c5","StatusNotification",{"connectorId":1,"status":"Available","errorCode":"NoError","timestamp":"2021-04-07T07:52:10.462Z","vendorId":"1.12.0"}]
+[2,"cee47d29-fc49-4517-af15-2958fc250f43","StatusNotification",{"connectorId":2,"status":"Available","errorCode":"NoError","timestamp":"2021-04-07T07:52:11.864Z","vendorId":"1.12.0"}]
+[2,"3dfa7fe7-1cbf-44e2-9b30-cbb5b40da7db","StatusNotification",{"connectorId":3,"status":"Available","errorCode":"NoError","timestamp":"2021-04-07T07:52:12.672Z","vendorId":"1.12.0"}]	
+[2,"5b1146f0-a252-4370-b498-8bb2fa41f62b","StatusNotification",{"connectorId":4,"status":"Available","errorCode":"NoError","timestamp":"2021-04-07T07:52:13.200Z","vendorId":"1.12.0"}]
+...
+[2,"6cbbd7f4-c9cc-4ca3-b2c4-87f7e113a8ae","MeterValues",{"connectorId":1,"meterValue":[{"timestamp":"2021-04-07T11:00:00.000Z","sampledValue":[{"value":"236.1","context":"Sample.Clock","format":"Raw","measurand":"Energy.Active.Import.Register","location":"Outlet","unit":"Wh"}]}]}]
+[2,"db6bc0c5-7e43-4c24-a9e2-e18248057735","MeterValues",{"connectorId":2,"meterValue":[{"timestamp":"2021-04-07T11:00:00.000Z","sampledValue":[{"value":"162.3","context":"Sample.Clock","format":"Raw","measurand":"Energy.Active.Import.Register","location":"Outlet","unit":"Wh"}]}]}]
+[2,"2468cc5a-403f-472c-a5c5-e88bc5f81c8e","MeterValues",{"connectorId":3,"meterValue":[{"timestamp":"2021-04-07T11:00:00.000Z","sampledValue":[{"value":"171.7","context":"Sample.Clock","format":"Raw","measurand":"Energy.Active.Import.Register","location":"Outlet","unit":"Wh"}]}]}]
+[2,"69a5d1b3-4020-48f5-ad79-f6869b644cbd","MeterValues",{"connectorId":4,"meterValue":[{"timestamp":"2021-04-07T11:00:00.000Z","sampledValue":[{"value":"164.5","context":"Sample.Clock","format":"Raw","measurand":"Energy.Active.Import.Register","location":"Outlet","unit":"Wh"}]}]}]
+[2,"19d6e3cf-535f-4b83-b1b0-7f16cee6e317","MeterValues",{"connectorId":0,"meterValue":[{"timestamp":"2021-04-07T11:00:00.000Z","sampledValue":[{"value":"734.6","context":"Sample.Clock","format":"Raw","measurand":"Energy.Active.Import.Register","location":"Outlet","unit":"Wh"}]}]}]
+```
 
 So we have one charge point with 4 connectors and 4 meters. The connector "0" is the sum of all 4 meter values.
 
 
 And this is the first charging transaction message:
 
-	```
-	[2,"dab92753-5fe0-43cd-84d1-44cb46d25951","StartTransaction",{"connectorId":4,"idTag":"12345678_dummy1","timestamp":"2021-04-08T18:49:11.450Z","meterStart":164}]
-	```
+```
+[2,"dab92753-5fe0-43cd-84d1-44cb46d25951","StartTransaction",{"connectorId":4,"idTag":"12345678_dummy1","timestamp":"2021-04-08T18:49:11.450Z","meterStart":164}]
+```
 
 Have a look at the RFID tag: "12345678_dummy1"
 
