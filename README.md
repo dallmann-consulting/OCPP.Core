@@ -7,7 +7,7 @@ OCPP.Core is an OCPP ([Open ChargePoint Protocol](https://en.wikipedia.org/wiki/
 ### Status
 Currently it supports OCPP1.6J and 2.0(JSON/REST).
 
-OCPP.Core has only been tested with a simulator so far. My wallbox is not yet installed :-)
+OCPP.Core is currently used with 4 [KEBA P30c/x](https://www.keba.com/de/emobility/products/c-series/c-serie) charge points operating in a load management and OCPP1.6J. I will write about my experiences soon...
 
 **Please send feedback if it works with your charge station or has issues**
 
@@ -48,7 +48,7 @@ The Web-UI is already **localized in English and German**. It has an overview pa
 
 ![Overview](images/Overview.png)
 
-Each tile shows details about the current charge process (if the charge station sends data).
+Each tile shows details about the current charge process if the charge station sends data (our KEBA devices are only sending the main meter value).
 
 ![Charging details](images/ChargingDetails.png)
 
@@ -169,7 +169,7 @@ An easy way to test the OCPP-Server are simulators:
 * [OCPP1.6 Simple Chargebox Simulator](https://github.com/victormunoz/OCPP-1.6-Chargebox-Simulator)
 * [OCPP-2.0-CP-Simulator](https://github.com/JavaIsJavaScript/OCPP-2.0-CP-Simulator)
 
-Attention: Both simulators have bugs in certain actions
+Attention: Both simulators have minor and major bugs in certain actions. That's why I modified them both and included copies in this project.
 
 
 Enter "ws://localhost:8081/OCPP/station42" as the central station URL.
