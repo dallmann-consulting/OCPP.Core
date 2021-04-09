@@ -37,11 +37,12 @@ Have a look at the RFID tag: "12345678_dummy1"
 Because the whole network operates as a single charge point, there is no possibilty to authenticate RFID tags on different charge points.
 So KEBA decided to append the charge points serial number to the RFID number and send that as the idTag.
 
-I configured the charge points to use its local RFID authentiction. You can allow/deny access for each RFID tag and each charge point there.
-But the transaction messages also send an RFID tag. If the OCPP server responds with a blocked, invalid etc. status, the master charge point immediately sets the RFID tag to blocked or expired.
-I wasn't prepared for the combined idTags and it took me a while to diagnose this problem. You authenticate succesfully with your RFID tag, the EV and the charge point communicate.
-When the charge point (network) send the "StartTransaction" message the OCPP server does find an RFID tag with an appended serial number.
-So it responds with an "invalid" status and the charge point stops the process with "De-Authorized". :-(
+
+I configured the charge points to use its local RFID authentication. You can allow/deny access for each RFID tag and each charge point there.
+But the transaction messages also send an RFID tag. If the OCPP server responds with a blocked, invalid etc. status, the master charge point immediately sets that RFID tag to blocked or expired.
+I wasn't prepared for the combined idTags and it took me a while to diagnose this problem! You authenticate successfully with your RFID tag and the EV and the charge point communicate. When the charge point (network) send the "StartTransaction" message the OCPP server does **NOT** find an RFID tag with an appended serial number.
+So it responds with an "invalid" status and the charge point stops the process with "De-Authorized". And then the RFID tag is blocked in the charge points... :-(
+
 
 Now the OCPP server cuts off any "_xxx" suffix from the submitted idTags.
 
