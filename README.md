@@ -7,7 +7,8 @@ OCPP.Core is an OCPP ([Open ChargePoint Protocol](https://en.wikipedia.org/wiki/
 ### Status
 Currently it supports OCPP1.6J and 2.0(JSON/REST).
 
-OCPP.Core is currently used with 4 [KEBA P30c/x](https://www.keba.com/de/emobility/products/c-series/c-serie) charge points operating in a load management and OCPP1.6J. I will write about my experiences soon...
+OCPP.Core is currently used with 4 [KEBA P30c/x](https://www.keba.com/de/emobility/products/c-series/c-serie) charge points operating in a load management and OCPP1.6J.
+Here's a report of my [first real live experiences](Real_life_Experiences_KEBA.md).
 
 **Please send feedback if it works with your charge station or has issues**
 
