@@ -41,7 +41,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("Processing authorize request...");
                 AuthorizeRequest authorizeRequest = JsonConvert.DeserializeObject<AuthorizeRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("Authorize => Message deserialized");
-                idTag = authorizeRequest.IdToken?.IdToken;
+                idTag = Utils.CleanChargeTagId(authorizeRequest.IdToken?.IdToken, Logger);
 
                 authorizeResponse.CustomData = new CustomDataType();
                 authorizeResponse.CustomData.VendorId = VendorId;

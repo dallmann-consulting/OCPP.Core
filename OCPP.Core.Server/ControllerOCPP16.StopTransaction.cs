@@ -41,44 +41,67 @@ namespace OCPP.Core.Server
                 StopTransactionRequest stopTransactionRequest = JsonConvert.DeserializeObject<StopTransactionRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("StopTransaction => Message deserialized");
 
-                string idTag = stopTransactionRequest.IdTag;
+                string idTag = Utils.CleanChargeTagId(stopTransactionRequest.IdTag, Logger);
 
-                try
+                if (string.IsNullOrWhiteSpace(idTag))
                 {
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
-                    {
-                        stopTransactionResponse.IdTagInfo = new IdTagInfo();
+                    // no RFID-Tag => accept request
+                    stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
+                    Logger.LogInformation("StopTransaction => no charge tag => Status: {0}", stopTransactionResponse.IdTagInfo.Status);
+                }
+                else
+                {
+                    stopTransactionResponse.IdTagInfo = new IdTagInfo();
+                    stopTransactionResponse.IdTagInfo.ExpiryDate = Utils.MaxExpiryDate;
 
-                        ChargeTag ct = dbContext.Find<ChargeTag>(idTag);
-                        if (ct != null)
+                    try
+                    {
+                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
                         {
-                            stopTransactionResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.HasValue ? ct.ExpiryDate.Value : new DateTime(2999, 12, 31);
-                            stopTransactionResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
-                            if (ct.Blocked.HasValue && ct.Blocked.Value)
+                            ChargeTag ct = dbContext.Find<ChargeTag>(idTag);
+                            if (ct != null)
                             {
-                                stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
-                            }
-                            else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                            {
-                                stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
+                                if (ct.ExpiryDate.HasValue) stopTransactionResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
+                                stopTransactionResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
+                                if (ct.Blocked.HasValue && ct.Blocked.Value)
+                                {
+                                    stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
+                                }
+                                else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                                {
+                                    stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
+                                }
+                                else
+                                {
+                                    stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
+                                }
                             }
                             else
                             {
-                                stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
+                                stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
                             }
-                        }
-                        else
-                        {
-                            stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+
+                            Logger.LogInformation("StopTransaction => RFID-tag='{0}' => Status: {1}", idTag, stopTransactionResponse.IdTagInfo.Status);
                         }
 
-                        Logger.LogInformation("StopTransaction => Status: {0}", stopTransactionResponse.IdTagInfo.Status);
 
-                        try
+                    }
+                    catch (Exception exp)
+                    {
+                        Logger.LogError(exp, "StopTransaction => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
+                        stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                    }
+                }
+
+                if (stopTransactionResponse.IdTagInfo.Status == IdTagInfoStatus.Accepted)
+                {
+                    try
+                    {
+                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
                         {
                             Transaction transaction = dbContext.Find<Transaction>(stopTransactionRequest.TransactionId);
-                            if (transaction == null || 
-                                transaction.ChargePointId != ChargePointStatus.Id || 
+                            if (transaction == null ||
+                                transaction.ChargePointId != ChargePointStatus.Id ||
                                 transaction.StopTime.HasValue)
                             {
                                 // unknown transaction id or already stopped transaction
@@ -114,15 +137,15 @@ namespace OCPP.Core.Server
                                     ChargeTag startTag = dbContext.Find<ChargeTag>(transaction.StartTagId);
                                     if (startTag != null)
                                     {
-                                        if (!string.Equals(startTag.ParentTagId, ct?.ParentTagId, StringComparison.InvariantCultureIgnoreCase))
+                                        if (!string.Equals(startTag.ParentTagId, stopTransactionResponse.IdTagInfo.ParentIdTag, StringComparison.InvariantCultureIgnoreCase))
                                         {
-                                            Logger.LogInformation("StopTransaction => Start-Tag ('{0}') and End-Tag ('{1}') do not match: Invalid!", transaction.StartTagId, ct?.TagId);
+                                            Logger.LogInformation("StopTransaction => Start-Tag ('{0}') and End-Tag ('{1}') do not match: Invalid!", transaction.StartTagId, idTag);
                                             stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
                                             valid = false;
                                         }
                                         else
                                         {
-                                            Logger.LogInformation("StopTransaction => Different RFID-Tags but matching group ('{0}')", ct?.ParentTagId);
+                                            Logger.LogInformation("StopTransaction => Different RFID-Tags but matching group ('{0}')", stopTransactionResponse.IdTagInfo.ParentIdTag);
                                         }
                                     }
                                     else
@@ -135,7 +158,7 @@ namespace OCPP.Core.Server
                                 if (valid)
                                 {
                                     transaction.StopTagId = idTag;
-                                    transaction.MeterStop = stopTransactionRequest.MeterStop;
+                                    transaction.MeterStop =  (double)stopTransactionRequest.MeterStop / 1000; // Meter value here is always Wh
                                     transaction.StopReason = stopTransactionRequest.Reason.ToString();
                                     transaction.StopTime = stopTransactionRequest.Timestamp.UtcDateTime;
                                     dbContext.SaveChanges();
@@ -148,17 +171,12 @@ namespace OCPP.Core.Server
                                 errorCode = ErrorCodes.PropertyConstraintViolation;
                             }
                         }
-                        catch (Exception exp)
-                        {
-                            Logger.LogError(exp, "StopTransaction => Exception writing transaction: chargepoint={0} / tag={1}", ChargePointStatus?.Id, idTag);
-                            errorCode = ErrorCodes.InternalError;
-                        }
                     }
-                }
-                catch (Exception exp)
-                {
-                    Logger.LogError(exp, "StopTransaction => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
-                    stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                    catch (Exception exp)
+                    {
+                        Logger.LogError(exp, "StopTransaction => Exception writing transaction: chargepoint={0} / tag={1}", ChargePointStatus?.Id, idTag);
+                        errorCode = ErrorCodes.InternalError;
+                    }
                 }
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(stopTransactionResponse);

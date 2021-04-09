@@ -43,65 +43,82 @@ namespace OCPP.Core.Server
                 StartTransactionRequest startTransactionRequest = JsonConvert.DeserializeObject<StartTransactionRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("StartTransaction => Message deserialized");
 
-                string idTag = startTransactionRequest.IdTag;
+                string idTag = Utils.CleanChargeTagId(startTransactionRequest.IdTag, Logger);
                 connectorId = startTransactionRequest.ConnectorId;
 
                 startTransactionResponse.IdTagInfo.ParentIdTag = string.Empty;
-                startTransactionResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow;
-                try
+                startTransactionResponse.IdTagInfo.ExpiryDate = Utils.MaxExpiryDate;
+
+                if (string.IsNullOrWhiteSpace(idTag))
                 {
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                    // no RFID-Tag => accept request
+                    startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
+                    Logger.LogInformation("StartTransaction => no charge tag => Status: {0}", startTransactionResponse.IdTagInfo.Status);
+                }
+                else
+                {
+                    try
                     {
-                        ChargeTag ct = dbContext.Find<ChargeTag>(idTag);
-                        if (ct != null)
+                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
                         {
-                            startTransactionResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.HasValue ? ct.ExpiryDate.Value : new DateTime(2999, 12, 31);
-                            startTransactionResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
-                            if (ct.Blocked.HasValue && ct.Blocked.Value)
+                            ChargeTag ct = dbContext.Find<ChargeTag>(idTag);
+                            if (ct != null)
                             {
-                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
-                            }
-                            else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                            {
-                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
+                                if (ct.ExpiryDate.HasValue) startTransactionResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
+                                startTransactionResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
+                                if (ct.Blocked.HasValue && ct.Blocked.Value)
+                                {
+                                    startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
+                                }
+                                else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                                {
+                                    startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
+                                }
+                                else
+                                {
+                                    startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
+                                }
                             }
                             else
                             {
-                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
+                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
                             }
-                        }
-                        else
-                        {
-                            startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                        }
 
-                        Logger.LogInformation("StartTransaction => Status: {0}", startTransactionResponse.IdTagInfo.Status);
+                            Logger.LogInformation("StartTransaction => Charge tag='{0}' => Status: {1}", idTag, startTransactionResponse.IdTagInfo.Status);
+                        }
+                    }
+                    catch (Exception exp)
+                    {
+                        Logger.LogError(exp, "StartTransaction => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
+                        startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                    }
+                }
 
-                        try
+                if (startTransactionResponse.IdTagInfo.Status == IdTagInfoStatus.Accepted)
+                {
+                    try
+                    {
+                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
                         {
                             Transaction transaction = new Transaction();
                             transaction.ChargePointId = ChargePointStatus?.Id;
                             transaction.ConnectorId = startTransactionRequest.ConnectorId;
                             transaction.StartTagId = idTag;
                             transaction.StartTime = startTransactionRequest.Timestamp.UtcDateTime;
-                            transaction.MeterStart = startTransactionRequest.MeterStart;
+                            transaction.MeterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh
                             transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();
                             dbContext.Add<Transaction>(transaction);
-
                             dbContext.SaveChanges();
+
+                            // Return DB-ID as transaction ID
                             startTransactionResponse.TransactionId = transaction.TransactionId;
                         }
-                        catch (Exception exp)
-                        {
-                            Logger.LogError(exp, "StartTransaction => Exception writing transaction: chargepoint={0} / tag={1}", ChargePointStatus?.Id, idTag);
-                            errorCode = ErrorCodes.InternalError;
-                        }
                     }
-                }
-                catch (Exception exp)
-                {
-                    Logger.LogError(exp, "StartTransaction => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
-                    startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                    catch (Exception exp)
+                    {
+                        Logger.LogError(exp, "StartTransaction => Exception writing transaction: chargepoint={0} / tag={1}", ChargePointStatus?.Id, idTag);
+                        errorCode = ErrorCodes.InternalError;
+                    }
                 }
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(startTransactionResponse);

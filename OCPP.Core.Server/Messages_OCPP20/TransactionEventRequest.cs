@@ -57,62 +57,65 @@ namespace OCPP.Core.Server.Messages_OCPP20
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.3.1.0 (Newtonsoft.Json v9.0.0.0)")]
     public enum ReasonEnumType
     {
+        [System.Runtime.Serialization.EnumMember(Value = @"")]
+        Missing,
+
         [System.Runtime.Serialization.EnumMember(Value = @"DeAuthorized")]
-        DeAuthorized = 0,
+        DeAuthorized,
 
         [System.Runtime.Serialization.EnumMember(Value = @"EmergencyStop")]
-        EmergencyStop = 1,
+        EmergencyStop,
 
         [System.Runtime.Serialization.EnumMember(Value = @"EnergyLimitReached")]
-        EnergyLimitReached = 2,
+        EnergyLimitReached,
 
         [System.Runtime.Serialization.EnumMember(Value = @"EVDisconnected")]
-        EVDisconnected = 3,
+        EVDisconnected,
 
         [System.Runtime.Serialization.EnumMember(Value = @"GroundFault")]
-        GroundFault = 4,
+        GroundFault,
 
         [System.Runtime.Serialization.EnumMember(Value = @"ImmediateReset")]
-        ImmediateReset = 5,
+        ImmediateReset,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Local")]
-        Local = 6,
+        Local,
 
         [System.Runtime.Serialization.EnumMember(Value = @"LocalOutOfCredit")]
-        LocalOutOfCredit = 7,
+        LocalOutOfCredit,
 
         [System.Runtime.Serialization.EnumMember(Value = @"MasterPass")]
-        MasterPass = 8,
+        MasterPass,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Other")]
-        Other = 9,
+        Other,
 
         [System.Runtime.Serialization.EnumMember(Value = @"OvercurrentFault")]
-        OvercurrentFault = 10,
+        OvercurrentFault,
 
         [System.Runtime.Serialization.EnumMember(Value = @"PowerLoss")]
-        PowerLoss = 11,
+        PowerLoss,
 
         [System.Runtime.Serialization.EnumMember(Value = @"PowerQuality")]
-        PowerQuality = 12,
+        PowerQuality,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Reboot")]
-        Reboot = 13,
+        Reboot,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Remote")]
-        Remote = 14,
+        Remote,
 
         [System.Runtime.Serialization.EnumMember(Value = @"SOCLimitReached")]
-        SOCLimitReached = 15,
+        SOCLimitReached,
 
         [System.Runtime.Serialization.EnumMember(Value = @"StoppedByEV")]
-        StoppedByEV = 16,
+        StoppedByEV,
 
         [System.Runtime.Serialization.EnumMember(Value = @"TimeLimitReached")]
-        TimeLimitReached = 17,
+        TimeLimitReached,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Timeout")]
-        Timeout = 18,
+        Timeout
     }
 
     /// <summary>This contains the type of this event.
@@ -311,9 +314,8 @@ namespace OCPP.Core.Server.Messages_OCPP20
         [Newtonsoft.Json.JsonProperty("reservationId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public int ReservationId { get; set; }
 
-        // Simulator does not send TransactionInfo
-        //[Newtonsoft.Json.JsonProperty("transactionInfo", Required = Newtonsoft.Json.Required.Always)]
-        //[System.ComponentModel.DataAnnotations.Required]
+        [Newtonsoft.Json.JsonProperty("transactionInfo", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required]
         public TransactionType TransactionInfo { get; set; } = new TransactionType();
 
         [Newtonsoft.Json.JsonProperty("evse", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]

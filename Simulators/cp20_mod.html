@@ -606,7 +606,7 @@
 
 			}
 
-			function startTransaction(charge_state = "EVDetected") {
+			function startTransaction(charge_state = "EVConnected") {
 				sessionStorage.setItem('LastAction', "startTransaction");
 				$('.indicator').hide();
 				$('#green').show();
@@ -626,8 +626,8 @@
 						"id": 2,
 						"connectorId": 2
 					},
-					"transactionData": {
-						"id": lastTranId,
+					"transactionInfo": {
+						"transactionId": lastTranId,
 						"remoteStartId": 0,
 						"chargingState": charge_state
 					},
@@ -641,7 +641,7 @@
 				_websocket.send(strtT);
 			}
 
-			function updateTransaction(charger_state = "EVDetected") {
+			function updateTransaction(charger_state = "EVConnected") {
 				sessionStorage.setItem('LastAction', "updateTransaction");
 				var updTrns = JSON.stringify([2, id, "TransactionEvent", {
 					"eventType": "Updated",
@@ -656,8 +656,8 @@
 						"id": 2,
 						"connectorId": 2
 					},
-					"transactionData": {
-						"id": lastTranId,
+					"transactionInfo": {
+						"transactionId": lastTranId,
 						"remoteStartId": 0,
 						"chargingState": charger_state
 					},
@@ -700,8 +700,8 @@
 						"id": 2,
 						"connectorId": 2
 					},
-					"transactionData": {
-						"id": lastTranId,
+					"transactionInfo": {
+						"transactionId": lastTranId,
 						"remoteStartId": 0
 					},
 					"meterValue": [{

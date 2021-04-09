@@ -58,80 +58,83 @@ namespace OCPP.Core.Server.Messages_OCPP20
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.3.1.0 (Newtonsoft.Json v9.0.0.0)")]
     public enum MeasurandEnumType
     {
+        [System.Runtime.Serialization.EnumMember(Value = @"")]
+        Missing,
+
         [System.Runtime.Serialization.EnumMember(Value = @"Current.Export")]
-        Current_Export = 0,
+        Current_Export,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Current.Import")]
-        Current_Import = 1,
+        Current_Import,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Current.Offered")]
-        Current_Offered = 2,
+        Current_Offered,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Active.Export.Register")]
-        Energy_Active_Export_Register = 3,
+        Energy_Active_Export_Register,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Active.Import.Register")]
-        Energy_Active_Import_Register = 4,
+        Energy_Active_Import_Register,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Reactive.Export.Register")]
-        Energy_Reactive_Export_Register = 5,
+        Energy_Reactive_Export_Register,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Reactive.Import.Register")]
-        Energy_Reactive_Import_Register = 6,
+        Energy_Reactive_Import_Register,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Active.Export.Interval")]
-        Energy_Active_Export_Interval = 7,
+        Energy_Active_Export_Interval,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Active.Import.Interval")]
-        Energy_Active_Import_Interval = 8,
+        Energy_Active_Import_Interval,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Active.Net")]
-        Energy_Active_Net = 9,
+        Energy_Active_Net,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Reactive.Export.Interval")]
-        Energy_Reactive_Export_Interval = 10,
+        Energy_Reactive_Export_Interval,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Reactive.Import.Interval")]
-        Energy_Reactive_Import_Interval = 11,
+        Energy_Reactive_Import_Interval,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Reactive.Net")]
-        Energy_Reactive_Net = 12,
+        Energy_Reactive_Net,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Apparent.Net")]
-        Energy_Apparent_Net = 13,
+        Energy_Apparent_Net,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Apparent.Import")]
-        Energy_Apparent_Import = 14,
+        Energy_Apparent_Import,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Energy.Apparent.Export")]
-        Energy_Apparent_Export = 15,
+        Energy_Apparent_Export,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Frequency")]
-        Frequency = 16,
+        Frequency,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Power.Active.Export")]
-        Power_Active_Export = 17,
+        Power_Active_Export,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Power.Active.Import")]
         Power_Active_Import = 18,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Power.Factor")]
-        Power_Factor = 19,
+        Power_Factor,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Power.Offered")]
-        Power_Offered = 20,
+        Power_Offered,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Power.Reactive.Export")]
-        Power_Reactive_Export = 21,
+        Power_Reactive_Export,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Power.Reactive.Import")]
-        Power_Reactive_Import = 22,
+        Power_Reactive_Import,
 
         [System.Runtime.Serialization.EnumMember(Value = @"SoC")]
-        SoC = 23,
+        SoC,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Voltage")]
-        Voltage = 24,
+        Voltage
 
     }
 

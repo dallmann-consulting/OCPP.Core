@@ -19,8 +19,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
@@ -41,7 +39,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("Processing authorize request...");
                 AuthorizeRequest authorizeRequest = JsonConvert.DeserializeObject<AuthorizeRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("Authorize => Message deserialized");
-                idTag = authorizeRequest.IdTag;
+                idTag = Utils.CleanChargeTagId(authorizeRequest.IdTag, Logger);
 
                 authorizeResponse.IdTagInfo.ParentIdTag = string.Empty;
                 authorizeResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow.AddMinutes(5);   // default: 5 minutes
