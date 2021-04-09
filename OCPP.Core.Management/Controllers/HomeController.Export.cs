@@ -168,7 +168,7 @@ namespace OCPP.Core.Management.Controllers
                     }
 
                     csv.AppendLine();
-                    csv.Append(EscapeCsvValue(t.ChargePointId));
+                    csv.Append(EscapeCsvValue(tlvm.CurrentChargePointName));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(t.ConnectorId.ToString()));
                     csv.Append(CSV_Seperator);

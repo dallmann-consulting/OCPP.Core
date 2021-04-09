@@ -116,7 +116,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         Power_Active_Export,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Power.Active.Import")]
-        Power_Active_Import = 18,
+        Power_Active_Import,
 
         [System.Runtime.Serialization.EnumMember(Value = @"Power.Factor")]
         Power_Factor,

@@ -97,7 +97,7 @@
                         stopTag = Model.ChargeTags[t.StopTagId]?.TagName;
                     }
                     <tr>
-                        <td>@t.ChargePointId</td>
+                        <td>@Model.CurrentChargePointName</td>
                         <td>@t.ConnectorId</td>
                         <td>@string.Format("{0} {1}", t.StartTime.ToLocalTime().ToShortDateString(), t.StartTime.ToLocalTime().ToShortTimeString())</td>
                         <td>@startTag</td>
