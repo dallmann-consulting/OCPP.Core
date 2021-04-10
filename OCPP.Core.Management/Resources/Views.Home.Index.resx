@@ -121,7 +121,7 @@
     <value>Available</value>
   </data>
   <data name="ChargekWh" xml:space="preserve">
-    <value>{0:0.00} kWh</value>
+    <value>{0:0.0##} kWh</value>
   </data>
   <data name="ChargePointOffline" xml:space="preserve">
     <value>Charge station is offline</value>

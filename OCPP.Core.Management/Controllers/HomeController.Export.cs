@@ -176,15 +176,15 @@ namespace OCPP.Core.Management.Controllers
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(startTag));
                     csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(t.MeterStart.ToString()));
+                    csv.Append(EscapeCsvValue(string.Format("{0:0.0##}", t.MeterStart)));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(((t.StopTime != null) ? t.StopTime.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(stopTag));
                     csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(((t.MeterStop != null) ? t.MeterStop.ToString() : string.Empty)));
+                    csv.Append(EscapeCsvValue(((t.MeterStop != null) ? string.Format("{0:0.0##}", t.MeterStop) : string.Empty)));
                     csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(((t.MeterStop != null) ? (t.MeterStop - t.MeterStart).ToString() : string.Empty)));
+                    csv.Append(EscapeCsvValue(((t.MeterStop != null) ? string.Format("{0:0.0##}", (t.MeterStop - t.MeterStart)) : string.Empty)));
                 }
             }
 
