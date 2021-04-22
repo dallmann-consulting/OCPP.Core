@@ -52,33 +52,55 @@ namespace OCPP.Core.Server
                 // Write raw status in DB
                 msgWritten = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Status={0}", statusNotificationRequest.ConnectorStatus), string.Empty);
 
-                ConnectorStatus newStatus = ConnectorStatus.Undefined;
+                ConnectorStatusEnum newStatus = ConnectorStatusEnum.Undefined;
 
                 switch (statusNotificationRequest.ConnectorStatus)
                 {
                     case ConnectorStatusEnumType.Available:
-                        newStatus = ConnectorStatus.Available;
+                        newStatus = ConnectorStatusEnum.Available;
                         break;
                     case ConnectorStatusEnumType.Occupied:
                     case ConnectorStatusEnumType.Reserved:
-                        newStatus = ConnectorStatus.Occupied;
+                        newStatus = ConnectorStatusEnum.Occupied;
                         break;
                     case ConnectorStatusEnumType.Unavailable:
-                        newStatus = ConnectorStatus.Unavailable;
+                        newStatus = ConnectorStatusEnum.Unavailable;
                         break;
                     case ConnectorStatusEnumType.Faulted:
-                        newStatus = ConnectorStatus.Faulted;
+                        newStatus = ConnectorStatusEnum.Faulted;
                         break;
                 }
                 Logger.LogInformation("StatusNotification => ChargePoint={0} / Connector={1} / newStatus={2}", ChargePointStatus?.Id, connectorId, newStatus.ToString());
 
-                if (connectorId <= 1)
+                if (connectorId > 0)
                 {
-                    ChargePointStatus.EVSE1Status = newStatus;
+                    if (UpdateConnectorStatus(connectorId, newStatus.ToString(), statusNotificationRequest.Timestamp, null, null) == false)
+                    {
+                        errorCode = ErrorCodes.InternalError;
+                    }
+
+                    if (ChargePointStatus.OnlineConnectors.ContainsKey(connectorId))
+                    {
+                        OnlineConnectorStatus ocs = ChargePointStatus.OnlineConnectors[connectorId];
+                        ocs.Status = newStatus;
+                    }
+                    else
+                    {
+                        OnlineConnectorStatus ocs = new OnlineConnectorStatus();
+                        ocs.Status = newStatus;
+                        if (ChargePointStatus.OnlineConnectors.TryAdd(connectorId, ocs))
+                        {
+                            Logger.LogTrace("StatusNotification => new OnlineConnectorStatus with values: ChargePoint={0} / Connector={1} / newStatus={2}", ChargePointStatus?.Id, connectorId, newStatus.ToString());
+                        }
+                        else
+                        {
+                            Logger.LogError("StatusNotification => Error adding new OnlineConnectorStatus for ChargePoint={0} / Connector={1}", ChargePointStatus?.Id, connectorId);
+                        }
+                    }
                 }
-                else if (connectorId == 2)
+                else
                 {
-                    ChargePointStatus.EVSE2Status = newStatus;
+                    Logger.LogWarning("StatusNotification => Status for unexpected ConnectorId={1} on ChargePoint={0}", ChargePointStatus?.Id, connectorId);
                 }
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(statusNotificationResponse);

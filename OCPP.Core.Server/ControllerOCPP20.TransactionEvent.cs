@@ -46,8 +46,21 @@ namespace OCPP.Core.Server
                 TransactionEventRequest transactionEventRequest = JsonConvert.DeserializeObject<TransactionEventRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("TransactionEvent => Message deserialized");
 
-                string idTag = Utils.CleanChargeTagId(transactionEventRequest.IdToken?.IdToken, Logger);
+                string idTag = CleanChargeTagId(transactionEventRequest.IdToken?.IdToken, Logger);
                 connectorId = (transactionEventRequest.Evse != null) ? transactionEventRequest.Evse.ConnectorId : 0;
+
+
+                //  Extract meter values with correct scale
+                double currentChargeKW = -1;
+                double meterKWH = -1;
+                DateTimeOffset? meterTime = null;
+                double stateOfCharge = -1;
+                GetMeterValues(transactionEventRequest.MeterValue, out meterKWH, out currentChargeKW, out stateOfCharge, out meterTime);
+
+                if (connectorId > 0 && meterKWH >= 0)
+                {
+                    UpdateConnectorStatus(connectorId, null, null, meterKWH, meterTime);
+                }
 
                 if (transactionEventRequest.EventType == TransactionEventEnumType.Started)
                 {
@@ -92,9 +105,10 @@ namespace OCPP.Core.Server
 
                             if (transactionEventResponse.IdTokenInfo.Status == AuthorizationStatusEnumType.Accepted)
                             {
+                                UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), meterTime, null, null);
+
                                 try
                                 {
-                                    double meterKWH = GetMeterValue(transactionEventRequest.MeterValue);
                                     Logger.LogInformation("StartTransaction => Meter='{0}' (kWh)", meterKWH);
 
                                     Transaction transaction = new Transaction();
@@ -166,11 +180,9 @@ namespace OCPP.Core.Server
                             if (transaction != null)
                             {
                                 // write current meter value in "stop" value
-                                double meterKWH = GetMeterValue(transactionEventRequest.MeterValue);
-                                Logger.LogInformation("UpdateTransaction => Meter='{0}' (kWh)", meterKWH);
-
                                 if (meterKWH >= 0)
                                 {
+                                    Logger.LogInformation("UpdateTransaction => Meter='{0}' (kWh)", meterKWH);
                                     transaction.MeterStop = meterKWH;
                                     dbContext.SaveChanges();
                                 }
@@ -296,7 +308,6 @@ namespace OCPP.Core.Server
                                 if (valid)
                                 {
                                     // write current meter value in "stop" value
-                                    double meterKWH = GetMeterValue(transactionEventRequest.MeterValue);
                                     Logger.LogInformation("EndTransaction => Meter='{0}' (kWh)", meterKWH);
 
                                     transaction.StopTime = transactionEventRequest.Timestamp.UtcDateTime;
@@ -343,8 +354,9 @@ namespace OCPP.Core.Server
         {
             double currentChargeKW = -1;
             double meterKWH = -1;
+            DateTimeOffset? meterTime = null;
             double stateOfCharge = -1;
-            GetMeterValues(meterValues, out meterKWH, out currentChargeKW, out stateOfCharge);
+            GetMeterValues(meterValues, out meterKWH, out currentChargeKW, out stateOfCharge, out meterTime);
 
             return meterKWH;
         }
@@ -352,10 +364,11 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Extract different meter values from collection
         /// </summary>
-        private void GetMeterValues(ICollection<MeterValueType> meterValues, out double meterKWH, out double currentChargeKW, out double stateOfCharge)
+        private void GetMeterValues(ICollection<MeterValueType> meterValues, out double meterKWH, out double currentChargeKW, out double stateOfCharge, out DateTimeOffset? meterTime)
         {
             currentChargeKW = -1;
             meterKWH = -1;
+            meterTime = null;
             stateOfCharge = -1;
 
             foreach (MeterValueType meterValue in meterValues)
@@ -416,6 +429,7 @@ namespace OCPP.Core.Server
                         {
                             Logger.LogWarning("GetMeterValues => Value: unexpected unit: '{0}' (Value={1})", sampleValue.UnitOfMeasure?.Unit, sampleValue.Value);
                         }
+                        meterTime = meterValue.Timestamp;
                     }
                     else if (sampleValue.Measurand == MeasurandEnumType.SoC)
                     {

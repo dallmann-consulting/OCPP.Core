@@ -25,17 +25,17 @@
             string cpTitle = Localizer["Available"].Value;
             switch (cpvm.ConnectorStatus)
             {
-                case ConnectorStatus.Occupied:
+                case ConnectorStatusEnum.Occupied:
                     cpIcon = "fa-bolt"; //"fa-car";
                     cpColor = "errorColor";
                     cpTitle = Localizer["Charging"].Value;
                     break;
-                case ConnectorStatus.Faulted:
+                case ConnectorStatusEnum.Faulted:
                     cpIcon = "fa-times-circle";
                     cpColor = "errorColor";
                     cpTitle = Localizer["Faulted"].Value;
                     break;
-                case ConnectorStatus.Unavailable:
+                case ConnectorStatusEnum.Unavailable:
                     cpIcon = "fa-ban";
                     cpColor = "unavailableColor";
                     cpTitle = Localizer["Unavailable"].Value;
@@ -43,7 +43,7 @@
             }
 
             <div class="card border-secondary" style="max-width: 18rem;">
-                <a href="~/Home/Transactions/@Uri.EscapeDataString(cpvm.ChargePointId)" class="text-decoration-none">
+                <a href="~/Home/Transactions/@Uri.EscapeDataString(cpvm.ChargePointId)/@cpvm.ConnectorId" class="text-decoration-none">
                     <div class="card-header @cpColor">
                         <i class="fas @cpIcon fa-2x"></i> @chargePointName
                     </div>

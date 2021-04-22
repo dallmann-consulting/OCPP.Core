@@ -35,7 +35,7 @@ namespace OCPP.Core.Server
             string errorCode = null;
             StartTransactionResponse startTransactionResponse = new StartTransactionResponse();
 
-            int? connectorId = null;
+            int connectorId = -1;
 
             try
             {
@@ -43,11 +43,11 @@ namespace OCPP.Core.Server
                 StartTransactionRequest startTransactionRequest = JsonConvert.DeserializeObject<StartTransactionRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("StartTransaction => Message deserialized");
 
-                string idTag = Utils.CleanChargeTagId(startTransactionRequest.IdTag, Logger);
+                string idTag = CleanChargeTagId(startTransactionRequest.IdTag, Logger);
                 connectorId = startTransactionRequest.ConnectorId;
 
                 startTransactionResponse.IdTagInfo.ParentIdTag = string.Empty;
-                startTransactionResponse.IdTagInfo.ExpiryDate = Utils.MaxExpiryDate;
+                startTransactionResponse.IdTagInfo.ExpiryDate = MaxExpiryDate;
 
                 if (string.IsNullOrWhiteSpace(idTag))
                 {
@@ -92,6 +92,12 @@ namespace OCPP.Core.Server
                         Logger.LogError(exp, "StartTransaction => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
                         startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
                     }
+                }
+
+                if (connectorId > 0)
+                {
+                    // Update meter value in db connector status 
+                    UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), startTransactionRequest.Timestamp, (double)startTransactionRequest.MeterStart / 1000, startTransactionRequest.Timestamp);
                 }
 
                 if (startTransactionResponse.IdTagInfo.Status == IdTagInfoStatus.Accepted)

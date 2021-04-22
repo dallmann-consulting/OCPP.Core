@@ -38,13 +38,17 @@ namespace OCPP.Core.Management.Controllers
         const char CSV_Seperator = ';';
 
         [Authorize]
-        public IActionResult Export(string Id)
+        public IActionResult Export(string Id, string ConnectorId)
         {
             Logger.LogTrace("Export: Loading charge point transactions...");
 
+            int currentConnectorId = -1;
+            int.TryParse(ConnectorId, out currentConnectorId);
+
             TransactionListViewModel tlvm = new TransactionListViewModel();
             tlvm.CurrentChargePointId = Id;
-            tlvm.ChargePoints = new List<ChargePoint>();
+            tlvm.CurrentConnectorId = currentConnectorId;
+            tlvm.ConnectorStatuses = new List<ConnectorStatus>();
             tlvm.Transactions = new List<Transaction>();
 
             try
@@ -73,16 +77,17 @@ namespace OCPP.Core.Management.Controllers
                 using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
                 {
                     Logger.LogTrace("Export: Loading charge points...");
-                    tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
+                    tlvm.ConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
 
-                    foreach(ChargePoint cp in tlvm.ChargePoints)
+                    // search selected charge point and connector
+                    foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
                     {
-                        if (cp.ChargePointId == Id)
+                        if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
                         {
-                            tlvm.CurrentChargePointName = cp.Name;
-                            if (string.IsNullOrEmpty(tlvm.CurrentChargePointName))
+                            tlvm.CurrentConnectorName = cs.ConnectorName;
+                            if (string.IsNullOrEmpty(tlvm.CurrentConnectorName))
                             {
-                                tlvm.CurrentChargePointName = Id;
+                                tlvm.CurrentConnectorName = $"{Id}:{cs.ConnectorId}";
                             }
                             break;
                         }
@@ -90,7 +95,6 @@ namespace OCPP.Core.Management.Controllers
 
                     // load charge tags for name resolution
                     Logger.LogTrace("Export: Loading charge tags...");
-                    tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
                     List<ChargeTag> chargeTags = dbContext.ChargeTags.ToList<ChargeTag>();
                     tlvm.ChargeTags = new Dictionary<string, ChargeTag>();
                     if (chargeTags != null)
@@ -105,18 +109,20 @@ namespace OCPP.Core.Management.Controllers
                     {
                         Logger.LogTrace("Export: Loading charge point transactions...");
                         tlvm.Transactions = dbContext.Transactions
-                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId && t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
+                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
+                                                        t.ConnectorId == tlvm.CurrentConnectorId &&
+                                                        t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
                                             .OrderByDescending(t => t.TransactionId)
                                             .ToList<Transaction>();
                     }
 
-                    StringBuilder chargepointName = new StringBuilder(tlvm.CurrentChargePointName);
+                    StringBuilder connectorName = new StringBuilder(tlvm.CurrentConnectorName);
                     foreach (char c in Path.GetInvalidFileNameChars())
                     {
-                        chargepointName.Replace(c, '_');
+                        connectorName.Replace(c, '_');
                     }
 
-                    string filename = string.Format("Transactions_{0}.csv", chargepointName);
+                    string filename = string.Format("Transactions_{0}.csv", connectorName);
                     string csv = CreateCsv(tlvm);
                     Logger.LogInformation("Export: File => {0} Chars / Name '{1}'", csv.Length, filename);
 
@@ -134,8 +140,6 @@ namespace OCPP.Core.Management.Controllers
         private string CreateCsv(TransactionListViewModel tlvm)
         {
             StringBuilder csv = new StringBuilder(8192);
-            csv.Append(EscapeCsvValue(_localizer["ChargePointId"]));
-            csv.Append(CSV_Seperator);
             csv.Append(EscapeCsvValue(_localizer["Connector"]));
             csv.Append(CSV_Seperator);
             csv.Append(EscapeCsvValue(_localizer["StartTime"]));
@@ -168,9 +172,7 @@ namespace OCPP.Core.Management.Controllers
                     }
 
                     csv.AppendLine();
-                    csv.Append(EscapeCsvValue(tlvm.CurrentChargePointName));
-                    csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(t.ConnectorId.ToString()));
+                    csv.Append(EscapeCsvValue(tlvm.CurrentConnectorName));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(t.StartTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
                     csv.Append(CSV_Seperator);

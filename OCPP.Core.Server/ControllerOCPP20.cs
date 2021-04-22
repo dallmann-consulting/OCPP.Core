@@ -27,43 +27,17 @@ using OCPP.Core.Server.Messages_OCPP20;
 
 namespace OCPP.Core.Server
 {
-    public partial class ControllerOCPP20
+    public partial class ControllerOCPP20 : ControllerBase
     {
-        //protected const string SimpleTimeStampFormat = "yyyy.MM.ddTHH:mm:ss";
-
         public const string VendorId = "dallmann consulting GmbH";
-
-        /// <summary>
-        /// Configuration context for reading app settings
-        /// </summary>
-        private IConfiguration Configuration { get; set; }
-
-        /// <summary>
-        /// Chargepoint
-        /// </summary>
-        private ChargePointStatus ChargePointStatus { get; set; }
-
-        /// <summary>
-        /// ILogger object
-        /// </summary>
-        private ILogger Logger { get; set; }
 
         /// <summary>
         /// Constructor
         /// </summary>
-        public ControllerOCPP20(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus)
+        public ControllerOCPP20(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus) :
+            base(config, loggerFactory, chargePointStatus)
         {
-            Configuration = config;
             Logger = loggerFactory.CreateLogger(typeof(ControllerOCPP20));
-
-            if (chargePointStatus != null)
-            {
-                ChargePointStatus = chargePointStatus;
-            }
-            else
-            {
-                Logger.LogError("New ControllerOCPP20 => empty chargepoint status");
-            }
         }
 
         /// <summary>

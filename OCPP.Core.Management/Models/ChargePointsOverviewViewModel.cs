@@ -32,6 +32,11 @@ namespace OCPP.Core.Management.Models
         public string ChargePointId { get; set; }
 
         /// <summary>
+        /// Connector-ID
+        /// </summary>
+        public int ConnectorId { get; set; }
+
+        /// <summary>
         /// Name of this chargepoint
         /// </summary>
         public string Name { get; set; }
@@ -64,7 +69,7 @@ namespace OCPP.Core.Management.Models
         /// <summary>
         /// Status of chargepoint
         /// </summary>
-        public ConnectorStatus ConnectorStatus { get; set; }
+        public ConnectorStatusEnum ConnectorStatus { get; set; }
 
         /// <summary>
         /// Is this chargepoint currently connected to OCPP.Server?

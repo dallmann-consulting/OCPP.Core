@@ -18,6 +18,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Net.WebSockets;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
@@ -29,6 +30,8 @@ namespace OCPP.Core.Server
     /// </summary>
     public class ChargePointStatus
     {
+        private Dictionary<int, OnlineConnectorStatus> _onlineConnectors;
+
         public ChargePointStatus()
         {
         }
@@ -58,24 +61,23 @@ namespace OCPP.Core.Server
         public string Protocol { get; set; }
 
         /// <summary>
-        /// Status of first (or only) charge connector
+        /// Dictionary with online connectors
         /// </summary>
-        public ConnectorStatus EVSE1Status { get; set; }
-
-        /// <summary>
-        /// Status of second  charge connector (currently not used)
-        /// </summary>
-        public ConnectorStatus EVSE2Status { get; set; }
-
-        /// <summary>
-        /// Details about current charge porcess (if charging)
-        /// </summary>
-        public ChargingData ChargingDataEVSE1 { get; set; }
-
-        /// <summary>
-        /// Details about current charge porcess (if charging)
-        /// </summary>
-        public ChargingData ChargingDataEVSE2 { get; set; }
+        public Dictionary<int, OnlineConnectorStatus> OnlineConnectors
+        {
+            get
+            {
+                if (_onlineConnectors == null)
+                {
+                    _onlineConnectors = new Dictionary<int, OnlineConnectorStatus>();
+                }
+                return _onlineConnectors;
+            }
+            set
+            {
+                _onlineConnectors = value;
+            }
+        }
 
         /// <summary>
         /// WebSocket for internal processing
@@ -85,10 +87,15 @@ namespace OCPP.Core.Server
     }
 
     /// <summary>
-    /// Encapsulates details about a charging process
+    /// Encapsulates details about online charge point connectors
     /// </summary>
-    public class ChargingData
+    public class OnlineConnectorStatus
     {
+        /// <summary>
+        /// Status of charge connector
+        /// </summary>
+        public ConnectorStatusEnum Status { get; set; }
+
         /// <summary>
         /// Current charge rate in kW
         /// </summary>
@@ -105,7 +112,7 @@ namespace OCPP.Core.Server
         public double? SoC { get; set; }
     }
 
-    public enum ConnectorStatus
+    public enum ConnectorStatusEnum
     {
         [System.Runtime.Serialization.EnumMember(Value = @"")]
         Undefined = 0,

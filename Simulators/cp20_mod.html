@@ -113,27 +113,26 @@
 
 			function formatDate(date) {
 
-				var day = String(date.getDate());
+				var day = String(date.getUTCDate());
 				if (day.length < 2) {
 					day = ('0' + day.slice(-2));
 				}
 
-				var monthIndex = String(date.getMonth() + 1);
+				var monthIndex = String(date.getUTCMonth() + 1);
 				if (monthIndex.length < 2) {
 					monthIndex = ('0' + monthIndex.slice(-2));
 				}
-				var year = date.getFullYear();
-				var h = date.getHours();
+				var year = date.getUTCFullYear();
+				var h = date.getUTCHours();
 				if (h < 3) {
 					h = 24 - h;
 				}
-				h = String(h - 1);
 				if (h.length < 2) {
 					h = ('0' + h.slice(-2));
 				}
-				var m = String(date.getMinutes());
+				var m = String(date.getUTCMinutes());
 
-				var s = String(date.getSeconds());
+				var s = String(date.getUTCSeconds());
 				if (m.length < 2) {
 					m = ('0' + m.slice(-2));
 				}

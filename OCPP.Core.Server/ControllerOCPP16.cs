@@ -28,41 +28,15 @@ using OCPP.Core.Server.Messages_OCPP16;
 
 namespace OCPP.Core.Server
 {
-    public partial class ControllerOCPP16
+    public partial class ControllerOCPP16 : ControllerBase
     {
-        //protected const string SimpleTimeStampFormat = "yyyy.MM.ddTHH:mm:ss";
-
-        /// <summary>
-        /// Configuration context for reading app settings
-        /// </summary>
-        private IConfiguration Configuration { get; set; }
-
-        /// <summary>
-        /// Chargepoint status
-        /// </summary>
-        private ChargePointStatus ChargePointStatus { get; set; }
-
-        /// <summary>
-        /// ILogger object
-        /// </summary>
-        private ILogger Logger { get; set; }
-
         /// <summary>
         /// Constructor
         /// </summary>
-        public ControllerOCPP16(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus)
+        public ControllerOCPP16(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus) :
+            base(config, loggerFactory, chargePointStatus)
         {
-            Configuration = config;
             Logger = loggerFactory.CreateLogger(typeof(ControllerOCPP16));
-
-            if (chargePointStatus != null)
-            {
-                ChargePointStatus = chargePointStatus;
-            }
-            else
-            {
-                Logger.LogError("New ControllerOCPP16 => empty chargepoint status");
-            }
         }
 
         /// <summary>

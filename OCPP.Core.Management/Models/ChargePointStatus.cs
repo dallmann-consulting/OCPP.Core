@@ -34,6 +34,7 @@ namespace OCPP.Core.Management.Models
     {
         public ChargePointStatus()
         {
+            OnlineConnectors = new Dictionary<int, OnlineConnectorStatus>();
         }
 
         /// <summary>
@@ -55,31 +56,21 @@ namespace OCPP.Core.Management.Models
         public string Protocol { get; set; }
 
         /// <summary>
-        /// Status of first (or only) charge connector
+        /// Dictionary with online connectors
         /// </summary>
-        public ConnectorStatus EVSE1Status { get; set; }
-
-        /// <summary>
-        /// Status of second  charge connector (currently not used)
-        /// </summary>
-        public ConnectorStatus EVSE2Status { get; set; }
-
-        /// <summary>
-        /// Details about current charge porcess (if charging)
-        /// </summary>
-        public ChargingData ChargingDataEVSE1 { get; set; }
-
-        /// <summary>
-        /// Details about current charge porcess (if charging)
-        /// </summary>
-        public ChargingData ChargingDataEVSE2 { get; set; }
+        public Dictionary<int, OnlineConnectorStatus> OnlineConnectors { get; set; }
     }
 
     /// <summary>
-    /// Encapsulates details about a charging process
+    /// Encapsulates details about online charge point connectors
     /// </summary>
-    public class ChargingData
+    public class OnlineConnectorStatus
     {
+        /// <summary>
+        /// Status of charge connector
+        /// </summary>
+        public ConnectorStatusEnum Status { get; set; }
+
         /// <summary>
         /// Current charge rate in kW
         /// </summary>
@@ -96,7 +87,7 @@ namespace OCPP.Core.Management.Models
         public double? SoC { get; set; }
     }
 
-    public enum ConnectorStatus
+    public enum ConnectorStatusEnum
     {
         [System.Runtime.Serialization.EnumMember(Value = @"")]
         Undefined = 0,

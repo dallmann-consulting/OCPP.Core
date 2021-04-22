@@ -34,13 +34,17 @@ namespace OCPP.Core.Management.Controllers
     public partial class HomeController : BaseController
     {
         [Authorize]
-        public IActionResult Transactions(string Id)
+        public IActionResult Transactions(string Id, string ConnectorId)
         {
             Logger.LogTrace("Transactions: Loading charge point transactions...");
 
+            int currentConnectorId = -1;
+            int.TryParse(ConnectorId, out currentConnectorId);
+
             TransactionListViewModel tlvm = new TransactionListViewModel();
             tlvm.CurrentChargePointId = Id;
-            tlvm.ChargePoints = new List<ChargePoint>();
+            tlvm.CurrentConnectorId = currentConnectorId;
+            tlvm.ConnectorStatuses = new List<ConnectorStatus>();
             tlvm.Transactions = new List<Transaction>();
 
             try
@@ -69,16 +73,16 @@ namespace OCPP.Core.Management.Controllers
                 using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
                 {
                     Logger.LogTrace("Transactions: Loading charge points...");
-                    tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
-                    // search selected charge point
-                    foreach (ChargePoint cp in tlvm.ChargePoints)
+                    tlvm.ConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
+                    // search selected charge point and connector
+                    foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
                     {
-                        if (cp.ChargePointId == Id)
+                        if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
                         {
-                            tlvm.CurrentChargePointName = cp.Name;
-                            if (string.IsNullOrEmpty(tlvm.CurrentChargePointName))
+                            tlvm.CurrentConnectorName = cs.ConnectorName;
+                            if (string.IsNullOrEmpty(tlvm.CurrentConnectorName))
                             {
-                                tlvm.CurrentChargePointName = Id;
+                                tlvm.CurrentConnectorName = $"{Id}:{cs.ConnectorId}";
                             }
                             break;
                         }
@@ -100,7 +104,9 @@ namespace OCPP.Core.Management.Controllers
                     {
                         Logger.LogTrace("Transactions: Loading charge point transactions...");
                         tlvm.Transactions = dbContext.Transactions
-                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId && t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
+                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
+                                                        t.ConnectorId == tlvm.CurrentConnectorId &&
+                                                        t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
                                             .OrderByDescending(t => t.TransactionId)
                                             .ToList<Transaction>();
                     }

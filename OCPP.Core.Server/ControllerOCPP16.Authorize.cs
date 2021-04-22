@@ -39,7 +39,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("Processing authorize request...");
                 AuthorizeRequest authorizeRequest = JsonConvert.DeserializeObject<AuthorizeRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("Authorize => Message deserialized");
-                idTag = Utils.CleanChargeTagId(authorizeRequest.IdTag, Logger);
+                idTag = CleanChargeTagId(authorizeRequest.IdTag, Logger);
 
                 authorizeResponse.IdTagInfo.ParentIdTag = string.Empty;
                 authorizeResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow.AddMinutes(5);   // default: 5 minutes

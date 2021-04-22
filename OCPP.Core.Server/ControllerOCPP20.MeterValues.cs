@@ -38,7 +38,7 @@ namespace OCPP.Core.Server
             meterValuesResponse.CustomData = new CustomDataType();
             meterValuesResponse.CustomData.VendorId = VendorId;
 
-            int? connectorId = null;
+            int connectorId = -1;
             string msgMeterValue = string.Empty;
 
             try
@@ -54,29 +54,45 @@ namespace OCPP.Core.Server
                     // Known charge station => extract meter values with correct scale
                     double currentChargeKW = -1;
                     double meterKWH = -1;
+                    DateTimeOffset? meterTime = null;
                     double stateOfCharge = -1;
-                    GetMeterValues(meterValueRequest.MeterValue, out meterKWH, out currentChargeKW, out stateOfCharge);
+                    GetMeterValues(meterValueRequest.MeterValue, out meterKWH, out currentChargeKW, out stateOfCharge, out meterTime);
 
                     // write charging/meter data in chargepoint status
-                    ChargingData chargingData = null;
-                    if (currentChargeKW >= 0 || meterKWH >= 0 || stateOfCharge >= 0)
+                    if (connectorId > 0)
                     {
-                        chargingData = new ChargingData();
-                        if (currentChargeKW >= 0) chargingData.ChargeRateKW = currentChargeKW;
-                        if (meterKWH >= 0) chargingData.MeterKWH = meterKWH;
-                        if (stateOfCharge >= 0) chargingData.SoC = stateOfCharge;
-
                         msgMeterValue = $"Meter (kWh): {meterKWH} | Charge (kW): {currentChargeKW} | SoC (%): {stateOfCharge}";
-                    }
-                    if (connectorId > 1)
-                    {
-                        // second connector (odr higher!?)
-                        ChargePointStatus.ChargingDataEVSE2 = chargingData;
-                    }
-                    else
-                    {
-                        // first connector
-                        ChargePointStatus.ChargingDataEVSE1 = chargingData;
+
+                        if (meterKWH >= 0)
+                        {
+                            UpdateConnectorStatus(connectorId, null, null, meterKWH, meterTime);
+                        }
+
+                        if (currentChargeKW >= 0 || meterKWH >= 0 || stateOfCharge >= 0)
+                        {
+                            if (ChargePointStatus.OnlineConnectors.ContainsKey(connectorId))
+                            {
+                                OnlineConnectorStatus ocs = ChargePointStatus.OnlineConnectors[connectorId];
+                                if (currentChargeKW >= 0) ocs.ChargeRateKW = currentChargeKW;
+                                if (meterKWH >= 0) ocs.MeterKWH = meterKWH;
+                                if (stateOfCharge >= 0) ocs.SoC = stateOfCharge;
+                            }
+                            else
+                            {
+                                OnlineConnectorStatus ocs = new OnlineConnectorStatus();
+                                if (currentChargeKW >= 0) ocs.ChargeRateKW = currentChargeKW;
+                                if (meterKWH >= 0) ocs.MeterKWH = meterKWH;
+                                if (stateOfCharge >= 0) ocs.SoC = stateOfCharge;
+                                if (ChargePointStatus.OnlineConnectors.TryAdd(connectorId, ocs))
+                                {
+                                    Logger.LogTrace("MeterValues => Set OnlineConnectorStatus for ChargePoint={0} / Connector={1} / Values: {2}", ChargePointStatus?.Id, connectorId, msgMeterValue);
+                                }
+                                else
+                                {
+                                    Logger.LogError("MeterValues => Error adding new OnlineConnectorStatus for ChargePoint={0} / Connector={1} / Values: {2}", ChargePointStatus?.Id, connectorId, msgMeterValue);
+                                }
+                            }
+                        }
                     }
                 }
                 else

@@ -1,5 +1,4 @@
 BEGIN TRANSACTION;
-DROP TABLE IF EXISTS "ChargePoint";
 CREATE TABLE IF NOT EXISTS "ChargePoint" (
 	"ChargePointId"	TEXT NOT NULL UNIQUE,
 	"Name"	TEXT,
@@ -9,7 +8,6 @@ CREATE TABLE IF NOT EXISTS "ChargePoint" (
 	"ClientCertThumb"	TEXT,
 	PRIMARY KEY("ChargePointId")
 );
-DROP TABLE IF EXISTS "ChargeTags";
 CREATE TABLE IF NOT EXISTS "ChargeTags" (
 	"TagId"	TEXT NOT NULL UNIQUE,
 	"TagName"	TEXT,
@@ -18,7 +16,6 @@ CREATE TABLE IF NOT EXISTS "ChargeTags" (
 	"Blocked"	INTEGER,
 	PRIMARY KEY("TagId")
 );
-DROP TABLE IF EXISTS "MessageLog";
 CREATE TABLE IF NOT EXISTS "MessageLog" (
 	"LogId"	INTEGER NOT NULL UNIQUE,
 	"LogTime"	TEXT,
@@ -29,7 +26,6 @@ CREATE TABLE IF NOT EXISTS "MessageLog" (
 	"ErrorCode"	TEXT,
 	PRIMARY KEY("LogId" AUTOINCREMENT)
 );
-DROP TABLE IF EXISTS "Transactions";
 CREATE TABLE IF NOT EXISTS "Transactions" (
 	"TransactionId"	INTEGER NOT NULL UNIQUE,
 	"Uid"	TEXT,
@@ -45,4 +41,28 @@ CREATE TABLE IF NOT EXISTS "Transactions" (
 	"StopReason"	TEXT,
 	PRIMARY KEY("TransactionId" AUTOINCREMENT)
 );
+
+/**** New with V1.1.0 ****/
+CREATE TABLE IF NOT EXISTS "ConnectorStatus" (
+	"ChargePointId"	TEXT NOT NULL UNIQUE,
+	"ConnectorId" INTEGER,
+	"ConnectorName"	TEXT,
+	"LastStatus"	TEXT,
+	"LastStatusTime"	TEXT,
+	"LastMeter"	TEXT,
+	"LastMeterTime"	TEXT,
+	PRIMARY KEY("ChargePointId", "ConnectorId")
+);
+CREATE VIEW IF NOT EXISTS "ConnectorStatusView"
+AS
+SELECT cs.ChargePointId, cs.ConnectorId, cs.ConnectorName, cs.LastStatus, cs.LastStatusTime, cs.LastMeter, cs.LastMeterTime, t.TransactionId, t.StartTagId, t.StartTime, t.MeterStart, t.StartResult, t.StopTagId, t.StopTime, t.MeterStop, t.StopReason
+FROM ConnectorStatus AS cs LEFT OUTER JOIN
+     Transactions AS t ON t.ChargePointId = cs.ChargePointId AND t.ConnectorId = cs.ConnectorId
+WHERE  (t.TransactionId IS NULL) OR
+                  (t.TransactionId IN
+                      (SELECT MAX(TransactionId) AS Expr1
+                       FROM     Transactions
+                       GROUP BY ChargePointId, ConnectorId));
+/**** End ****/
+
 COMMIT;

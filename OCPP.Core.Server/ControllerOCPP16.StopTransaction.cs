@@ -41,7 +41,7 @@ namespace OCPP.Core.Server
                 StopTransactionRequest stopTransactionRequest = JsonConvert.DeserializeObject<StopTransactionRequest>(msgIn.JsonPayload);
                 Logger.LogTrace("StopTransaction => Message deserialized");
 
-                string idTag = Utils.CleanChargeTagId(stopTransactionRequest.IdTag, Logger);
+                string idTag = CleanChargeTagId(stopTransactionRequest.IdTag, Logger);
 
                 if (string.IsNullOrWhiteSpace(idTag))
                 {
@@ -52,7 +52,7 @@ namespace OCPP.Core.Server
                 else
                 {
                     stopTransactionResponse.IdTagInfo = new IdTagInfo();
-                    stopTransactionResponse.IdTagInfo.ExpiryDate = Utils.MaxExpiryDate;
+                    stopTransactionResponse.IdTagInfo.ExpiryDate = MaxExpiryDate;
 
                     try
                     {
@@ -129,6 +129,12 @@ namespace OCPP.Core.Server
 
                             if (transaction != null)
                             {
+                                if (transaction.ConnectorId > 0)
+                                {
+                                    // Update meter value in db connector status 
+                                    UpdateConnectorStatus(transaction.ConnectorId, null, null, (double)stopTransactionRequest.MeterStop / 1000, stopTransactionRequest.Timestamp);
+                                }
+
                                 // check current tag against start tag
                                 bool valid = true;
                                 if (!string.Equals(transaction.StartTagId, idTag, StringComparison.InvariantCultureIgnoreCase))
