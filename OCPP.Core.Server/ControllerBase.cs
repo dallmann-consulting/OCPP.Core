@@ -79,8 +79,6 @@ namespace OCPP.Core.Server
                         connectorStatus = new ConnectorStatus();
                         connectorStatus.ChargePointId = ChargePointStatus.Id;
                         connectorStatus.ConnectorId = connectorId;
-                        // default name: <Name/Id>:<ConnectorId>
-                        connectorStatus.ConnectorName = string.Format("{0}:{1}", string.IsNullOrWhiteSpace(ChargePointStatus.Name) ? ChargePointStatus.Id : ChargePointStatus.Name, connectorId);
                         Logger.LogTrace("UpdateConnectorStatus => Creating new DB-ConnectorStatus: ID={0} / Connector={1}", connectorStatus.ChargePointId, connectorStatus.ConnectorId);
                         dbContext.Add<ConnectorStatus>(connectorStatus);
                     }
