@@ -1,0 +1,42 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@model ConnectorStatusViewModel
+@inject IViewLocalizer Localizer
+@{
+    ViewData["Title"] = @Localizer["Title"];
+}
+<br />
+
+@if (Model != null)
+{
+    <table id="dtChargeTags" class="table table-striped table-bordered table-sm table-hover" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th class="th-sm">@Localizer["ChargePointId"]</th>
+                <th class="th-sm">@Localizer["ConnectorId"]</th>
+                <th class="th-sm">@Localizer["ConnectorName"]</th>
+                <th class="th-sm">@Localizer["LastStatus"]</th>
+                <th class="th-sm">@Localizer["LastStatusTime"]</th>
+                <th class="th-sm">@Localizer["LastMeter"]</th>
+                <th class="th-sm">@Localizer["LastMeterTime"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.ConnectorStatuses != null)
+            {
+                foreach (ConnectorStatus cs in Model.ConnectorStatuses)
+                {
+                    <tr class="table-row" data-href='@Url.Action("Connector", Constants.HomeController, new { id = cs.ChargePointId, connectorId = cs.ConnectorId.ToString() })'>
+                        <td>@cs.ChargePointId</td>
+                        <td>@cs.ConnectorId</td>
+                        <td>@cs.ConnectorName</td>
+                        <td>@((!string.IsNullOrEmpty(cs.LastStatus)) ? cs.LastStatus : "-")</td>
+                        <td>@((cs.LastStatusTime.HasValue) ? string.Format("{0:G}", cs.LastStatusTime.Value.ToLocalTime()) : "-")</td>
+                        <td>@((cs.LastMeter.HasValue) ? string.Format("{0:0.0##}", cs.LastMeter.Value) : "-" )</td>
+                        <td>@((cs.LastMeterTime.HasValue) ? string.Format("{0:G}", cs.LastMeterTime.Value.ToLocalTime()): "-")</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+

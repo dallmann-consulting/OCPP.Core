@@ -117,22 +117,40 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Administration" xml:space="preserve">
-    <value>Administration</value>
+  <data name="ChargePointIdLabel" xml:space="preserve">
+    <value>Charge point ID</value>
   </data>
-  <data name="ChargePoints" xml:space="preserve">
-    <value>Charge points</value>
+  <data name="ConnectorIdLabel" xml:space="preserve">
+    <value>Connector No.</value>
   </data>
-  <data name="ChargeTags" xml:space="preserve">
-    <value>RFID-Tags</value>
+  <data name="ConnectorNameLabel" xml:space="preserve">
+    <value>Name</value>
   </data>
-  <data name="Connectors" xml:space="preserve">
-    <value>Connectors</value>
+  <data name="ConnectorNamePlaceholder" xml:space="preserve">
+    <value>Override name (empty for default)</value>
   </data>
-  <data name="Logout" xml:space="preserve">
-    <value>Logout</value>
+  <data name="EditConnector" xml:space="preserve">
+    <value>Edit charge point connector</value>
   </data>
-  <data name="Overview" xml:space="preserve">
-    <value>Overview</value>
+  <data name="FieldMaxLength" xml:space="preserve">
+    <value>Max. {0} characters</value>
+  </data>
+  <data name="LastMeterLabel" xml:space="preserve">
+    <value>Last meter</value>
+  </data>
+  <data name="LastMeterTimeLabel" xml:space="preserve">
+    <value>Last meter timestamp</value>
+  </data>
+  <data name="LastStatusLabel" xml:space="preserve">
+    <value>Last status</value>
+  </data>
+  <data name="LastStatusTimeLabel" xml:space="preserve">
+    <value>Last status timestamp</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Management</value>
   </data>
 </root>

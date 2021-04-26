@@ -1,0 +1,123 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@model ConnectorStatusViewModel
+@inject IViewLocalizer Localizer
+@{
+    ViewData["Title"] = @Localizer["Title"];
+}
+<br />
+
+@if (Model != null)
+{
+    @using (Html.BeginForm())
+    {
+        @Html.AntiForgeryToken()
+
+        <h4>@Localizer["EditConnector"]</h4>
+        <br />
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="ChargePointIdRO">@Localizer["ChargePointIdLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input type="text" readonly class="form-control" id="ChargePointIdRO" name="ChargePointIdRO" value="@Model.ChargePointId">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="ConnectorIdRO">@Localizer["ConnectorIdLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input type="text" readonly class="form-control" id="ConnectorIdRO" name="ConnectorIdRO" value="@Model.ConnectorId">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="ConnectorName">@Localizer["ConnectorNameLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 200)" data-val-length-max="200" id="ConnectorName" maxlength="200" name="ConnectorName" placeholder="@Localizer["ConnectorNamePlaceholder"]" type="text" value="@Model.ConnectorName" />
+                    </div>
+                </div>
+                <div class="col-sm-2">
+                    <span class="field-validation-valid text-danger" data-valmsg-for="ConnectorName" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="LastStatusRO">@Localizer["LastStatusLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input type="text" readonly class="form-control" id="LastStatusRO" name="LastStatusRO" value="@Model.LastStatus">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="LastStatusTimeRO">@Localizer["LastStatusTimeLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input type="text" readonly class="form-control" id="LastStatusTimeRO" name="LastStatusTimeRO" value="@((Model.LastStatusTime.HasValue) ? string.Format("{0:G}", Model.LastStatusTime.Value.ToLocalTime()) : "-")">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="LastMeterRO">@Localizer["LastMeterLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input type="text" readonly class="form-control" id="LastMeterRO" name="LastMeterRO" value="@((Model.LastMeter.HasValue) ? string.Format("{0:0.0## kWh}", Model.LastMeter.Value) : "-" )">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
+                        <label class="inline-label" for="LastMeterTimeRO">@Localizer["LastMeterTimeLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input type="text" readonly class="form-control" id="LastMeterTimeRO" name="LastMeterTimeRO" value="@((Model.LastMeterTime.HasValue) ? string.Format("{0:G}", Model.LastMeterTime.Value.ToLocalTime()) : "-")">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-12 text-danger">
+                    @ViewBag.ErrorMsg
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-1">
+                    &nbsp;
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2">
+                    <button type="submit" class="btn btn-primary">@Localizer["Save"]</button>
+                </div>
+            </div>
+        </div>
+    }
+}

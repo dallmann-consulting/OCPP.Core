@@ -11,7 +11,7 @@
         @foreach (ChargePointsOverviewViewModel cpvm in Model.ChargePoints)
         {
 
-            string chargePointName = string.IsNullOrWhiteSpace(cpvm.Name) ? cpvm.ChargePointId : cpvm.Name;
+            string chargePointName = string.IsNullOrWhiteSpace(cpvm.Name) ? $"{cpvm.ChargePointId}:{cpvm.ConnectorId}" : cpvm.Name;
             string lastCharge = (cpvm.MeterStart >= 0 && cpvm.MeterStop != null) ? string.Format(Localizer["ChargekWh"].Value, (cpvm.MeterStop - cpvm.MeterStart)) : null;
             string chargeTime = null;
             if (cpvm.StartTime != null && cpvm.StopTime == null)

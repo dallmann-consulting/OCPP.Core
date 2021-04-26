@@ -73,7 +73,35 @@ namespace OCPP.Core.Management.Controllers
                 using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
                 {
                     Logger.LogTrace("Transactions: Loading charge points...");
+                    tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
+
+                    Logger.LogTrace("Transactions: Loading charge points connectors...");
                     tlvm.ConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
+
+                    // Count connectors for every charge point (=> naming scheme)
+                    Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
+                    foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
+                    {
+                        if (dictConnectorCount.ContainsKey(cs.ChargePointId))
+                        {
+                            // > 1 connector
+                            dictConnectorCount[cs.ChargePointId] = dictConnectorCount[cs.ChargePointId] + 1;
+                        }
+                        else
+                        {
+                            // first connector
+                            dictConnectorCount.Add(cs.ChargePointId, 1);
+                        }
+                    }
+
+                    // Dictionary mit ID+Connector => Name erstellen und View übergeben
+                    // => Combobox damit füllen
+                    // => Namen in Transaktionen auflösen
+
+
+
+
+                    /*
                     // search selected charge point and connector
                     foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
                     {
@@ -87,6 +115,8 @@ namespace OCPP.Core.Management.Controllers
                             break;
                         }
                     }
+                    */
+
 
                     // load charge tags for name resolution
                     Logger.LogTrace("Transactions: Loading charge tags...");

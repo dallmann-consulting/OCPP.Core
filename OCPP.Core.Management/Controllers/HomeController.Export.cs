@@ -74,22 +74,43 @@ namespace OCPP.Core.Management.Controllers
                     tlvm.Timespan = 1;
                 }
 
+                string currentConnectorName = string.Empty;
                 using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
                 {
                     Logger.LogTrace("Export: Loading charge points...");
                     tlvm.ConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
 
-                    // search selected charge point and connector
+                    // Preferred: use specific connector name
                     foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
                     {
                         if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
                         {
-                            tlvm.CurrentConnectorName = cs.ConnectorName;
+                            currentConnectorName = cs.ConnectorName;
+                            /*
                             if (string.IsNullOrEmpty(tlvm.CurrentConnectorName))
                             {
-                                tlvm.CurrentConnectorName = $"{Id}:{cs.ConnectorId}";
+                                currentConnectorName = $"{Id}:{cs.ConnectorId}";
                             }
+                            */
                             break;
+                        }
+                    }
+                    // default: combined name with charge point and connector
+                    if (string.IsNullOrEmpty(currentConnectorName))
+                    {
+                        tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
+                        foreach(ChargePoint cp in tlvm.ChargePoints)
+                        {
+                            if (cp.ChargePointId == Id)
+                            {
+                                currentConnectorName = $"{cp.Name}:{currentConnectorId}";
+                                break;
+                            }
+                        }
+                        if (string.IsNullOrEmpty(currentConnectorName))
+                        {
+                            // Fallback: ID + connector
+                            currentConnectorName = $"{Id}:{currentConnectorId}";
                         }
                     }
 
@@ -116,14 +137,14 @@ namespace OCPP.Core.Management.Controllers
                                             .ToList<Transaction>();
                     }
 
-                    StringBuilder connectorName = new StringBuilder(tlvm.CurrentConnectorName);
+                    StringBuilder connectorName = new StringBuilder(currentConnectorName);
                     foreach (char c in Path.GetInvalidFileNameChars())
                     {
                         connectorName.Replace(c, '_');
                     }
 
                     string filename = string.Format("Transactions_{0}.csv", connectorName);
-                    string csv = CreateCsv(tlvm);
+                    string csv = CreateCsv(tlvm, currentConnectorName);
                     Logger.LogInformation("Export: File => {0} Chars / Name '{1}'", csv.Length, filename);
 
                     return File(Encoding.GetEncoding("ISO-8859-1").GetBytes(csv), "text/csv", filename);
@@ -131,13 +152,13 @@ namespace OCPP.Core.Management.Controllers
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "Export: Error loading charge points from database");
+                Logger.LogError(exp, "Export: Error loading data from database");
             }
 
             return View(tlvm);
         }
 
-        private string CreateCsv(TransactionListViewModel tlvm)
+        private string CreateCsv(TransactionListViewModel tlvm, string currentConnectorName)
         {
             StringBuilder csv = new StringBuilder(8192);
             csv.Append(EscapeCsvValue(_localizer["Connector"]));
@@ -172,7 +193,7 @@ namespace OCPP.Core.Management.Controllers
                     }
 
                     csv.AppendLine();
-                    csv.Append(EscapeCsvValue(tlvm.CurrentConnectorName));
+                    csv.Append(EscapeCsvValue(currentConnectorName));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(t.StartTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
                     csv.Append(CSV_Seperator);

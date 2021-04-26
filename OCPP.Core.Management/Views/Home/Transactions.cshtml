@@ -5,7 +5,63 @@
     ViewData["Title"] = @Localizer["Title"];
 }
 <br />
-@{ string timespan = (Model.Timespan == 2) ? "?t=2" : ((Model.Timespan == 3) ? "?t=3" : string.Empty); }
+@{
+    string timespan = (Model.Timespan == 2) ? "?t=2" : ((Model.Timespan == 3) ? "?t=3" : string.Empty);
+
+    List<ConnectorStatusViewModel> connectorStatusViewModels = new List<ConnectorStatusViewModel>();
+
+    // Copy CP-Names in dictionary for name resolution and
+    Dictionary<string, string> chargePointNames = new Dictionary<string, string>();
+    if (Model.ChargePoints != null)
+    {
+        foreach (ChargePoint cp in Model.ChargePoints)
+        {
+            chargePointNames.Add(cp.ChargePointId, cp.Name);
+        }
+    }
+
+
+    // Count connectors for every charge point (=> naming scheme)
+    Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
+    string currentConnectorName = string.Empty;
+    foreach (ConnectorStatus cs in Model.ConnectorStatuses)
+    {
+        if (dictConnectorCount.ContainsKey(cs.ChargePointId))
+        {
+            // > 1 connector
+            dictConnectorCount[cs.ChargePointId] = dictConnectorCount[cs.ChargePointId] + 1;
+        }
+        else
+        {
+            // first connector
+            dictConnectorCount.Add(cs.ChargePointId, 1);
+        }
+
+        ConnectorStatusViewModel csvm = new ConnectorStatusViewModel();
+        csvm.ChargePointId = cs.ChargePointId;
+        csvm.ConnectorId = cs.ConnectorId;
+
+        string connectorName = cs.ConnectorName;
+        if (string.IsNullOrEmpty(connectorName))
+        {
+            // Default: use charge point name
+            chargePointNames.TryGetValue(cs.ChargePointId, out connectorName);
+            if (string.IsNullOrEmpty(connectorName))
+            {
+                // Fallback: use charge point ID
+                connectorName = cs.ChargePointId;
+            }
+            connectorName = $"{connectorName}:{cs.ConnectorId}";
+        }
+        csvm.ConnectorName = connectorName;
+        connectorStatusViewModels.Add(csvm);
+
+        if (cs.ChargePointId == Model.CurrentChargePointId && cs.ConnectorId == Model.CurrentConnectorId)
+        {
+            currentConnectorName = connectorName;
+        }
+    }
+}
 
 <div class="container fill">
     <div class="row">
@@ -15,12 +71,12 @@
         <div class="col-md-auto align-self-center">
             <div class="dropdown">
                 <button class="btn btn-secondary dropdown-toggle" type="button" id="ddbChargePoint" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    @Model.CurrentConnectorName
+                    @currentConnectorName
                 </button>
                 <div class="dropdown-menu" aria-labelledby="ddbChargePoint">
-                    @foreach (ConnectorStatus cs in Model.ConnectorStatuses)
+                    @foreach (ConnectorStatusViewModel csvm in connectorStatusViewModels)
                     {
-                        <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(cs.ChargePointId)/@cs.ConnectorId@timespan">@cs.ConnectorName</a>
+                        <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(csvm.ChargePointId)/@csvm.ConnectorId@timespan">@csvm.ConnectorName</a>
                     }
                 </div>
             </div>
@@ -96,7 +152,7 @@
                         stopTag = Model.ChargeTags[t.StopTagId]?.TagName;
                     }
                     <tr>
-                        <td>@Model.CurrentConnectorName</td>
+                        <td>@currentConnectorName</td>
                         <td>@string.Format("{0} {1}", t.StartTime.ToLocalTime().ToShortDateString(), t.StartTime.ToLocalTime().ToShortTimeString())</td>
                         <td>@startTag</td>
                         <td>@string.Format("{0:0.0##}", t.MeterStart)</td>

@@ -143,6 +143,23 @@ namespace OCPP.Core.Management.Controllers
                     // List of charge point status (OCPP messages) with latest transaction (if one exist)
                     List<ConnectorStatusView> connectorStatusViewList = dbContext.ConnectorStatusViews.ToList<ConnectorStatusView>();
 
+                    // Count connectors for every charge point (=> naming scheme)
+                    Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
+                    foreach(ConnectorStatusView csv in connectorStatusViewList)
+                    {
+                        if (dictConnectorCount.ContainsKey(csv.ChargePointId))
+                        {
+                            // > 1 connector
+                            dictConnectorCount[csv.ChargePointId] = dictConnectorCount[csv.ChargePointId] + 1;
+                        }
+                        else
+                        {
+                            // first connector
+                            dictConnectorCount.Add(csv.ChargePointId, 1);
+                        }
+                    }
+
+
                     // List of configured charge points
                     List<ChargePoint> dbChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
                     if (dbChargePoints != null)
@@ -166,7 +183,26 @@ namespace OCPP.Core.Management.Controllers
                                         ChargePointsOverviewViewModel cpovm = new ChargePointsOverviewViewModel();
                                         cpovm.ChargePointId = cp.ChargePointId;
                                         cpovm.ConnectorId = connStatus.ConnectorId;
-                                        cpovm.Name = connStatus.ConnectorName;
+                                        if (string.IsNullOrWhiteSpace(connStatus.ConnectorName))
+                                        {
+                                            // No connector name specified => use default
+                                            if (dictConnectorCount.ContainsKey(cp.ChargePointId) &&
+                                                dictConnectorCount[cp.ChargePointId] > 1)
+                                            {
+                                                // more than 1 connector => "<charge point name>:<connector no.>"
+                                                cpovm.Name = $"{cp.Name}:{connStatus.ConnectorId}";
+                                            }
+                                            else
+                                            {
+                                                // only 1 connector => "<charge point name>"
+                                                cpovm.Name = cp.Name;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // Connector has name override name specified
+                                            cpovm.Name = connStatus.ConnectorName;
+                                        }
                                         cpovm.Online = cpOnlineStatus != null;
                                         cpovm.ConnectorStatus = ConnectorStatusEnum.Undefined;
                                         OnlineConnectorStatus onlineConnectorStatus = null;

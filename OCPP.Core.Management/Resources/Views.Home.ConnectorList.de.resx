@@ -117,22 +117,28 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Administration" xml:space="preserve">
-    <value>Administration</value>
+  <data name="ChargePointId" xml:space="preserve">
+    <value>Ladestation</value>
   </data>
-  <data name="ChargePoints" xml:space="preserve">
-    <value>Charge points</value>
+  <data name="ConnectorId" xml:space="preserve">
+    <value>Anschluss Nr.</value>
   </data>
-  <data name="ChargeTags" xml:space="preserve">
-    <value>RFID-Tags</value>
+  <data name="ConnectorName" xml:space="preserve">
+    <value>Name</value>
   </data>
-  <data name="Connectors" xml:space="preserve">
-    <value>Connectors</value>
+  <data name="LastMeter" xml:space="preserve">
+    <value>Zählerstand</value>
   </data>
-  <data name="Logout" xml:space="preserve">
-    <value>Logout</value>
+  <data name="LastMeterTime" xml:space="preserve">
+    <value>Zähler Zeitpunkt</value>
   </data>
-  <data name="Overview" xml:space="preserve">
-    <value>Overview</value>
+  <data name="LastStatus" xml:space="preserve">
+    <value>Letzter Status</value>
+  </data>
+  <data name="LastStatusTime" xml:space="preserve">
+    <value>Status Zeitpunkt</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Management</value>
   </data>
 </root>
