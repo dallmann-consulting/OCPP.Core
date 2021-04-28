@@ -47,10 +47,6 @@ So it responds with an "invalid" status and the charge point stops the process w
 Now the OCPP server cuts off any "_xxx" suffix from the submitted idTags.
 
 
-## What's next
-My next steps will be to differentiate the submitted connectors as (almost) seperate charging points.
-Because our neighbors want to see their own charge point, I want to be able to give them custom names.
+With Version 1.1.0 I added multi connector support (see ReadMe) and this works fine. Every connector has a custom name defined, so that it looks like they are independent charge points.
 
-
-To be continued...
 

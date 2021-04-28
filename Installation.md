@@ -11,19 +11,72 @@ The "Management" is the Web-UI you can open in the browser. You can manage the c
 
 The "Database" is used by both other projects. It contains the necessary Code for reading & writing data from/into the database.
 
+## Database
+The project includes templates for SQL-Server and SQLite:
 
-## Build with Visual Studio
+	* SQL-Server (SQL-Express)
+	Use the script in the folder 'SQL-Server' to create a new database.
+	Configure your account (IIS => AppPool) for reading and writing data.
+		
+	* SQLite
+	The folder 'SQLite' contains an empty ready-to-use database file. Or you use the SQL script in the same folder.
+
+The main Script in both folders always contain the latest version for a full database. If you are updating from previous versions there are dedicated update skripts.
+
+## Webserver
+The OCPP-Server and the Web-UI are independent webs/servers and both need database connection information. The Web-UI needs the the URL to the OCPP server for status information and some actions. The config file of the Web-UI contains the users and passwords.
+
+**OCPP.Core.Server**
+Edit the appsettings.json file and configure the 'SQLite' *or* 'SqlServer' entry:
+```
+"ConnectionStrings": {
+	//"SQLite": "Filename=.\\..\\SQLite\\OCPP.Core.sqlite;"
+	"SqlServer": "Server=.;Database=OCPP.Core;Trusted_Connection=True;"
+	},
+```
+If you configure a dump directory, the server writes all OCPP requests and responses there. You can also log basic message information in the database.
+```
+"MessageDumpDir": "c:\\temp\\OCPP",
+"DbMessageLog": 2,  //0=None, 1=Info, 2=Verbose (all)
+```
+**OCPP.Core.Management**
+See above for the database connection. The appsettings.json file also contains the user logins, passwords and role. Administrators can create and edit chargepoints and tags. Regular users can see the chargepoints and transactions.
+```
+"Users": [
+	{
+		"Username": "admin",
+		"Password": "t3st",
+		"Administrator": true
+	},
+	{
+		"Username": "user",
+		"Password": "t3st",
+		"Administrator": false
+	}
+]
+```
+The Management-UI needs the URL to the OCPP server for internal communication.  To secure this API you can configure API keys (=identical passwords) on both sides:
+```
+"ServerApiUrl": "http://localhost:8081/API",
+"ApiKey": "....",
+```	
+
+
+## Build & Run
+### Build with Visual Studio
 If you use VS you can simply open and the compile the solution. Visual Studio will create the correct file structure in the output directory. It should look something like this:
 
 ![BuildOutput](images/BuildOutput.png)
 
+For deployments you should "publish" each project. Then visual studio will automatically add all necessary files (like "wwwroot" - see below) to the output.
 
 ## Build with SDK
 Make sure that the [.NET-Core SDK 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) is installed.
 
 Open a command shell (cmd) and navigate to the folder where the "OCPP.Core.sln" file is. Then enter the following command to start a debug build:
 
-```dotnet build OCPP.Core.sln```
+```dotnet build OCPP.Core.sln``` or
+```dotnet publish OCPP.Core.sln```
 
 You will hopefully see that all three projects were compiled without errors. You should then have the same output like the VS-Build (see screenshot above).
 
@@ -31,7 +84,7 @@ You will hopefully see that all three projects were compiled without errors. You
 
 **Run with Kestrel (simple Web-Server)**
 
-The compiler output for the two web projects (Server and Managment) contain equally named executables:
+The compiler output for the two web projects (Server and Management) contain equally named executables:
 
 ```OCPP.Core.Server.exe``` and ```OCPP.Core.Management.exe```
 
@@ -47,20 +100,17 @@ The appsettings.json files contain the following URL settings for the Kestrel se
  
  Both projects contain a self-signed certificate (.pfx file) for testing purposes.
 
+***Attention:***
 
-
-
-***BUT BEFORE:***
-
-The Management Web-UI contains a few static files in a folder "wwwroot" in the project. You need to copy this folder to the compiler output directory:
+The Management Web-UI contains a few static files in a folder "wwwroot" in the project. Only the "publish" actions will copy these files. Make sure that this folder was copied to the output:
 
 ![wwwroot](images/wwwroot.png)
 
-Most components (bootstrap, fontawesome ...) are loaded externally from the internet. So you won't notice any errors. But with the static files missing, you cannot open chargepoints or RFID-Tokens from the table view.
+Most components (bootstrap, fontawesome ...) are loaded externally from the internet. So you won't notice any errors. But with the static files missing, you cannot open chargepoints or RFID-Tokens from the table views.
 
 **Run in IIS**
 
 To run an ASP.NET-Core application in IIS you need to install the .NET-Core Hosting Bundle. This is described here:
 https://dotnetcoretutorials.com/2019/12/23/hosting-an-asp-net-core-web-application-in-iis/
 
-Then you can create a website or app-folder in IIS and point to the compiler output folder. Also don't forget the wwwroot-folder!
+Then you can create a website or app-folder in IIS and point to the compiler output folder. If you're using SQL-Server and want integrated security you might also need to configure the app pool.
