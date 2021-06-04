@@ -123,16 +123,13 @@
 					monthIndex = ('0' + monthIndex.slice(-2));
 				}
 				var year = date.getUTCFullYear();
-				var h = date.getUTCHours();
-				if (h < 3) {
-					h = 24 - h;
-				}
+				var h = String(date.getUTCHours());
+				var m = String(date.getUTCMinutes());
+				var s = String(date.getUTCSeconds());
+
 				if (h.length < 2) {
 					h = ('0' + h.slice(-2));
 				}
-				var m = String(date.getUTCMinutes());
-
-				var s = String(date.getUTCSeconds());
 				if (m.length < 2) {
 					m = ('0' + m.slice(-2));
 				}

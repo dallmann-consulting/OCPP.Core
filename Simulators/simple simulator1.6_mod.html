@@ -94,7 +94,7 @@
             monthIndex = ('0' + monthIndex.slice(-2));
         }
         var year = date.getUTCFullYear();
-        var h = date.getUTCHours();
+        var h = String(date.getUTCHours());
         var m = String(date.getUTCMinutes());
         var s = String(date.getUTCSeconds());
 
@@ -350,6 +350,7 @@
 
         $('#mv').click(function () {
             sessionStorage.setItem('LastAction', "MeterValues");
+			ssid = sessionStorage.getItem('TransactionId');
             var val = $("#metervalue").val();
             var MV = JSON.stringify([2, id, "MeterValues", {"connectorId": 2, "transactionId": ssid, "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": val, "measurand": "Energy.Active.Import.Register"},{"value": 800, "measurand": "Power.Active.Import"},{"value": 47, "measurand": "SoC"}]}]}]);
             _websocket.send(MV);
