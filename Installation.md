@@ -59,10 +59,41 @@ The Management-UI needs the URL to the OCPP server for internal communication.  
 ```
 "ServerApiUrl": "http://localhost:8081/API",
 "ApiKey": "....",
-```	
+```
 
 
-## Build & Run
+
+## Quick run with published release
+Download a precompiled [release](https://github.com/dallmann-consulting/OCPP.Core/releases).
+They are compiled 'portable' and run on different platforms.
+
+### Windows
+* Download and install the .NET.Core 3.1 runtime.
+* Extract the ZIP file somewhere. 
+* Open the file "appsettings.json" in the OCPP.Server and configure "MessageDumpDir" to an existing directory or leave it empty to turn off message dumps.
+* Start the "OCPP.Core.Server.exe" and "OCPP.Core.Management.exe". 
+* Open "http://localhost:8082" in a browser.
+
+### Linux
+* Install the .NET.Core 3.1 runtime for your Linux distribution and version. Instructions [here](https://docs.microsoft.com/en-us/dotnet/core/install/linux).
+* Extract the ZIP file somewhere. 
+* Open the file "appsettings.json" in both projects
+	* change the paths to the sqlite file to a valid unix path: "SQLite": "Filename=./../SQLite/OCPP.Core.sqlite;"
+	* Only OCPP.Server: configure the "MessageDumpDir" to an existing directory or leave it empty to turn off message dumps.
+* Give the file "SQLite/OCPP.Core.sqlite" Read&Write permissions to everone.
+* Start both projects in consoles:
+	```
+	dotnet OCPP.Core.Server.dll
+	```
+
+	```
+	dotnet OCPP.Core.Management.dll
+	```
+* Open "http://localhost:8082" in a browser.
+
+
+
+## Build
 ### Build with Visual Studio
 If you use VS you can simply open and the compile the solution. Visual Studio will create the correct file structure in the output directory. It should look something like this:
 
