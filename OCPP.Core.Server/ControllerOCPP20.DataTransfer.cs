@@ -47,7 +47,7 @@ namespace OCPP.Core.Server
                 {
                     // Known charge station
                     msgWritten = WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, string.Format("VendorId={0} / MessageId={1} / Data={2}", dataTransferRequest.VendorId, dataTransferRequest.MessageId, dataTransferRequest.Data), errorCode);
-                    dataTransferResponse.Status = DataTransferStatusEnumType.UnknownVendorId;
+                    dataTransferResponse.Status = DataTransferStatusEnumType.Accepted;
                 }
                 else
                 {
