@@ -341,6 +341,46 @@ namespace OCPP.Core.Server
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
                     }
+                    else if (cmd == "GetLocalListVersion")
+                    {
+                        if (!string.IsNullOrEmpty(urlChargePointId))
+                        {
+                            try
+                            {
+                                ChargePointStatus status = null;
+                                if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
+                                {
+                                    // send message to chargepoint
+                                    if (status.Protocol == Protocol_OCPP20)
+                                    {
+                                        // OCPP 2.0
+                                        throw new NotImplementedException("OCPP 2.0 is not supported yet.");
+                                    }
+                                    else
+                                    {
+                                        // OCPP 1.6
+                                        await GetLocalListVersion16(status, context);
+                                    }
+                                }
+                                else
+                                {
+                                    // chargepoint offline
+                                    _logger.LogError("OCPPMiddleware GetLocalListVersion => ChargePoint offline: {0}", urlChargePointId);
+                                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                                }
+                            }
+                            catch (Exception exp)
+                            {
+                                _logger.LogError("OCPPMiddleware GetLocalListVersion => Error: {0}", exp.Message);
+                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogError("OCPPMiddleware GetLocalListVersion => Missing chargepoint ID.");
+                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        }
+                    }
                     else if (cmd == "UnlockConnector")
                     {
                         if (!string.IsNullOrEmpty(urlChargePointId))

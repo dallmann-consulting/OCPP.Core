@@ -148,6 +148,40 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// Sends a GetLocalListVersion request to the chargepoint.
+        /// </summary>
+        private async Task GetLocalListVersion16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
+            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus);
+
+            Messages_OCPP16.GetLocalListVersionRequest request = new Messages_OCPP16.GetLocalListVersionRequest();
+            string jsonRequest = JsonConvert.SerializeObject(request);
+
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = "GetLocalListVersion";
+            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.JsonPayload = jsonRequest;
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
+
+            // store HttpContext with MsgId for later answer processing (=> send answer to API caller)
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            // send OCPP message with optional logging/dump
+            await SendOcpp16Message(msgOut, logger, chargePointStatus.WebSocket);
+
+            // wait for asynchronous chargepoint response and processing
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            logger.LogInformation("GetLocalListVersion returned: " + apiResult);
+
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        /// <summary>
         /// Sends a Unlock-Request to the chargepoint
         /// </summary>
         private async Task UnlockConnector16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
