@@ -354,7 +354,7 @@ namespace OCPP.Core.Server
                                     if (status.Protocol == Protocol_OCPP20)
                                     {
                                         // OCPP 2.0
-                                        throw new NotImplementedException("OCPP 2.0 is not supported yet.");
+                                        await GetLocalListVersion20(status, context);
                                     }
                                     else
                                     {
@@ -394,7 +394,7 @@ namespace OCPP.Core.Server
                                     if (status.Protocol == Protocol_OCPP20)
                                     {
                                         // OCPP 2.0
-                                        throw new NotImplementedException("OCPP 2.0 is not supported yet.");
+                                        await SendLocalList20(status, context);
                                     }
                                     else
                                     {
