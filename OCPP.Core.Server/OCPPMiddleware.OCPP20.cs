@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using OCPP.Core.Server.Messages_OCPP20;
+using OCPP.Core.Server.Models;
 
 namespace OCPP.Core.Server
 {
@@ -193,28 +194,28 @@ namespace OCPP.Core.Server
             apiCallerContext.Request.EnableBuffering();
             apiCallerContext.Request.Body.Seek(0, SeekOrigin.Begin);
 
-            List<string> tags = new List<string>();
+            SendLocalListModel inputModel = new SendLocalListModel();
             using (StreamReader stream = new StreamReader(apiCallerContext.Request.Body))
             {
                 string body = await stream.ReadToEndAsync();
-                tags = JsonConvert.DeserializeObject<List<string>>(body);
+                inputModel = JsonConvert.DeserializeObject<SendLocalListModel>(body);
             }
 
             // prepare request
             Messages_OCPP20.SendLocalListRequest request = new Messages_OCPP20.SendLocalListRequest();
-            request.VersionNumber = new Random().Next(1, 1000);
+            request.VersionNumber = inputModel.ListVersion;
             request.UpdateType = UpdateEnumType.Full;
 
             request.LocalAuthorizationList = new List<Messages_OCPP16.AuthorizationData>();
-            foreach (var tag in tags)
+            foreach (var tag in inputModel.Tags)
             {
                 request.LocalAuthorizationList.Add(new Messages_OCPP16.AuthorizationData
                 {
-                    IdTag = tag,
+                    IdTag = tag.TagId,
                     IdTagInfo = new Messages_OCPP16.IdTagInfo
                     {
                         Status = Messages_OCPP16.IdTagInfoStatus.Accepted,
-                        ExpiryDate = DateTimeOffset.Now.AddMonths(12)
+                        ExpiryDate = tag.ExpiryDate
                     }
                 });
             }
