@@ -1,5 +1,5 @@
 # OCPP.Core
-OCPP.Core is an OCPP ([Open ChargePoint Protocol](https://en.wikipedia.org/wiki/Open_Charge_Point_Protocol)) server written in .NET-Core. It includes a management Web-UI for administration of charge points and charge tokens (RFID-Token)
+OCPP.Core is an OCPP ([Open ChargePoint Protocol](https://en.wikipedia.org/wiki/Open_Charge_Point_Protocol)) server written in .NET 6. It includes a management Web-UI for administration of charge points and charge tokens (RFID-Token)
 
 ## Status
 It currently supports OCPP1.6J and 2.0(JSON/REST).
@@ -70,7 +70,7 @@ This results in different scenarios for displaying charge points:
 If a connector has a name specified this name overrides the charge point name or default scheme (see above). This allows you to define custom names for every connector (like left / right).
 
 ## System Requirements
-OCPP.Core is written in .NET-Core 3.1 and therefore runs on different plattforms. I also installed it in Azure for testing purposes.
+OCPP.Core is written in .NET 6 and therefore runs on different plattforms. I also installed it in Azure for testing purposes.
 The storage is based on the EntityFramework-Core and supports different databases. The project contains script für SQL-Server (SQL-Express) and SQLite.
 
 Referenced Packages:
