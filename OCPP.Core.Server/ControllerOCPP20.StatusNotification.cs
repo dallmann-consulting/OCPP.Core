@@ -44,7 +44,7 @@ namespace OCPP.Core.Server
             try
             {
                 Logger.LogTrace("Processing status notification...");
-                StatusNotificationRequest statusNotificationRequest = JsonConvert.DeserializeObject<StatusNotificationRequest>(msgIn.JsonPayload);
+                StatusNotificationRequest statusNotificationRequest = DeserializeMessage<StatusNotificationRequest>(msgIn);
                 Logger.LogTrace("StatusNotification => Message deserialized");
 
                 connectorId = statusNotificationRequest.ConnectorId;

@@ -40,7 +40,7 @@ namespace OCPP.Core.Server
             try
             {
                 Logger.LogTrace("Processing data transfer...");
-                DataTransferRequest dataTransferRequest = JsonConvert.DeserializeObject<DataTransferRequest>(msgIn.JsonPayload);
+                DataTransferRequest dataTransferRequest = DeserializeMessage<DataTransferRequest>(msgIn);
                 Logger.LogTrace("DataTransfer => Message deserialized");
 
                 if (ChargePointStatus != null)

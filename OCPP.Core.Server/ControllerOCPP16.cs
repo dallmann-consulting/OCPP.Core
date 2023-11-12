@@ -31,6 +31,14 @@ namespace OCPP.Core.Server
     public partial class ControllerOCPP16 : ControllerBase
     {
         /// <summary>
+        /// Internal string for OCPP protocol version
+        /// </summary>
+        protected override string ProtocolVersion
+        {
+            get { return "16"; }
+        }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public ControllerOCPP16(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus) :

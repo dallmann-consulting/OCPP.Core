@@ -24,6 +24,8 @@ namespace OCPP.Core.Server
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
             ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus);
 
+            int maxMessageSizeBytes = _configuration.GetValue<int>("MaxMessageSize", 0);
+
             byte[] buffer = new byte[1024 * 4];
             MemoryStream memStream = new MemoryStream(buffer.Length);
 
@@ -35,71 +37,84 @@ namespace OCPP.Core.Server
                     logger.LogTrace("OCPPMiddleware.Receive16 => Receiving segment: {0} bytes (EndOfMessage={1} / MsgType={2})", result.Count, result.EndOfMessage, result.MessageType);
                     memStream.Write(buffer, 0, result.Count);
 
-                    if (result.EndOfMessage)
+                    // max. allowed message size NOT exceeded - or limit deactivated?
+                    if (maxMessageSizeBytes == 0 || memStream.Length <= maxMessageSizeBytes)
                     {
-                        // read complete message into byte array
-                        byte[] bMessage = memStream.ToArray();
-                        // reset memory stream für next message
-                        memStream = new MemoryStream(buffer.Length);
-
-                        string dumpDir = _configuration.GetValue<string>("MessageDumpDir");
-                        if (!string.IsNullOrWhiteSpace(dumpDir))
+                        if (result.EndOfMessage)
                         {
-                            string path = Path.Combine(dumpDir, string.Format("{0}_ocpp16-in.txt", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-ffff")));
-                            try
-                            {
-                                // Write incoming message into dump directory
-                                File.WriteAllBytes(path, bMessage);
-                            }
-                            catch (Exception exp)
-                            {
-                                logger.LogError(exp, "OCPPMiddleware.Receive16 => Error dumping incoming message to path: '{0}'", path);
-                            }
-                        }
+                            // read complete message into byte array
+                            byte[] bMessage = memStream.ToArray();
+                            // reset memory stream für next message
+                            memStream = new MemoryStream(buffer.Length);
 
-                        string ocppMessage = UTF8Encoding.UTF8.GetString(bMessage);
-
-                        Match match = Regex.Match(ocppMessage, MessageRegExp);
-                        if (match != null && match.Groups != null && match.Groups.Count >= 3)
-                        {
-                            string messageTypeId = match.Groups[1].Value;
-                            string uniqueId = match.Groups[2].Value;
-                            string action = match.Groups[3].Value;
-                            string jsonPaylod = match.Groups[4].Value;
-                            logger.LogInformation("OCPPMiddleware.Receive16 => OCPP-Message: Type={0} / ID={1} / Action={2})", messageTypeId, uniqueId, action);
-
-                            OCPPMessage msgIn = new OCPPMessage(messageTypeId, uniqueId, action, jsonPaylod);
-                            if (msgIn.MessageType == "2")
+                            string dumpDir = _configuration.GetValue<string>("MessageDumpDir");
+                            if (!string.IsNullOrWhiteSpace(dumpDir))
                             {
-                                // Request from chargepoint to OCPP server
-                                OCPPMessage msgOut = controller16.ProcessRequest(msgIn);
-
-                                // Send OCPP message with optional logging/dump
-                                await SendOcpp16Message(msgOut, logger, chargePointStatus.WebSocket);
-                            }
-                            else if (msgIn.MessageType == "3" || msgIn.MessageType == "4")
-                            {
-                                // Process answer from chargepoint
-                                if (_requestQueue.ContainsKey(msgIn.UniqueId))
+                                string path = Path.Combine(dumpDir, string.Format("{0}_ocpp16-in.txt", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-ffff")));
+                                try
                                 {
-                                    controller16.ProcessAnswer(msgIn, _requestQueue[msgIn.UniqueId]);
-                                    _requestQueue.Remove(msgIn.UniqueId);
+                                    // Write incoming message into dump directory
+                                    File.WriteAllBytes(path, bMessage);
+                                }
+                                catch (Exception exp)
+                                {
+                                    logger.LogError(exp, "OCPPMiddleware.Receive16 => Error dumping incoming message to path: '{0}'", path);
+                                }
+                            }
+
+                            string ocppMessage = UTF8Encoding.UTF8.GetString(bMessage);
+
+                            Match match = Regex.Match(ocppMessage, MessageRegExp);
+                            if (match != null && match.Groups != null && match.Groups.Count >= 3)
+                            {
+                                string messageTypeId = match.Groups[1].Value;
+                                string uniqueId = match.Groups[2].Value;
+                                string action = match.Groups[3].Value;
+                                string jsonPaylod = match.Groups[4].Value;
+                                logger.LogInformation("OCPPMiddleware.Receive16 => OCPP-Message: Type={0} / ID={1} / Action={2})", messageTypeId, uniqueId, action);
+
+                                OCPPMessage msgIn = new OCPPMessage(messageTypeId, uniqueId, action, jsonPaylod);
+                                if (msgIn.MessageType == "2")
+                                {
+
+
+
+                                    // Request from chargepoint to OCPP server
+                                    OCPPMessage msgOut = controller16.ProcessRequest(msgIn);
+
+                                    // Send OCPP message with optional logging/dump
+                                    await SendOcpp16Message(msgOut, logger, chargePointStatus.WebSocket);
+                                }
+                                else if (msgIn.MessageType == "3" || msgIn.MessageType == "4")
+                                {
+                                    // Process answer from chargepoint
+                                    if (_requestQueue.ContainsKey(msgIn.UniqueId))
+                                    {
+                                        controller16.ProcessAnswer(msgIn, _requestQueue[msgIn.UniqueId]);
+                                        _requestQueue.Remove(msgIn.UniqueId);
+                                    }
+                                    else
+                                    {
+                                        logger.LogError("OCPPMiddleware.Receive16 => HttpContext from caller not found / Msg: {0}", ocppMessage);
+                                    }
                                 }
                                 else
                                 {
-                                    logger.LogError("OCPPMiddleware.Receive16 => HttpContext from caller not found / Msg: {0}", ocppMessage);
+                                    // Unknown message type
+                                    logger.LogError("OCPPMiddleware.Receive16 => Unknown message type: {0} / Msg: {1}", msgIn.MessageType, ocppMessage);
                                 }
                             }
                             else
                             {
-                                // Unknown message type
-                                logger.LogError("OCPPMiddleware.Receive16 => Unknown message type: {0} / Msg: {1}", msgIn.MessageType, ocppMessage);
+                                logger.LogWarning("OCPPMiddleware.Receive16 => Error in RegEx-Matching: Msg={0})", ocppMessage);
                             }
                         }
-                        else
-                        {
-                            logger.LogWarning("OCPPMiddleware.Receive16 => Error in RegEx-Matching: Msg={0})", ocppMessage);
-                        }
+                    }
+                    else
+                    {
+                        // max. allowed message size exceeded => close connection (DoS attack?)
+                        logger.LogInformation("OCPPMiddleware.Receive16 => Allowed message size exceeded - close connection");
+                        await chargePointStatus.WebSocket.CloseOutputAsync(WebSocketCloseStatus.MessageTooBig, string.Empty, CancellationToken.None);
                     }
                 }
                 else

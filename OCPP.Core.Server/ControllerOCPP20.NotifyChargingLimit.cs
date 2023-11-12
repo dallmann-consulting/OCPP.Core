@@ -46,7 +46,7 @@ namespace OCPP.Core.Server
 
             try
             {
-                NotifyChargingLimitRequest notifyChargingLimitRequest = JsonConvert.DeserializeObject<NotifyChargingLimitRequest>(msgIn.JsonPayload);
+                NotifyChargingLimitRequest notifyChargingLimitRequest = DeserializeMessage<NotifyChargingLimitRequest>(msgIn);
                 Logger.LogTrace("NotifyChargingLimit => Message deserialized");
 
 

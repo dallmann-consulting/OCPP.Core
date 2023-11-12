@@ -37,7 +37,7 @@ namespace OCPP.Core.Server
             try
             {
                 Logger.LogTrace("Processing boot notification...");
-                BootNotificationRequest bootNotificationRequest = JsonConvert.DeserializeObject<BootNotificationRequest>(msgIn.JsonPayload);
+                BootNotificationRequest bootNotificationRequest = DeserializeMessage<BootNotificationRequest>(msgIn);
                 Logger.LogTrace("BootNotification => Message deserialized");
 
                 BootNotificationResponse bootNotificationResponse = new BootNotificationResponse();

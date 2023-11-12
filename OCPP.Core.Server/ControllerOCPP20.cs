@@ -32,6 +32,14 @@ namespace OCPP.Core.Server
         public const string VendorId = "dallmann consulting GmbH";
 
         /// <summary>
+        /// Internal string for OCPP protocol version
+        /// </summary>
+        protected override string ProtocolVersion
+        {
+            get { return "20"; }
+        }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public ControllerOCPP20(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus) :

@@ -38,7 +38,7 @@ namespace OCPP.Core.Server
             try
             {
                 Logger.LogTrace("Processing stopTransaction request...");
-                StopTransactionRequest stopTransactionRequest = JsonConvert.DeserializeObject<StopTransactionRequest>(msgIn.JsonPayload);
+                StopTransactionRequest stopTransactionRequest = DeserializeMessage<StopTransactionRequest>(msgIn);
                 Logger.LogTrace("StopTransaction => Message deserialized");
 
                 string idTag = CleanChargeTagId(stopTransactionRequest.IdTag, Logger);

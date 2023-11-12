@@ -45,7 +45,7 @@ namespace OCPP.Core.Server
 
             try
             {
-                NotifyEVChargingScheduleRequest notifyEVChargingScheduleRequest = JsonConvert.DeserializeObject<NotifyEVChargingScheduleRequest>(msgIn.JsonPayload);
+                NotifyEVChargingScheduleRequest notifyEVChargingScheduleRequest = DeserializeMessage<NotifyEVChargingScheduleRequest>(msgIn);
                 Logger.LogTrace("NotifyEVChargingSchedule => Message deserialized");
 
 

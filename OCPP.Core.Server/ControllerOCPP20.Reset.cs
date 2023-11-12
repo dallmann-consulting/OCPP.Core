@@ -37,7 +37,7 @@ namespace OCPP.Core.Server
 
             try
             {
-                ResetResponse resetResponse = JsonConvert.DeserializeObject<ResetResponse>(msgIn.JsonPayload);
+                ResetResponse resetResponse = DeserializeMessage<ResetResponse>(msgIn);
                 Logger.LogInformation("Reset => Answer status: {0}", resetResponse?.Status);
                 WriteMessageLog(ChargePointStatus?.Id, null, msgOut.Action, resetResponse?.Status.ToString(), msgIn.ErrorCode);
 

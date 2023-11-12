@@ -81,7 +81,7 @@ namespace OCPP.Core.Management.Controllers
                                             serverApiUrl += "/";
                                         }
                                         Uri uri = new Uri(serverApiUrl);
-                                        uri = new Uri(uri, $"Reset/{Uri.EscapeUriString(Id)}");
+                                        uri = new Uri(uri, $"Reset/{Uri.EscapeDataString(Id)}");
                                         httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
 
                                         // API-Key authentication?

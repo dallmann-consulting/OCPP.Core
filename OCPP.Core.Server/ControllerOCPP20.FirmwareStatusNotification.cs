@@ -43,7 +43,7 @@ namespace OCPP.Core.Server
 
             try
             {
-                FirmwareStatusNotificationRequest firmwareStatusNotificationRequest = JsonConvert.DeserializeObject<FirmwareStatusNotificationRequest>(msgIn.JsonPayload);
+                FirmwareStatusNotificationRequest firmwareStatusNotificationRequest = DeserializeMessage<FirmwareStatusNotificationRequest>(msgIn);
                 Logger.LogTrace("FirmwareStatusNotification => Message deserialized");
 
 

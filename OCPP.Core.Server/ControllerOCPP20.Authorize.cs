@@ -39,7 +39,7 @@ namespace OCPP.Core.Server
             try
             {
                 Logger.LogTrace("Processing authorize request...");
-                AuthorizeRequest authorizeRequest = JsonConvert.DeserializeObject<AuthorizeRequest>(msgIn.JsonPayload);
+                AuthorizeRequest authorizeRequest = DeserializeMessage<AuthorizeRequest>(msgIn);
                 Logger.LogTrace("Authorize => Message deserialized");
                 idTag = CleanChargeTagId(authorizeRequest.IdToken?.IdToken, Logger);
 

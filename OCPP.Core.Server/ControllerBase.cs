@@ -19,10 +19,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Schema;
 using OCPP.Core.Database;
 using OCPP.Core.Server.Messages_OCPP16;
 
@@ -30,6 +34,11 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerBase
     {
+        /// <summary>
+        /// Internal string for OCPP protocol version
+        /// </summary>
+        protected virtual string ProtocolVersion { get;  }
+
         /// <summary>
         /// Configuration context for reading app settings
         /// </summary>
@@ -59,6 +68,61 @@ namespace OCPP.Core.Server
             else
             {
                 Logger.LogError("New ControllerBase => empty chargepoint status");
+            }
+        }
+
+        /// <summary>
+        /// Deserialize and validate JSON message (if schema file exists)
+        /// </summary>
+        protected T DeserializeMessage<T>(OCPPMessage msg)
+        {
+            string codeBase = Assembly.GetExecutingAssembly().Location;
+            UriBuilder uri = new UriBuilder(codeBase);
+            string path = Uri.UnescapeDataString(uri.Path);
+            codeBase = Path.GetDirectoryName(path);
+
+            bool validateMessages = Configuration.GetValue<bool>("ValidateMessages", false);
+
+            string schemaJson = null;
+            if (validateMessages && 
+                !string.IsNullOrEmpty(codeBase) && 
+                Directory.Exists(codeBase))
+            {
+                string msgTypeName = typeof(T).Name;
+                string filename = Path.Combine(codeBase, $"Schema{ProtocolVersion}", $"{msgTypeName}.json");
+                if (File.Exists(filename))
+                {
+                    Logger.LogTrace("DeserializeMessage => Using schema file: {0}", filename);
+                    schemaJson = File.ReadAllText(filename);
+                }
+            }
+
+            JsonTextReader reader = new JsonTextReader(new StringReader(msg.JsonPayload));
+            JsonSerializer serializer = new JsonSerializer();
+
+            if (!string.IsNullOrEmpty(schemaJson))
+            {
+                JSchemaValidatingReader validatingReader = new JSchemaValidatingReader(reader);
+                validatingReader.Schema = JSchema.Parse(schemaJson);
+
+                IList<string> messages = new List<string>();
+                validatingReader.ValidationEventHandler += (o, a) => messages.Add(a.Message);
+                T obj = serializer.Deserialize<T>(validatingReader);
+                if (messages.Count > 0)
+                {
+                    foreach (string err in messages)
+                    {
+                        Logger.LogWarning("DeserializeMessage {0} => Validation error: {1}", msg.Action, err);
+                    }
+                    throw new FormatException("Message validation failed");
+                }
+                return obj;
+            }
+            else
+            {
+                // Deserialization WITHOUT schema validation
+                Logger.LogTrace("DeserializeMessage => Deserialization without schema validation");
+                return serializer.Deserialize<T>(reader);
             }
         }
 

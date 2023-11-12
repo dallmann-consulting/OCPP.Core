@@ -43,7 +43,7 @@ namespace OCPP.Core.Server
 
             try
             {
-                LogStatusNotificationRequest logStatusNotificationRequest = JsonConvert.DeserializeObject<LogStatusNotificationRequest>(msgIn.JsonPayload);
+                LogStatusNotificationRequest logStatusNotificationRequest = DeserializeMessage<LogStatusNotificationRequest>(msgIn);
                 Logger.LogTrace("LogStatusNotification => Message deserialized");
 
 

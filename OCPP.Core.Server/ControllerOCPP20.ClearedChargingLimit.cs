@@ -44,7 +44,7 @@ namespace OCPP.Core.Server
 
             try
             {
-                ClearedChargingLimitRequest clearedChargingLimitRequest = JsonConvert.DeserializeObject<ClearedChargingLimitRequest>(msgIn.JsonPayload);
+                ClearedChargingLimitRequest clearedChargingLimitRequest = DeserializeMessage<ClearedChargingLimitRequest>(msgIn);
                 Logger.LogTrace("ClearedChargingLimit => Message deserialized");
 
                 if (ChargePointStatus != null)

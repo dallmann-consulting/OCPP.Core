@@ -197,7 +197,7 @@
 
                                 }
                             };
-                            xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/Reset/" + Uri.EscapeUriString(Model.ChargePointId)))", true);
+                            xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/Reset/" + Uri.EscapeDataString(Model.ChargePointId)))", true);
                             xmlhttp.send();
                         }
                     }, {
@@ -245,7 +245,7 @@
 
                                 }
                             };
-                            xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/UnlockConnector/" + Uri.EscapeUriString(Model.ChargePointId)))", true);
+                                xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/UnlockConnector/" + Uri.EscapeDataString(Model.ChargePointId)))", true);
                             xmlhttp.send();
                         }
                     }, {

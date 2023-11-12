@@ -43,7 +43,7 @@ namespace OCPP.Core.Server
             try
             {
                 Logger.LogTrace("TransactionEvent => Processing transactionEvent request...");
-                TransactionEventRequest transactionEventRequest = JsonConvert.DeserializeObject<TransactionEventRequest>(msgIn.JsonPayload);
+                TransactionEventRequest transactionEventRequest = DeserializeMessage<TransactionEventRequest>(msgIn);
                 Logger.LogTrace("TransactionEvent => Message deserialized");
 
                 string idTag = CleanChargeTagId(transactionEventRequest.IdToken?.IdToken, Logger);

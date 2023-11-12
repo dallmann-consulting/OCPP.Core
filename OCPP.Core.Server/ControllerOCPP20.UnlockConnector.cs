@@ -37,7 +37,7 @@ namespace OCPP.Core.Server
 
             try
             {
-                UnlockConnectorResponse unlockConnectorResponse = JsonConvert.DeserializeObject<UnlockConnectorResponse>(msgIn.JsonPayload);
+                UnlockConnectorResponse unlockConnectorResponse = DeserializeMessage<UnlockConnectorResponse>(msgIn);
                 Logger.LogInformation("HandleUnlockConnector => Answer status: {0}", unlockConnectorResponse?.Status);
                 WriteMessageLog(ChargePointStatus?.Id, null, msgOut.Action, unlockConnectorResponse?.Status.ToString(), msgIn.ErrorCode);
 

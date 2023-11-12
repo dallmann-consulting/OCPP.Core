@@ -584,8 +584,7 @@
 					"idToken": {
 						"idToken": "TAG1",
 						"type": "Central"
-					},
-					"evseId": [1,2,3,4] //Just to test
+					}
 				}]);
 				_websocket.send(Auth);
 
@@ -596,7 +595,7 @@
 				sessionStorage.setItem('LastAction', "FirmwareStatusNotification");
 				var FirmStat = JSON.stringify([2, id, "FirmwareStatusNotification", {
 					"status": "Installed",
-					"requestId": "0"
+					"requestId": 0
 				}]);
 				_websocket.send(FirmStat);
 
@@ -740,7 +739,7 @@
 						"serialNumber": "avt.001.13.1",
 						"model": "AVT-Express",
 						"modem": {
-							"iccid": "MMCC IINN NNNN NNNN NN C x",
+							"iccid": "MMCCIINNNNNNNNNNNNCx",
 							"imsi": "520031234567890"
 						},
 						"vendorName": "AVT-Company",
@@ -772,25 +771,25 @@
 					"meterValue": [{
 						"timestamp": formatDate(new Date()),
 						"sampledValue": [{
-							"value": "0",
+							"value": 0,
 							"measurand": "Energy.Active.Import.Register"
 						}, {
-							"value": "7200",
-							"measurand": "Power_Active_Import"
+							"value": 7200,
+							"measurand": "Power.Active.Import"
 						}]
 					}, {
 						"timestamp": formatDate(new Date()),
 						"sampledValue": [{
-							"value": "800",
+							"value": 800,
 							"measurand": "Energy.Active.Import.Register"
 						}, {
-							"value": "20",
+							"value": 20,
 							"measurand": "Energy.Reactive.Import.Register"
 						}]
 					}, {
 						"timestamp": formatDate(new Date()),
 						"sampledValue": [{
-							"value": "42",
+							"value": 42,
 							"measurand": "SoC"
 						}]
 					}]
@@ -823,7 +822,7 @@
 					"evseId": 1,
 					"chargingLimit": {
 						"chargingLimitSource": limit_source,
-						"isGridCritical": "False",
+						"isGridCritical": false,
 					},
 					"chargingSchedule": [charging_schedule(charge_limit)]
 				}]);
@@ -916,7 +915,7 @@
 				sessionStorage.setItem('LastAction', "ClearedChargingLimit");
 				var CCL = JSON.stringify([2, id, "ClearedChargingLimit", {
 					"chargingLimitSource": "Other",
-					"evseId": "2"
+					"evseId": 2
 				}]);
 				 _websocket.send(CCL);
 

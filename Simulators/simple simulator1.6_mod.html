@@ -270,7 +270,7 @@
         logMsg("Connector status changed to: " + connector_locked);
         $('#yellow').show();
         var stpT = JSON.stringify([2, id, "StopTransaction",{
-            "transactionId": ssid,
+            "transactionId": parseInt(ssid),
             "idTag": $("#TAG").val(),
             "timestamp": formatDate(new Date()),
             "meterStop": 20
@@ -351,8 +351,12 @@
         $('#mv').click(function () {
             sessionStorage.setItem('LastAction', "MeterValues");
 			ssid = sessionStorage.getItem('TransactionId');
-            var val = $("#metervalue").val();
-            var MV = JSON.stringify([2, id, "MeterValues", {"connectorId": 2, "transactionId": ssid, "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": val, "measurand": "Energy.Active.Import.Register"},{"value": 800, "measurand": "Power.Active.Import"},{"value": 47, "measurand": "SoC"}]}]}]);
+            var val = String($("#metervalue").val());
+			var MV;
+			if (ssid == null)
+				MV = JSON.stringify([2, id, "MeterValues", {"connectorId": 2, "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": val, "measurand": "Energy.Active.Import.Register"},{"value": "800", "measurand": "Power.Active.Import"},{"value": "47", "measurand": "SoC"}]}]}]);
+			else
+				MV = JSON.stringify([2, id, "MeterValues", {"connectorId": 2, "transactionId": ssid, "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": val, "measurand": "Energy.Active.Import.Register"},{"value": "800", "measurand": "Power.Active.Import"},{"value": "47", "measurand": "SoC"}]}]}]);
             _websocket.send(MV);
 
         });
