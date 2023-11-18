@@ -76,10 +76,8 @@ namespace OCPP.Core.Server
         /// </summary>
         protected T DeserializeMessage<T>(OCPPMessage msg)
         {
-            string codeBase = Assembly.GetExecutingAssembly().Location;
-            UriBuilder uri = new UriBuilder(codeBase);
-            string path = Uri.UnescapeDataString(uri.Path);
-            codeBase = Path.GetDirectoryName(path);
+            string path = Assembly.GetExecutingAssembly().Location;
+            string codeBase = Path.GetDirectoryName(path);
 
             bool validateMessages = Configuration.GetValue<bool>("ValidateMessages", false);
 
