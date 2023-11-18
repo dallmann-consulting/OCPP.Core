@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
@@ -36,6 +37,7 @@ namespace OCPP.Core.Server
             StartTransactionResponse startTransactionResponse = new StartTransactionResponse();
 
             int connectorId = -1;
+            bool denyConcurrentTx = Configuration.GetValue<bool>("DenyConcurrentTx", false);
 
             try
             {
@@ -77,6 +79,20 @@ namespace OCPP.Core.Server
                                 else
                                 {
                                     startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
+
+                                    if (denyConcurrentTx)
+                                    {
+                                        // Check that no open transaction with this idTag exists
+                                        Transaction tx = dbContext.Transactions
+                                            .Where(t => !t.StopTime.HasValue && t.StartTagId == idTag)
+                                            .OrderByDescending(t => t.TransactionId)
+                                            .FirstOrDefault();
+
+                                        if (tx != null)
+                                        {
+                                            startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.ConcurrentTx;
+                                        }
+                                    }
                                 }
                             }
                             else

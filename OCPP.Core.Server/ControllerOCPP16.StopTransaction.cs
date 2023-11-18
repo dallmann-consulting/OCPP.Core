@@ -100,34 +100,9 @@ namespace OCPP.Core.Server
                         using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
                         {
                             Transaction transaction = dbContext.Find<Transaction>(stopTransactionRequest.TransactionId);
-                            if (transaction == null ||
-                                transaction.ChargePointId != ChargePointStatus.Id ||
-                                transaction.StopTime.HasValue)
-                            {
-                                // unknown transaction id or already stopped transaction
-                                // => find latest transaction for the charge point and check if its open
-                                Logger.LogWarning("StopTransaction => Unknown or closed transaction id={0}", transaction?.TransactionId);
-                                transaction = dbContext.Transactions
-                                    .Where(t => t.ChargePointId == ChargePointStatus.Id)
-                                    .OrderByDescending(t => t.TransactionId)
-                                    .FirstOrDefault();
-
-                                if (transaction != null)
-                                {
-                                    Logger.LogTrace("StopTransaction => Last transaction id={0} / Start='{1}' / Stop='{2}'", transaction.TransactionId, transaction.StartTime.ToString("O"), transaction?.StopTime?.ToString("o"));
-                                    if (transaction.StopTime.HasValue)
-                                    {
-                                        Logger.LogTrace("StopTransaction => Last transaction (id={0}) is already closed ", transaction.TransactionId);
-                                        transaction = null;
-                                    }
-                                }
-                                else
-                                {
-                                    Logger.LogTrace("StopTransaction => Found no transaction for charge point '{0}'", ChargePointStatus.Id);
-                                }
-                            }
-
-                            if (transaction != null)
+                            if (transaction != null &&
+                                transaction.ChargePointId == ChargePointStatus.Id &&
+                                !transaction.StopTime.HasValue)
                             {
                                 if (transaction.ConnectorId > 0)
                                 {
@@ -172,7 +147,7 @@ namespace OCPP.Core.Server
                             }
                             else
                             {
-                                Logger.LogError("StopTransaction => Unknown transaction: id={0} / chargepoint={1} / tag={2}", stopTransactionRequest.TransactionId, ChargePointStatus?.Id, idTag);
+                                Logger.LogError("StopTransaction => Unknown or not matching transaction: id={0} / chargepoint={1} / tag={2}", stopTransactionRequest.TransactionId, ChargePointStatus?.Id, idTag);
                                 WriteMessageLog(ChargePointStatus?.Id, transaction?.ConnectorId, msgIn.Action, string.Format("UnknownTransaction:ID={0}/Meter={1}", stopTransactionRequest.TransactionId, stopTransactionRequest.MeterStop), errorCode);
                                 errorCode = ErrorCodes.PropertyConstraintViolation;
                             }
