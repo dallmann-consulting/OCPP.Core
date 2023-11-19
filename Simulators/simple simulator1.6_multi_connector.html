@@ -1,0 +1,474 @@
+<html>
+<head>
+    <style>
+        body {
+            background: #000;
+            color: white;
+            font-family: Arial;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
+        input, select {
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
+        .FullLine {
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
+        button {
+            background: #369;
+            color: #fff;
+            padding: 5px 0;
+            border: none;
+        }
+
+        ul {
+            background: #000;
+            color: #eee;
+        }
+
+    </style>
+</head>
+
+<body>
+<h1>Simple OCPP 1.6 Chargebox Simulator</h1>
+<select style="display:none;"><option value="">OCPP-J1.6</option></select>
+<label>Central Station</label><input id="CP" type="text" class="FullLine" placeholder="Id Station" value="ws://localhost:8081/OCPP/Test1234" />
+<label>Tag</label><input id="TAG" type="text" class="FullLine" placeholder="Tag" value="B4A63CDF"/>
+<h2>Actions</h2>
+<button id="connect">Connect</button>
+<button id="heartbeat">Heartbeat</button>
+<button id="data_transfer">Data Tranfer</button>
+<button id="send">Authorize</button>
+<table style="width: 100%">
+<tr>
+<td style="width: 40%">
+<fieldset>
+	<legend><span id="connector1">Connector 1</span></legend>
+	<button id="start1">Start Transaction</button>
+	<button id="stop1">Stop Transaction</button>
+	<label>Meter value</label>&nbsp;<input id="metervalue1" type="text" placeholder="Meter value" value="100" />
+	<label>State of Charge</label>&nbsp;<input id="soc1" type="text" placeholder="SoC" value="23" />
+	<button id="mv1">Send Meter Values</button>
+	<label>Status</label>&nbsp;<select id="statusValue1" >
+		<option selected="selected">Available</option>
+		<option>Preparing</option>
+		<option>Charging</option>
+		<option>SuspendedEVSE</option>
+		<option>SuspendedEV</option>
+		<option>Finishing</option>
+		<option>Reserved</option>
+		<option>Unavailable</option>
+		<option>Faulted</option>
+	</select>	
+	<button id="status1">Status Notification</button>
+</fieldset>
+</td>
+<td style="width: 40%">
+<fieldset>
+	<legend><span id="connector2">Connector 2</span></legend>
+	<button id="start2">Start Transaction</button>
+	<button id="stop2">Stop Transaction</button>
+	<label>Meter value</label>&nbsp;<input id="metervalue2" type="text" placeholder="Meter value" value="500" />
+	<label>State of Charge</label>&nbsp;<input id="soc2" type="text" placeholder="SoC" value="63" />
+	<button id="mv2">Send Meter Values</button>
+	<label>Status</label>&nbsp;<select id="statusValue2" >
+		<option selected="selected">Available</option>
+		<option>Preparing</option>
+		<option>Charging</option>
+		<option>SuspendedEVSE</option>
+		<option>SuspendedEV</option>
+		<option>Finishing</option>
+		<option>Reserved</option>
+		<option>Unavailable</option>
+		<option>Faulted</option>
+	</select>	
+	<button id="status2">Status Notification</button>
+</fieldset>
+</td>
+</tr>
+</table>
+<ul id="console"></ul>
+<script
+        src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+
+<script>
+    var c = 0;
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    var id = randomId();
+    var _websocket = null;
+    var connector_locked = false;
+
+    function formatDate(date) {
+        var day = String(date.getUTCDate());
+        if (day.length <2){
+            day = ('0' + day.slice(-2));
+        }
+
+        var monthIndex = String(date.getUTCMonth()+1);
+        if (monthIndex.length <2){
+            monthIndex = ('0' + monthIndex.slice(-2));
+        }
+        var year = date.getUTCFullYear();
+        var h = String(date.getUTCHours());
+        var m = String(date.getUTCMinutes());
+        var s = String(date.getUTCSeconds());
+
+
+        if (h.length <2){
+            h = ('0' + h.slice(-2));
+        }
+        if (m.length <2){
+            m = ('0' + m.slice(-2));
+        }
+        if (s.length <2){
+            s = ('0' + s.slice(-2));
+        }
+        return year + '-' + monthIndex + '-' + day+"T"+h+":"+m+":"+s+"Z";
+    }
+
+    function randomId() {
+        id = "";
+        for (var i = 0; i < 36; i++) {
+            id += possible.charAt(Math.floor(Math.random() * possible.length));
+        }
+        return id;
+    }
+
+    function wsConnect() {
+        var wsurl = $('select').val();
+        var CP = $('#CP').val();
+
+        if (_websocket) {
+			setConnectionStatus(false);
+            _websocket.close(3001);
+        } else {
+            _websocket = new WebSocket(wsurl + "" + CP, ["ocpp1.6", "ocpp1.5"]);
+            _websocket.onopen = function (authorizationData) {
+
+                sessionStorage.setItem('LastAction', "BootNotification");
+				setConnectionStatus(true);
+                BootNotification();
+
+                $('#connect').text('Disconnect').css('background', 'green');
+
+            };
+
+            _websocket.onmessage = function (msg) {
+                c++;
+                var ddata = (JSON.parse(msg.data));
+
+                if(c==1){
+                    var hb_interval = handleData(ddata);
+                    sessionStorage.setItem("Configuration",hb_interval);
+                    startHB(hb_interval*1000);
+                }
+
+                if (ddata[0] === 3) {
+                    la = getLastAction();
+
+                    if (la.startsWith("startTransaction")){
+
+                        var dd = ddata[2];
+						
+						var status = dd.idTagInfo.status;
+						var txId = dd.transactionId;
+
+						if (status == 'Accepted')
+						{
+							logMsg("Data exchange successful!");
+							sessionStorage.setItem('TransactionId'+la.charAt(16), txId);
+							setTransactionStatus(parseInt(la.charAt(16)), true);
+						}
+						else
+						{
+							logMsg("Transaction rejected: "+status);							
+						}
+                    }
+                    logMsg("Response: " + JSON.stringify(ddata[2]));
+                } else if ((JSON.parse(msg.data))[0] === 4) {
+                    logMsg("Data exchange failed - JSON is not accepted!");
+                } else if ((JSON.parse(msg.data))[0] === 2) {
+                    logMsg((JSON.parse(msg.data))[2]);
+                    id = (JSON.parse(msg.data))[1];
+
+                    switch (ddata[2]) {
+                        case "Reset":
+                            //Reset type SOFT, HARD
+                            var ResetS = JSON.stringify([3, id, {"status": "Accepted"}]);
+                            _websocket.send(ResetS);
+                            location.reload();
+                            break;
+                        case "RemoteStopTransaction":
+                            //TransactionID
+                            var remStp = JSON.stringify([3, id, {"status": "Accepted"}]);
+                            _websocket.send(remStp);
+
+                            var stop_id = (JSON.parse(msg.data)[3].transactionId);
+
+                            stopTransaction(stop_id);
+                            break;
+                        case "RemoteStartTransaction":
+                            //Need to get idTag, connectorId (map - ddata[3])
+
+                            var remStrt = JSON.stringify([3, id, {"status": "Accepted"}]);
+                            _websocket.send(remStrt);
+                            startTransaction();
+
+                            break;
+                        case "UnlockConnector": /////////ERROR!!!!!!!!
+                            //connectorId
+                            var UC = JSON.stringify([3, id, {"status": "Unlocked"}]);
+                            _websocket.send(UC);
+                             connector_locked = false;
+							setTransactionStatus(1, false);
+                            logMsg("Connector status changed to: "+connector_locked);
+                            break;
+                        default:
+                            var error = JSON.stringify([4, id]);
+                            _websocket.send(error);
+                            break;
+                    }
+                }
+            };
+
+            _websocket.onclose = function (evt) {
+                $('#connect').text('Connect').css('background', '#369');
+                if (evt.code == 3001) {
+                    logMsg('ws closed');
+                    _websocket = null;
+                } else {
+                    logMsg('ws connection error: ' + evt.code);
+                    $('#console').html("");
+                    _websocket = null;
+                    wsConnect();
+                }
+            };
+
+            _websocket.onerror = function (evt) {
+                if (_websocket.readyState == 1) {
+					setConnectionStatus(false);
+                    logMsg('ws normal error: ' + evt.type);
+                }
+            };
+        }
+    }
+
+    function logMsg(err) {
+        console.log(err);
+        $('#console').append('<li>' + err + '</li>');
+    }
+
+    function Authorize(){
+        sessionStorage.setItem('LastAction', "Authorize");
+        var Auth = JSON.stringify([2, id, "Authorize", {"idTag": $("#TAG").val()}]);
+        _websocket.send(Auth);
+    }
+
+    function startTransaction(connectorId){
+        sessionStorage.setItem('LastAction', "startTransaction"+connectorId);
+        connector_locked = true;
+        logMsg("Connector"+connectorId+" status changed to: " + connector_locked);
+        var strtT = JSON.stringify([2, id, "StartTransaction", {
+            "connectorId": connectorId,
+            "idTag": $("#TAG").val(),
+            "timestamp": formatDate(new Date()),
+            "meterStart": 0,
+            "reservationId": 0
+        }]);
+        _websocket.send(strtT);
+    }
+
+    function stopTransaction(connectorId, transaction_id = false){
+        sessionStorage.setItem('LastAction', "stopTransaction"+connectorId);
+        transaction_id == false ? ssid = sessionStorage.getItem('TransactionId'+connectorId) : ssid = transaction_id;
+        connector_locked = false;
+        logMsg("Connector"+connectorId+" status changed to: " + connector_locked);
+		setConnectionStatus(true);
+        var stpT = JSON.stringify([2, id, "StopTransaction",{
+            "transactionId": parseInt(ssid),
+            "idTag": $("#TAG").val(),
+            "timestamp": formatDate(new Date()),
+            "meterStop": 20
+        }]);
+        _websocket.send(stpT);
+    }
+
+    function handleData(data, request = false){
+        var lastAction = getLastAction();
+        if(lastAction = "BootNotification"){
+            data = data[2];
+            heartbeat_interval = data.interval;
+            return heartbeat_interval;
+        }else if(lastAction.startsWith("StartTransaction")){
+            return "StartTransaction";
+        }else if (1==2){
+            alert("else");
+        }
+    }
+
+    function getLastAction(){
+        var LastAction = sessionStorage.getItem("LastAction");
+        return LastAction;
+    }
+
+    function BootNotification(){
+        var BN = JSON.stringify([2, id, "BootNotification", {
+            "chargePointVendor": "AVT-Company",
+            "chargePointModel": "AVT-Express",
+            "chargePointSerialNumber": "avt.001.13.1",
+            "chargeBoxSerialNumber": "avt.001.13.1.01",
+            "firmwareVersion": "0.9.87",
+            "iccid": "",
+            "imsi": "",
+            "meterType": "AVT NQC-ACDC",
+            "meterSerialNumber": "avt.001.13.1.01"
+        }]);
+
+        logMsg('ws connected');
+
+        _websocket.send(BN);
+    }
+
+    function startHB(interval){
+        logMsg("Setting heartbeat interval to "+interval);
+        setInterval(send_heartbeat,interval);
+    }
+
+    function send_heartbeat() {
+        sessionStorage.setItem('LastAction', "Heartbeat");
+        var HB = JSON.stringify([2, id, "Heartbeat", {}]);
+        _websocket.send(HB);
+    }
+	
+	function send_MeterValues(connectorId)
+	{
+		sessionStorage.setItem('LastAction', "MeterValues"+connectorId);
+		ssid = sessionStorage.getItem('TransactionId');
+		var meterVal = String($("#metervalue"+connectorId).val());
+		var socVal = String($("#soc"+connectorId).val());
+		var MV;
+		if (ssid == null)
+			MV = JSON.stringify([2, id, "MeterValues", {"connectorId": connectorId, "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": meterVal, "measurand": "Energy.Active.Import.Register"},{"value": "800", "measurand": "Power.Active.Import"},{"value": socVal, "measurand": "SoC"}]}]}]);
+		else
+			MV = JSON.stringify([2, id, "MeterValues", {"connectorId": connectorId, "transactionId": ssid, "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": meterVal, "measurand": "Energy.Active.Import.Register"},{"value": "800", "measurand": "Power.Active.Import"},{"value": socVal, "measurand": "SoC"}]}]}]);
+		_websocket.send(MV);
+	}
+	
+	function send_StatusNotification(connectorId)
+	{
+		sessionStorage.setItem('LastAction', "StatusNotification"+connectorId);
+		var statusVal = String($("#statusValue"+connectorId).val());
+		var SN = JSON.stringify([2, id, "StatusNotification", {
+			"connectorId": connectorId,
+			"status": statusVal,
+			"errorCode": "NoError",
+			"info": "",
+			"timestamp": formatDate(new Date()),
+			"vendorId": "",
+			"vendorErrorCode": ""
+		}]);
+		_websocket.send(SN);
+	}
+
+	function setConnectionStatus(connected)
+	{
+		if (connected)
+		{
+			setTransactionStatus(1, false);
+			setTransactionStatus(2, false);
+		}
+		else
+		{
+			$('#connector1').css("background-color", "");
+			$('#connector2').css("background-color", "");
+		}
+	}
+
+	function setTransactionStatus(connectorId, active)
+	{
+		if (active)
+			$('#connector'+connectorId).css("background-color", "green");
+		else
+			$('#connector'+connectorId).css("background-color", "#C0C000");
+
+	}
+
+    $( document ).ready(function() {
+		setConnectionStatus(false);
+
+        //bind controls
+        $('#connect').click(function () {
+            $('#console').html("");
+            wsConnect();
+        });
+
+        $('#send').click(function () {
+            Authorize();
+        });
+
+        $('#start1').click(function () {
+            startTransaction(1);
+        });
+        $('#start2').click(function () {
+            startTransaction(2);
+        });
+
+        $('#stop1').click(function () {
+            stopTransaction(1);
+        });
+        $('#stop2').click(function () {
+            stopTransaction(2);
+        });
+
+        $('#mv1').click(function () {
+			send_MeterValues(1);
+        });
+        $('#mv2').click(function () {
+			send_MeterValues(2);
+        });
+
+        $('#heartbeat').click(function () {
+            send_heartbeat();
+        });
+
+        $('#status1').click(function () {
+			send_StatusNotification(1);
+        });
+        $('#status2').click(function () {
+			send_StatusNotification(2);
+        });
+
+        $('#data_transfer').click(function () {
+            sessionStorage.setItem('LastAction', "DataTransfer");
+            var DT = JSON.stringify([2, id, "DataTransfer", {
+                "vendorId": "rus.avt.cp",
+                "messageId": "GetChargeInstruction",
+                "data": ""
+            }]);
+            _websocket.send(DT);
+        });
+
+        $('#connect').on('change', function () {
+            if (_websocket) {
+                _websocket.close(3001);
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
