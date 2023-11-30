@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
@@ -42,7 +43,7 @@ namespace OCPP.Core.Server
 
                 BootNotificationResponse bootNotificationResponse = new BootNotificationResponse();
                 bootNotificationResponse.CurrentTime = DateTimeOffset.UtcNow;
-                bootNotificationResponse.Interval = 300;    // 300 seconds
+                bootNotificationResponse.Interval = Configuration.GetValue<int>("HeartBeatInterval", 300);  // in seconds
 
                 if (ChargePointStatus != null)
                 {
