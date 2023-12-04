@@ -34,6 +34,7 @@ namespace OCPP.Core.Server
         {
             string errorCode = null;
             StopTransactionResponse stopTransactionResponse = new StopTransactionResponse();
+            stopTransactionResponse.IdTagInfo = new IdTagInfo();
 
             try
             {
@@ -51,7 +52,6 @@ namespace OCPP.Core.Server
                 }
                 else
                 {
-                    stopTransactionResponse.IdTagInfo = new IdTagInfo();
                     stopTransactionResponse.IdTagInfo.ExpiryDate = MaxExpiryDate;
 
                     try
@@ -83,7 +83,6 @@ namespace OCPP.Core.Server
 
                             Logger.LogInformation("StopTransaction => RFID-tag='{0}' => Status: {1}", idTag, stopTransactionResponse.IdTagInfo.Status);
                         }
-
 
                     }
                     catch (Exception exp)
