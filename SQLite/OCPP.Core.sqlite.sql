@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS "Transactions" (
 
 /**** New with V1.1.0 ****/
 CREATE TABLE IF NOT EXISTS "ConnectorStatus" (
-	"ChargePointId"	TEXT NOT NULL UNIQUE,
+	"ChargePointId"	TEXT NOT NULL,
 	"ConnectorId" INTEGER,
 	"ConnectorName"	TEXT,
 	"LastStatus"	TEXT,
