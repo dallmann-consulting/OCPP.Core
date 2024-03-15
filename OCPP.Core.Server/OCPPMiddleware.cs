@@ -341,6 +341,86 @@ namespace OCPP.Core.Server
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
                     }
+                    else if (cmd == "RemoteStartTransaction")
+                    {
+                        if (!string.IsNullOrEmpty(urlChargePointId))
+                        {
+                            try
+                            {
+                                ChargePointStatus status = null;
+                                if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
+                                {
+                                    // Send message to chargepoint
+                                    if (status.Protocol == Protocol_OCPP20)
+                                    {
+                                        // OCPP V2.0
+                                        await RemoteStartTransaction20(status, context);
+                                    }
+                                    else
+                                    {
+                                        // OCPP V1.6
+                                        await RemoteStartTransaction16(status, context);
+                                    }
+                                }
+                                else
+                                {
+                                    // Chargepoint offline
+                                    _logger.LogError("OCPPMiddleware SoftReset => Chargepoint offline: {0}", urlChargePointId);
+                                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                                }
+                            }
+                            catch (Exception exp)
+                            {
+                                _logger.LogError(exp, "OCPPMiddleware SoftReset => Error: {0}", exp.Message);
+                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogError("OCPPMiddleware SoftReset => Missing chargepoint ID");
+                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        }
+                    }
+                    else if (cmd == "RemoteStopTransaction")
+                    {
+                        if (!string.IsNullOrEmpty(urlChargePointId))
+                        {
+                            try
+                            {
+                                ChargePointStatus status = null;
+                                if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
+                                {
+                                    // Send message to chargepoint
+                                    if (status.Protocol == Protocol_OCPP20)
+                                    {
+                                        // OCPP V2.0
+                                        await RemoteStopTransaction20(status, context);
+                                    }
+                                    else
+                                    {
+                                        // OCPP V1.6
+                                        await RemoteStopTransaction16(status, context);
+                                    }
+                                }
+                                else
+                                {
+                                    // Chargepoint offline
+                                    _logger.LogError("OCPPMiddleware SoftReset => Chargepoint offline: {0}", urlChargePointId);
+                                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                                }
+                            }
+                            catch (Exception exp)
+                            {
+                                _logger.LogError(exp, "OCPPMiddleware SoftReset => Error: {0}", exp.Message);
+                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogError("OCPPMiddleware SoftReset => Missing chargepoint ID");
+                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        }
+                    }
                     else if (cmd == "UnlockConnector")
                     {
                         if (!string.IsNullOrEmpty(urlChargePointId))
