@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using OCPP.Core.Server.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -157,6 +158,100 @@ namespace OCPP.Core.Server
             string apiResult = await msgOut.TaskCompletionSource.Task;
 
             // 
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        /// <summary>
+        /// Sends a GetLocalListVersion request to the chargepoint.
+        /// </summary>
+        private async Task GetLocalListVersion16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
+            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus);
+
+            Messages_OCPP16.GetLocalListVersionRequest request = new Messages_OCPP16.GetLocalListVersionRequest();
+            string jsonRequest = JsonConvert.SerializeObject(request);
+
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = "GetLocalListVersion";
+            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.JsonPayload = jsonRequest;
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
+
+            // store HttpContext with MsgId for later answer processing (=> send answer to API caller)
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            // send OCPP message with optional logging/dump
+            await SendOcpp16Message(msgOut, logger, chargePointStatus.WebSocket);
+
+            // wait for asynchronous chargepoint response and processing
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            logger.LogInformation("GetLocalListVersion returned: " + apiResult);
+
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        private async Task SendLocalList16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
+            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus);
+
+            // read values from request body
+            apiCallerContext.Request.EnableBuffering();
+            apiCallerContext.Request.Body.Seek(0, SeekOrigin.Begin);
+
+            SendLocalListModel inputModel = new SendLocalListModel();
+            using (StreamReader stream = new StreamReader(apiCallerContext.Request.Body))
+            {
+                string body = await stream.ReadToEndAsync();
+                inputModel = JsonConvert.DeserializeObject<SendLocalListModel>(body);
+            }
+
+            // prepare request
+            Messages_OCPP16.SendLocalListRequest request = new Messages_OCPP16.SendLocalListRequest();
+            request.ListVersion = inputModel.ListVersion;
+            request.Type = Messages_OCPP16.UpdateType.Full;
+
+            request.LocalAuthorizationList = new List<Messages_OCPP16.AuthorizationData>();
+            foreach (var tag in inputModel.Tags)
+            {
+                request.LocalAuthorizationList.Add(new Messages_OCPP16.AuthorizationData
+                {
+                    IdTag = tag.TagId,
+                    IdTagInfo = new Messages_OCPP16.IdTagInfo
+                    {
+                        Status = Messages_OCPP16.IdTagInfoStatus.Accepted,
+                        ExpiryDate = tag.ExpiryDate
+                    }
+                });
+            }
+
+            string jsonRequest = JsonConvert.SerializeObject(request);
+
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = "SendLocalList";
+            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.JsonPayload = jsonRequest;
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
+
+            // store HttpContext with MsgId for later answer processing (=> send answer to API caller)
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            // send OCPP message with optional logging/dump
+            await SendOcpp16Message(msgOut, logger, chargePointStatus.WebSocket);
+
+            // wait for asynchronous chargepoint response and processing
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            logger.LogInformation("SendLocalList returned: " + apiResult);
+
             apiCallerContext.Response.StatusCode = 200;
             apiCallerContext.Response.ContentType = "application/json";
             await apiCallerContext.Response.WriteAsync(apiResult);

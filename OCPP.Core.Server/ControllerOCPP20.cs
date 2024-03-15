@@ -146,6 +146,14 @@ namespace OCPP.Core.Server
                     HandleReset(msgIn, msgOut);
                     break;
 
+                case "GetLocalListVersion":
+                    HandleGetLocalListVersion(msgIn, msgOut);
+                    break;
+
+                case "SendLocalList":
+                    HandleSendLocalList(msgIn, msgOut);
+                    break;
+
                 case "UnlockConnector":
                     HandleUnlockConnector(msgIn, msgOut);
                     break;

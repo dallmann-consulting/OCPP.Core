@@ -126,6 +126,14 @@ namespace OCPP.Core.Server
                     HandleUnlockConnector(msgIn, msgOut);
                     break;
 
+                case "GetLocalListVersion":
+                    HandleGetLocalListVersion(msgIn, msgOut);
+                    break;
+
+                case "SendLocalList":
+                    HandleSendLocalList(msgIn, msgOut);
+                    break;
+
                 default:
                     WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");
                     break;
