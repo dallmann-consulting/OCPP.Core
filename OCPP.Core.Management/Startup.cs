@@ -48,6 +48,8 @@ namespace OCPP.Core.Management
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddOCCPDbContext(Configuration);
+
             services.AddControllersWithViews();
 
             services.AddAuthentication(

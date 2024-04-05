@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
 namespace OCPP.Core.Management.Controllers
@@ -36,7 +37,8 @@ namespace OCPP.Core.Management.Controllers
         public AccountController(
             UserManager userManager,
             ILoggerFactory loggerFactory,
-            IConfiguration config) : base(userManager, loggerFactory, config)
+            IConfiguration config,
+            OCPPCoreContext dbContext) : base(userManager, loggerFactory, config, dbContext)
         {
             Logger = loggerFactory.CreateLogger<AccountController>();
         }

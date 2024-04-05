@@ -39,24 +39,7 @@ namespace OCPP.Core.Server
                 .AddJsonFile("appsettings.json", optional: false)
                 .Build();
 
-            try
-            {
-                var host = CreateHostBuilder(args).Build();
-
-                // Force the EF model creation for faster startup
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(config))
-                {
-                    dbContext.Database.Migrate();
-                    IModel model = dbContext.Model;
-                }
-
-                host.Run();
-            }
-            catch //(Exception e)
-            {
-                //logger.Error(e, "OCPP server stopped because of exception");
-                throw;
-            }
+            CreateHostBuilder(args).Build().Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

@@ -61,47 +61,44 @@ namespace OCPP.Core.Server
                 {
                     try
                     {
-                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                        ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
+                        if (ct != null)
                         {
-                            ChargeTag ct = dbContext.Find<ChargeTag>(idTag);
-                            if (ct != null)
+                            if (ct.ExpiryDate.HasValue) startTransactionResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
+                            startTransactionResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
+                            if (ct.Blocked.HasValue && ct.Blocked.Value)
                             {
-                                if (ct.ExpiryDate.HasValue) startTransactionResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
-                                startTransactionResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
-                                if (ct.Blocked.HasValue && ct.Blocked.Value)
-                                {
-                                    startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
-                                }
-                                else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                                {
-                                    startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
-                                }
-                                else
-                                {
-                                    startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-
-                                    if (denyConcurrentTx)
-                                    {
-                                        // Check that no open transaction with this idTag exists
-                                        Transaction tx = dbContext.Transactions
-                                            .Where(t => !t.StopTime.HasValue && t.StartTagId == idTag)
-                                            .OrderByDescending(t => t.TransactionId)
-                                            .FirstOrDefault();
-
-                                        if (tx != null)
-                                        {
-                                            startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.ConcurrentTx;
-                                        }
-                                    }
-                                }
+                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
+                            }
+                            else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                            {
+                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
                             }
                             else
                             {
-                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                            }
+                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
 
-                            Logger.LogInformation("StartTransaction => Charge tag='{0}' => Status: {1}", idTag, startTransactionResponse.IdTagInfo.Status);
+                                if (denyConcurrentTx)
+                                {
+                                    // Check that no open transaction with this idTag exists
+                                    Transaction tx = DbContext.Transactions
+                                        .Where(t => !t.StopTime.HasValue && t.StartTagId == idTag)
+                                        .OrderByDescending(t => t.TransactionId)
+                                        .FirstOrDefault();
+
+                                    if (tx != null)
+                                    {
+                                        startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.ConcurrentTx;
+                                    }
+                                }
+                            }
                         }
+                        else
+                        {
+                            startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                        }
+
+                        Logger.LogInformation("StartTransaction => Charge tag='{0}' => Status: {1}", idTag, startTransactionResponse.IdTagInfo.Status);
                     }
                     catch (Exception exp)
                     {
@@ -120,21 +117,18 @@ namespace OCPP.Core.Server
                 {
                     try
                     {
-                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
-                        {
-                            Transaction transaction = new Transaction();
-                            transaction.ChargePointId = ChargePointStatus?.Id;
-                            transaction.ConnectorId = startTransactionRequest.ConnectorId;
-                            transaction.StartTagId = idTag;
-                            transaction.StartTime = startTransactionRequest.Timestamp.UtcDateTime;
-                            transaction.MeterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh
-                            transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();
-                            dbContext.Add<Transaction>(transaction);
-                            dbContext.SaveChanges();
+                        Transaction transaction = new Transaction();
+                        transaction.ChargePointId = ChargePointStatus?.Id;
+                        transaction.ConnectorId = startTransactionRequest.ConnectorId;
+                        transaction.StartTagId = idTag;
+                        transaction.StartTime = startTransactionRequest.Timestamp.UtcDateTime;
+                        transaction.MeterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh
+                        transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();
+                        DbContext.Add<Transaction>(transaction);
+                        DbContext.SaveChanges();
 
-                            // Return DB-ID as transaction ID
-                            startTransactionResponse.TransactionId = transaction.TransactionId;
-                        }
+                        // Return DB-ID as transaction ID
+                        startTransactionResponse.TransactionId = transaction.TransactionId;
                     }
                     catch (Exception exp)
                     {

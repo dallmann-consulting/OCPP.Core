@@ -75,80 +75,78 @@ namespace OCPP.Core.Management.Controllers
                 }
 
                 string currentConnectorName = string.Empty;
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
-                {
-                    Logger.LogTrace("Export: Loading charge points...");
-                    tlvm.ConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
 
-                    // Preferred: use specific connector name
-                    foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
+                Logger.LogTrace("Export: Loading charge points...");
+                tlvm.ConnectorStatuses = DbContext.ConnectorStatuses.ToList<ConnectorStatus>();
+
+                // Preferred: use specific connector name
+                foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
+                {
+                    if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
                     {
-                        if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
+                        currentConnectorName = cs.ConnectorName;
+                        /*
+                        if (string.IsNullOrEmpty(tlvm.CurrentConnectorName))
                         {
-                            currentConnectorName = cs.ConnectorName;
-                            /*
-                            if (string.IsNullOrEmpty(tlvm.CurrentConnectorName))
-                            {
-                                currentConnectorName = $"{Id}:{cs.ConnectorId}";
-                            }
-                            */
+                            currentConnectorName = $"{Id}:{cs.ConnectorId}";
+                        }
+                        */
+                        break;
+                    }
+                }
+                // default: combined name with charge point and connector
+                if (string.IsNullOrEmpty(currentConnectorName))
+                {
+                    tlvm.ChargePoints = DbContext.ChargePoints.ToList<ChargePoint>();
+                    foreach(ChargePoint cp in tlvm.ChargePoints)
+                    {
+                        if (cp.ChargePointId == Id)
+                        {
+                            currentConnectorName = $"{cp.Name}:{currentConnectorId}";
                             break;
                         }
                     }
-                    // default: combined name with charge point and connector
                     if (string.IsNullOrEmpty(currentConnectorName))
                     {
-                        tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
-                        foreach(ChargePoint cp in tlvm.ChargePoints)
-                        {
-                            if (cp.ChargePointId == Id)
-                            {
-                                currentConnectorName = $"{cp.Name}:{currentConnectorId}";
-                                break;
-                            }
-                        }
-                        if (string.IsNullOrEmpty(currentConnectorName))
-                        {
-                            // Fallback: ID + connector
-                            currentConnectorName = $"{Id}:{currentConnectorId}";
-                        }
+                        // Fallback: ID + connector
+                        currentConnectorName = $"{Id}:{currentConnectorId}";
                     }
-
-                    // load charge tags for name resolution
-                    Logger.LogTrace("Export: Loading charge tags...");
-                    List<ChargeTag> chargeTags = dbContext.ChargeTags.ToList<ChargeTag>();
-                    tlvm.ChargeTags = new Dictionary<string, ChargeTag>();
-                    if (chargeTags != null)
-                    {
-                        foreach (ChargeTag tag in chargeTags)
-                        {
-                            tlvm.ChargeTags.Add(tag.TagId, tag);
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
-                    {
-                        Logger.LogTrace("Export: Loading charge point transactions...");
-                        tlvm.Transactions = dbContext.Transactions
-                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
-                                                        t.ConnectorId == tlvm.CurrentConnectorId &&
-                                                        t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
-                                            .OrderByDescending(t => t.TransactionId)
-                                            .ToList<Transaction>();
-                    }
-
-                    StringBuilder connectorName = new StringBuilder(currentConnectorName);
-                    foreach (char c in Path.GetInvalidFileNameChars())
-                    {
-                        connectorName.Replace(c, '_');
-                    }
-
-                    string filename = string.Format("Transactions_{0}.csv", connectorName);
-                    string csv = CreateCsv(tlvm, currentConnectorName);
-                    Logger.LogInformation("Export: File => {0} Chars / Name '{1}'", csv.Length, filename);
-
-                    return File(Encoding.GetEncoding("ISO-8859-1").GetBytes(csv), "text/csv", filename);
                 }
+
+                // load charge tags for name resolution
+                Logger.LogTrace("Export: Loading charge tags...");
+                List<ChargeTag> chargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
+                tlvm.ChargeTags = new Dictionary<string, ChargeTag>();
+                if (chargeTags != null)
+                {
+                    foreach (ChargeTag tag in chargeTags)
+                    {
+                        tlvm.ChargeTags.Add(tag.TagId, tag);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
+                {
+                    Logger.LogTrace("Export: Loading charge point transactions...");
+                    tlvm.Transactions = DbContext.Transactions
+                                        .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
+                                                    t.ConnectorId == tlvm.CurrentConnectorId &&
+                                                    t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
+                                        .OrderByDescending(t => t.TransactionId)
+                                        .ToList<Transaction>();
+                }
+
+                StringBuilder connectorName = new StringBuilder(currentConnectorName);
+                foreach (char c in Path.GetInvalidFileNameChars())
+                {
+                    connectorName.Replace(c, '_');
+                }
+
+                string filename = string.Format("Transactions_{0}.csv", connectorName);
+                string csv = CreateCsv(tlvm, currentConnectorName);
+                Logger.LogInformation("Export: File => {0} Chars / Name '{1}'", csv.Length, filename);
+
+                return File(Encoding.GetEncoding("ISO-8859-1").GetBytes(csv), "text/csv", filename);
             }
             catch (Exception exp)
             {
