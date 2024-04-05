@@ -175,6 +175,8 @@ namespace OCPP.Core.Database
                     .HasForeignKey(d => d.ChargePointId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Transactions_ChargePoint");
+
+                entity.HasIndex(e => new { e.ChargePointId, e.ConnectorId });
             });
 
             OnModelCreatingPartial(modelBuilder);

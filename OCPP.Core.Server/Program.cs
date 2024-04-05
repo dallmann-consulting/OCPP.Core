@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -43,6 +44,7 @@ namespace OCPP.Core.Server
                 // Force the EF model creation for faster startup
                 using (OCPPCoreContext dbContext = new OCPPCoreContext(config))
                 {
+                    dbContext.Database.Migrate();
                     IModel model = dbContext.Model;
                 }
 
