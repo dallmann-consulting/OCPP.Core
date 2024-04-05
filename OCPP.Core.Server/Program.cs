@@ -41,6 +41,8 @@ namespace OCPP.Core.Server
 
             try
             {
+                var host = CreateHostBuilder(args).Build();
+
                 // Force the EF model creation for faster startup
                 using (OCPPCoreContext dbContext = new OCPPCoreContext(config))
                 {
@@ -48,7 +50,7 @@ namespace OCPP.Core.Server
                     IModel model = dbContext.Model;
                 }
 
-                CreateHostBuilder(args).Build().Run();
+                host.Run();
             }
             catch //(Exception e)
             {
