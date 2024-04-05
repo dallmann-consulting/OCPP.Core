@@ -42,7 +42,7 @@ namespace OCPP.Core.Management.Controllers
             IConfiguration config) : base(userManager, loggerFactory, config)
         {
             _localizer = localizer;
-            Logger = loggerFactory.CreateLogger<HomeController>();
+            Logger = loggerFactory.CreateLogger<ApiController>();
         }
 
         [Authorize]
