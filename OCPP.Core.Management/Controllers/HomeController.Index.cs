@@ -138,7 +138,41 @@ namespace OCPP.Core.Management.Controllers
                 using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
                 {
                     // List of charge point status (OCPP messages) with latest transaction (if one exist)
-                    List<ConnectorStatusView> connectorStatusViewList = dbContext.ConnectorStatusViews.ToList<ConnectorStatusView>();
+                    var connectorStatusViewList = dbContext.ConnectorStatuses
+                        .GroupJoin(
+                            dbContext.Transactions,
+                            cs => new { cs.ChargePointId, cs.ConnectorId },
+                            t => new { t.ChargePointId, t.ConnectorId },
+                            (cs, transactions) => new { cs, transactions }
+                        )
+                        .SelectMany(
+                            x => x.transactions.DefaultIfEmpty(),
+                            (x, transaction) => new ConnectorStatusView
+                            {
+                                ChargePointId = x.cs.ChargePointId,
+                                ConnectorId = x.cs.ConnectorId,
+                                ConnectorName = x.cs.ConnectorName,
+                                LastStatus = x.cs.LastStatus,
+                                LastStatusTime = x.cs.LastStatusTime,
+                                LastMeter = x.cs.LastMeter,
+                                LastMeterTime = x.cs.LastMeterTime,
+                                TransactionId = (int?)transaction.TransactionId,
+                                StartTagId = transaction.StartTagId,
+                                StartTime = transaction.StartTime,
+                                MeterStart = transaction.MeterStart,
+                                StartResult = transaction.StartResult,
+                                StopTagId = transaction.StopTagId,
+                                StopTime = transaction.StopTime,
+                                MeterStop = transaction.MeterStop,
+                                StopReason = transaction.StopReason
+                            }
+                        )
+                        .Where(x => x.TransactionId == null ||
+                                    x.TransactionId == dbContext.Transactions
+                                        .Where(t => t.ChargePointId == x.ChargePointId && t.ConnectorId == x.ConnectorId)
+                                        .Select(t => t.TransactionId)
+                                        .Max())
+                        .ToList();
 
                     // Count connectors for every charge point (=> naming scheme)
                     Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
