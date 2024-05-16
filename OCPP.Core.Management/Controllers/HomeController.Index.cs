@@ -218,8 +218,11 @@ namespace OCPP.Core.Management.Controllers
                                         cpovm.StartTime = connStatus.StartTime;
                                         cpovm.StopTime = connStatus.StopTime;
 
-                                        // default status: active transaction or not?
-                                        cpovm.ConnectorStatus = (cpovm.StopTime.HasValue) ? ConnectorStatusEnum.Available : ConnectorStatusEnum.Occupied;
+                                        if (cpovm.ConnectorStatus == ConnectorStatusEnum.Undefined)
+                                        {
+                                            // default status: active transaction or not?
+                                            cpovm.ConnectorStatus = (cpovm.StopTime.HasValue) ? ConnectorStatusEnum.Available : ConnectorStatusEnum.Occupied;
+                                        }
                                     }
                                     else
                                     {
@@ -228,8 +231,11 @@ namespace OCPP.Core.Management.Controllers
                                         cpovm.StartTime = null;
                                         cpovm.StopTime = null;
 
-                                        // default status: Available
-                                        cpovm.ConnectorStatus = ConnectorStatusEnum.Available;
+                                        if (cpovm.ConnectorStatus == ConnectorStatusEnum.Undefined)
+                                        {
+                                            // default status: Available
+                                            cpovm.ConnectorStatus = ConnectorStatusEnum.Available;
+                                        }
                                     }
 
                                     // Add current charge data to view model

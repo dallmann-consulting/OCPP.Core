@@ -43,7 +43,7 @@ namespace OCPP.Core.Management.Controllers
             OCPPCoreContext dbContext) : base(userManager, loggerFactory, config, dbContext)
         {
             _localizer = localizer;
-            Logger = loggerFactory.CreateLogger<HomeController>();
+            Logger = loggerFactory.CreateLogger<ApiController>();
         }
 
         [Authorize]
