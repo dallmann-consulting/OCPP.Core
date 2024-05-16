@@ -92,29 +92,6 @@ namespace OCPP.Core.Management.Controllers
                     }
                 }
 
-                // Dictionary mit ID+Connector => Name erstellen und View übergeben
-                // => Combobox damit füllen
-                // => Namen in Transaktionen auflösen
-
-
-
-
-                /*
-                // search selected charge point and connector
-                foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
-                {
-                    if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
-                    {
-                        tlvm.CurrentConnectorName = cs.ConnectorName;
-                        if (string.IsNullOrEmpty(tlvm.CurrentConnectorName))
-                        {
-                            tlvm.CurrentConnectorName = $"{Id}:{cs.ConnectorId}";
-                        }
-                        break;
-                    }
-                }
-                */
-
 
                 // load charge tags for name resolution
                 Logger.LogTrace("Transactions: Loading charge tags...");

@@ -57,7 +57,7 @@ namespace OCPP.Core.Server
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddOCCPDbContext(Configuration);
+            services.AddOCPPDbContext(Configuration);
             services.AddControllers();
         }
 
@@ -80,7 +80,12 @@ namespace OCPP.Core.Server
             // Migrate database
             using var scope = serviceScopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<OCPPCoreContext>();
-            dbContext.Database.Migrate();
+            // but only when not disabled (needs admin permissions in SQL-Server!)
+            bool dbMigrate = Configuration.GetValue<bool>("AutoMigrateDB", true);
+            if (dbMigrate)
+            {
+                dbContext.Database.Migrate();
+            }
 
             // Set WebSocketsOptions
             var webSocketOptions = new WebSocketOptions() 

@@ -11,7 +11,7 @@ namespace OCPP.Core.Database
 {
     public static class DbContextExtensions
     {
-        public static void AddOCCPDbContext(this IServiceCollection services, IConfiguration configuration)
+        public static void AddOCPPDbContext(this IServiceCollection services, IConfiguration configuration)
         {
             string sqlServerConnectionString = configuration.GetConnectionString("SqlServer");
             string sqliteConnectionString = configuration.GetConnectionString("SQLite");

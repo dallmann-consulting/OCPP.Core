@@ -78,9 +78,6 @@ namespace OCPP.Core.Server
                                 OCPPMessage msgIn = new OCPPMessage(messageTypeId, uniqueId, action, jsonPaylod);
                                 if (msgIn.MessageType == "2")
                                 {
-
-
-
                                     // Request from chargepoint to OCPP server
                                     OCPPMessage msgOut = controller16.ProcessRequest(msgIn);
 

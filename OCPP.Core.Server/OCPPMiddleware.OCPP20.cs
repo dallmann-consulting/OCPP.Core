@@ -21,7 +21,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Waits for new OCPP V2.0 messages on the open websocket connection and delegates processing to a controller
         /// </summary>
-        private async Task Receive20(ChargePointStatus chargePointStatus, HttpContext context, OCPPCoreContext dbContext)
+        private async Task Receive20(ChargePointStatus chargePointStatus, HttpContext httpContext, OCPPCoreContext dbContext)
         {
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
             ControllerOCPP20 controller20 = new ControllerOCPP20(_configuration, _logFactory, chargePointStatus, dbContext);
