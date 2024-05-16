@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -38,21 +39,7 @@ namespace OCPP.Core.Server
                 .AddJsonFile("appsettings.json", optional: false)
                 .Build();
 
-            try
-            {
-                // Force the EF model creation for faster startup
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(config))
-                {
-                    IModel model = dbContext.Model;
-                }
-
-                CreateHostBuilder(args).Build().Run();
-            }
-            catch //(Exception e)
-            {
-                //logger.Error(e, "OCPP server stopped because of exception");
-                throw;
-            }
+            CreateHostBuilder(args).Build().Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

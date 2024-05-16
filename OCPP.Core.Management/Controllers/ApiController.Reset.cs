@@ -39,7 +39,8 @@ namespace OCPP.Core.Management.Controllers
             UserManager userManager,
             IStringLocalizer<ApiController> localizer,
             ILoggerFactory loggerFactory,
-            IConfiguration config) : base(userManager, loggerFactory, config)
+            IConfiguration config,
+            OCPPCoreContext dbContext) : base(userManager, loggerFactory, config, dbContext)
         {
             _localizer = localizer;
             Logger = loggerFactory.CreateLogger<ApiController>();
@@ -63,106 +64,103 @@ namespace OCPP.Core.Management.Controllers
             {
                 try
                 {
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                    ChargePoint chargePoint = DbContext.ChargePoints.Find(Id);
+                    if (chargePoint != null)
                     {
-                        ChargePoint chargePoint = dbContext.ChargePoints.Find(Id);
-                        if (chargePoint != null)
+                        string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
+                        string apiKeyConfig = base.Config.GetValue<string>("ApiKey");
+                        if (!string.IsNullOrEmpty(serverApiUrl))
                         {
-                            string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
-                            string apiKeyConfig = base.Config.GetValue<string>("ApiKey");
-                            if (!string.IsNullOrEmpty(serverApiUrl))
+                            try
                             {
-                                try
+                                using (var httpClient = new HttpClient())
                                 {
-                                    using (var httpClient = new HttpClient())
+                                    if (!serverApiUrl.EndsWith('/'))
                                     {
-                                        if (!serverApiUrl.EndsWith('/'))
-                                        {
-                                            serverApiUrl += "/";
-                                        }
-                                        Uri uri = new Uri(serverApiUrl);
-                                        uri = new Uri(uri, $"Reset/{Uri.EscapeDataString(Id)}");
-                                        httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
+                                        serverApiUrl += "/";
+                                    }
+                                    Uri uri = new Uri(serverApiUrl);
+                                    uri = new Uri(uri, $"Reset/{Uri.EscapeDataString(Id)}");
+                                    httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
 
-                                        // API-Key authentication?
-                                        if (!string.IsNullOrWhiteSpace(apiKeyConfig))
-                                        {
-                                            httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKeyConfig);
-                                        }
-                                        else
-                                        {
-                                            Logger.LogWarning("Reset: No API-Key configured!");
-                                        }
+                                    // API-Key authentication?
+                                    if (!string.IsNullOrWhiteSpace(apiKeyConfig))
+                                    {
+                                        httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKeyConfig);
+                                    }
+                                    else
+                                    {
+                                        Logger.LogWarning("Reset: No API-Key configured!");
+                                    }
 
-                                        HttpResponseMessage response = await httpClient.GetAsync(uri);
-                                        if (response.StatusCode == HttpStatusCode.OK)
+                                    HttpResponseMessage response = await httpClient.GetAsync(uri);
+                                    if (response.StatusCode == HttpStatusCode.OK)
+                                    {
+                                        string jsonResult = await response.Content.ReadAsStringAsync();
+                                        if (!string.IsNullOrEmpty(jsonResult))
                                         {
-                                            string jsonResult = await response.Content.ReadAsStringAsync();
-                                            if (!string.IsNullOrEmpty(jsonResult))
+                                            try
                                             {
-                                                try
+                                                dynamic jsonObject = JsonConvert.DeserializeObject(jsonResult);
+                                                Logger.LogInformation("Reset: Result of API request is '{0}'", jsonResult);
+                                                string status = jsonObject.status;
+                                                switch (status)
                                                 {
-                                                    dynamic jsonObject = JsonConvert.DeserializeObject(jsonResult);
-                                                    Logger.LogInformation("Reset: Result of API request is '{0}'", jsonResult);
-                                                    string status = jsonObject.status;
-                                                    switch (status)
-                                                    {
-                                                        case "Accepted":
-                                                            resultContent = _localizer["ResetAccepted"];
-                                                            break;
-                                                        case "Rejected":
-                                                            resultContent = _localizer["ResetRejected"];
-                                                            break;
-                                                        case "Scheduled":
-                                                            resultContent = _localizer["ResetScheduled"];
-                                                            break;
-                                                        default:
-                                                            resultContent = string.Format(_localizer["ResetUnknownStatus"], status);
-                                                            break;
-                                                    }
-                                                }
-                                                catch (Exception exp)
-                                                {
-                                                    Logger.LogError(exp, "Reset: Error in JSON result => {0}", exp.Message);
-                                                    httpStatuscode = (int)HttpStatusCode.OK;
-                                                    resultContent = _localizer["ResetError"];
+                                                    case "Accepted":
+                                                        resultContent = _localizer["ResetAccepted"];
+                                                        break;
+                                                    case "Rejected":
+                                                        resultContent = _localizer["ResetRejected"];
+                                                        break;
+                                                    case "Scheduled":
+                                                        resultContent = _localizer["ResetScheduled"];
+                                                        break;
+                                                    default:
+                                                        resultContent = string.Format(_localizer["ResetUnknownStatus"], status);
+                                                        break;
                                                 }
                                             }
-                                            else
+                                            catch (Exception exp)
                                             {
-                                                Logger.LogError("Reset: Result of API request is empty");
+                                                Logger.LogError(exp, "Reset: Error in JSON result => {0}", exp.Message);
                                                 httpStatuscode = (int)HttpStatusCode.OK;
                                                 resultContent = _localizer["ResetError"];
                                             }
                                         }
-                                        else if (response.StatusCode == HttpStatusCode.NotFound)
-                                        {
-                                            // Chargepoint offline
-                                            httpStatuscode = (int)HttpStatusCode.OK;
-                                            resultContent = _localizer["ResetOffline"];
-                                        }
                                         else
                                         {
-                                            Logger.LogError("Reset: Result of API  request => httpStatus={0}", response.StatusCode);
+                                            Logger.LogError("Reset: Result of API request is empty");
                                             httpStatuscode = (int)HttpStatusCode.OK;
                                             resultContent = _localizer["ResetError"];
                                         }
                                     }
-                                }
-                                catch (Exception exp)
-                                {
-                                    Logger.LogError(exp, "Reset: Error in API request => {0}", exp.Message);
-                                    httpStatuscode = (int)HttpStatusCode.OK;
-                                    resultContent = _localizer["ResetError"];
+                                    else if (response.StatusCode == HttpStatusCode.NotFound)
+                                    {
+                                        // Chargepoint offline
+                                        httpStatuscode = (int)HttpStatusCode.OK;
+                                        resultContent = _localizer["ResetOffline"];
+                                    }
+                                    else
+                                    {
+                                        Logger.LogError("Reset: Result of API  request => httpStatus={0}", response.StatusCode);
+                                        httpStatuscode = (int)HttpStatusCode.OK;
+                                        resultContent = _localizer["ResetError"];
+                                    }
                                 }
                             }
+                            catch (Exception exp)
+                            {
+                                Logger.LogError(exp, "Reset: Error in API request => {0}", exp.Message);
+                                httpStatuscode = (int)HttpStatusCode.OK;
+                                resultContent = _localizer["ResetError"];
+                            }
                         }
-                        else
-                        {
-                            Logger.LogWarning("Reset: Error loading charge point '{0}' from database", Id);
-                            httpStatuscode = (int)HttpStatusCode.OK;
-                            resultContent = _localizer["UnknownChargepoint"];
-                        }
+                    }
+                    else
+                    {
+                        Logger.LogWarning("Reset: Error loading charge point '{0}' from database", Id);
+                        httpStatuscode = (int)HttpStatusCode.OK;
+                        resultContent = _localizer["UnknownChargepoint"];
                     }
                 }
                 catch (Exception exp)

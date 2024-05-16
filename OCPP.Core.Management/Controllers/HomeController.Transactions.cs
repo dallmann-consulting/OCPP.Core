@@ -70,76 +70,73 @@ namespace OCPP.Core.Management.Controllers
                     tlvm.Timespan = 1;
                 }
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                Logger.LogTrace("Transactions: Loading charge points...");
+                tlvm.ChargePoints = DbContext.ChargePoints.ToList<ChargePoint>();
+
+                Logger.LogTrace("Transactions: Loading charge points connectors...");
+                tlvm.ConnectorStatuses = DbContext.ConnectorStatuses.ToList<ConnectorStatus>();
+
+                // Count connectors for every charge point (=> naming scheme)
+                Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
+                foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
                 {
-                    Logger.LogTrace("Transactions: Loading charge points...");
-                    tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
-
-                    Logger.LogTrace("Transactions: Loading charge points connectors...");
-                    tlvm.ConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
-
-                    // Count connectors for every charge point (=> naming scheme)
-                    Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
-                    foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
+                    if (dictConnectorCount.ContainsKey(cs.ChargePointId))
                     {
-                        if (dictConnectorCount.ContainsKey(cs.ChargePointId))
-                        {
-                            // > 1 connector
-                            dictConnectorCount[cs.ChargePointId] = dictConnectorCount[cs.ChargePointId] + 1;
-                        }
-                        else
-                        {
-                            // first connector
-                            dictConnectorCount.Add(cs.ChargePointId, 1);
-                        }
+                        // > 1 connector
+                        dictConnectorCount[cs.ChargePointId] = dictConnectorCount[cs.ChargePointId] + 1;
                     }
-
-                    // Dictionary mit ID+Connector => Name erstellen und View übergeben
-                    // => Combobox damit füllen
-                    // => Namen in Transaktionen auflösen
-
-
-
-
-                    /*
-                    // search selected charge point and connector
-                    foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
+                    else
                     {
-                        if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
-                        {
-                            tlvm.CurrentConnectorName = cs.ConnectorName;
-                            if (string.IsNullOrEmpty(tlvm.CurrentConnectorName))
-                            {
-                                tlvm.CurrentConnectorName = $"{Id}:{cs.ConnectorId}";
-                            }
-                            break;
-                        }
+                        // first connector
+                        dictConnectorCount.Add(cs.ChargePointId, 1);
                     }
-                    */
+                }
+
+                // Dictionary mit ID+Connector => Name erstellen und View übergeben
+                // => Combobox damit füllen
+                // => Namen in Transaktionen auflösen
 
 
-                    // load charge tags for name resolution
-                    Logger.LogTrace("Transactions: Loading charge tags...");
-                    List<ChargeTag> chargeTags = dbContext.ChargeTags.ToList<ChargeTag>();
-                    tlvm.ChargeTags = new Dictionary<string, ChargeTag>();
-                    if (chargeTags != null)
+
+
+                /*
+                // search selected charge point and connector
+                foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
+                {
+                    if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
                     {
-                        foreach(ChargeTag tag in chargeTags)
+                        tlvm.CurrentConnectorName = cs.ConnectorName;
+                        if (string.IsNullOrEmpty(tlvm.CurrentConnectorName))
                         {
-                            tlvm.ChargeTags.Add(tag.TagId, tag);
+                            tlvm.CurrentConnectorName = $"{Id}:{cs.ConnectorId}";
                         }
+                        break;
                     }
+                }
+                */
 
-                    if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
+
+                // load charge tags for name resolution
+                Logger.LogTrace("Transactions: Loading charge tags...");
+                List<ChargeTag> chargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
+                tlvm.ChargeTags = new Dictionary<string, ChargeTag>();
+                if (chargeTags != null)
+                {
+                    foreach(ChargeTag tag in chargeTags)
                     {
-                        Logger.LogTrace("Transactions: Loading charge point transactions...");
-                        tlvm.Transactions = dbContext.Transactions
-                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
-                                                        t.ConnectorId == tlvm.CurrentConnectorId &&
-                                                        t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
-                                            .OrderByDescending(t => t.TransactionId)
-                                            .ToList<Transaction>();
+                        tlvm.ChargeTags.Add(tag.TagId, tag);
                     }
+                }
+
+                if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
+                {
+                    Logger.LogTrace("Transactions: Loading charge point transactions...");
+                    tlvm.Transactions = DbContext.Transactions
+                                        .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
+                                                    t.ConnectorId == tlvm.CurrentConnectorId &&
+                                                    t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
+                                        .OrderByDescending(t => t.TransactionId)
+                                        .ToList<Transaction>();
                 }
             }
             catch (Exception exp)

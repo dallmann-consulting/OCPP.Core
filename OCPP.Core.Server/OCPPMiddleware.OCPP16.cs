@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using OCPP.Core.Database;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,10 +21,10 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Waits for new OCPP V1.6 messages on the open websocket connection and delegates processing to a controller
         /// </summary>
-        private async Task Receive16(ChargePointStatus chargePointStatus, HttpContext context)
+        private async Task Receive16(ChargePointStatus chargePointStatus, HttpContext context, OCPPCoreContext dbContext)
         {
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
-            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus);
+            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus, dbContext);
 
             int maxMessageSizeBytes = _configuration.GetValue<int>("MaxMessageSize", 0);
 
@@ -131,10 +133,10 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Waits for new OCPP V1.6 messages on the open websocket connection and delegates processing to a controller
         /// </summary>
-        private async Task Reset16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
+        private async Task Reset16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext)
         {
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
-            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus);
+            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus, dbContext);
 
             Messages_OCPP16.ResetRequest resetRequest = new Messages_OCPP16.ResetRequest();
             resetRequest.Type = Messages_OCPP16.ResetRequestType.Soft;
@@ -165,10 +167,10 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Sends a Unlock-Request to the chargepoint
         /// </summary>
-        private async Task UnlockConnector16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
+        private async Task UnlockConnector16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext)
         {
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
-            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus);
+            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus, dbContext);
 
             Messages_OCPP16.UnlockConnectorRequest unlockConnectorRequest = new Messages_OCPP16.UnlockConnectorRequest();
             unlockConnectorRequest.ConnectorId = 0;

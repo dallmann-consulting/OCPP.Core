@@ -56,36 +56,33 @@ namespace OCPP.Core.Server
 
                 try
                 {
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                    ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
+                    if (ct != null)
                     {
-                        ChargeTag ct = dbContext.Find<ChargeTag>(idTag);
-                        if (ct != null)
+                        if (!string.IsNullOrEmpty(ct.ParentTagId))
                         {
-                            if (!string.IsNullOrEmpty(ct.ParentTagId))
-                            {
-                                authorizeResponse.IdTokenInfo.GroupIdToken.IdToken = ct.ParentTagId;
-                            }
+                            authorizeResponse.IdTokenInfo.GroupIdToken.IdToken = ct.ParentTagId;
+                        }
 
-                            if (ct.Blocked.HasValue && ct.Blocked.Value)
-                            {
-                                authorizeResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Blocked;
-                            }
-                            else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                            {
-                                authorizeResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Expired;
-                            }
-                            else
-                            {
-                                authorizeResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
-                            }
+                        if (ct.Blocked.HasValue && ct.Blocked.Value)
+                        {
+                            authorizeResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Blocked;
+                        }
+                        else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                        {
+                            authorizeResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Expired;
                         }
                         else
                         {
-                            authorizeResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                            authorizeResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
                         }
-
-                        Logger.LogInformation("Authorize => Status: {0}", authorizeResponse.IdTokenInfo.Status);
                     }
+                    else
+                    {
+                        authorizeResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                    }
+
+                    Logger.LogInformation("Authorize => Status: {0}", authorizeResponse.IdTokenInfo.Status);
                 }
                 catch (Exception exp)
                 {

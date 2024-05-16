@@ -50,59 +50,56 @@ namespace OCPP.Core.Management.Controllers
                 ViewBag.DatePattern = CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern;
                 ViewBag.Language = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                Logger.LogTrace("Connector: Loading connectors...");
+                List<ConnectorStatus> dbConnectorStatuses = DbContext.ConnectorStatuses.ToList<ConnectorStatus>();
+                Logger.LogInformation("Connector: Found {0} connectors", dbConnectorStatuses.Count);
+
+                ConnectorStatus currentConnectorStatus = null;
+                if (!string.IsNullOrEmpty(Id) && !string.IsNullOrEmpty(ConnectorId))
                 {
-                    Logger.LogTrace("Connector: Loading connectors...");
-                    List<ConnectorStatus> dbConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
-                    Logger.LogInformation("Connector: Found {0} connectors", dbConnectorStatuses.Count);
-
-                    ConnectorStatus currentConnectorStatus = null;
-                    if (!string.IsNullOrEmpty(Id) && !string.IsNullOrEmpty(ConnectorId))
+                    foreach (ConnectorStatus cs in dbConnectorStatuses)
                     {
-                        foreach (ConnectorStatus cs in dbConnectorStatuses)
+                        if (cs.ChargePointId.Equals(Id, StringComparison.InvariantCultureIgnoreCase) &&
+                            cs.ConnectorId.ToString().Equals(ConnectorId, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            if (cs.ChargePointId.Equals(Id, StringComparison.InvariantCultureIgnoreCase) &&
-                                cs.ConnectorId.ToString().Equals(ConnectorId, StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                currentConnectorStatus = cs;
-                                Logger.LogTrace("Connector: Current connector: {0} / {1}", cs.ChargePointId, cs.ConnectorId);
-                                break;
-                            }
+                            currentConnectorStatus = cs;
+                            Logger.LogTrace("Connector: Current connector: {0} / {1}", cs.ChargePointId, cs.ConnectorId);
+                            break;
                         }
                     }
+                }
 
-                    if (Request.Method == "POST")
+                if (Request.Method == "POST")
+                {
+                    if (currentConnectorStatus.ChargePointId == Id)
                     {
-                        if (currentConnectorStatus.ChargePointId == Id)
-                        {
-                            // Save connector
-                            currentConnectorStatus.ConnectorName = csvm.ConnectorName;
-                            dbContext.SaveChanges();
-                            Logger.LogInformation("Connector: Edit => Connector saved: {0} / {1} => '{2}'", csvm.ChargePointId, csvm.ConnectorId, csvm.ConnectorName);
-                        }
-
-                        return RedirectToAction("Connector", new { Id = "" });
+                        // Save connector
+                        currentConnectorStatus.ConnectorName = csvm.ConnectorName;
+                        DbContext.SaveChanges();
+                        Logger.LogInformation("Connector: Edit => Connector saved: {0} / {1} => '{2}'", csvm.ChargePointId, csvm.ConnectorId, csvm.ConnectorName);
                     }
-                    else
+
+                    return RedirectToAction("Connector", new { Id = "" });
+                }
+                else
+                {
+                    // List all charge tags
+                    csvm = new ConnectorStatusViewModel();
+                    csvm.ConnectorStatuses = dbConnectorStatuses;
+
+                    if (currentConnectorStatus != null)
                     {
-                        // List all charge tags
-                        csvm = new ConnectorStatusViewModel();
-                        csvm.ConnectorStatuses = dbConnectorStatuses;
-
-                        if (currentConnectorStatus != null)
-                        {
-                            csvm.ChargePointId = currentConnectorStatus.ChargePointId;
-                            csvm.ConnectorId = currentConnectorStatus.ConnectorId;
-                            csvm.ConnectorName = currentConnectorStatus.ConnectorName;
-                            csvm.LastStatus = currentConnectorStatus.LastStatus;
-                            csvm.LastStatusTime = currentConnectorStatus.LastStatusTime;
-                            csvm.LastMeter = currentConnectorStatus.LastMeter;
-                            csvm.LastMeterTime = currentConnectorStatus.LastMeterTime;
-                        }
-
-                        string viewName = (currentConnectorStatus != null) ? "ConnectorDetail" : "ConnectorList";
-                        return View(viewName, csvm);
+                        csvm.ChargePointId = currentConnectorStatus.ChargePointId;
+                        csvm.ConnectorId = currentConnectorStatus.ConnectorId;
+                        csvm.ConnectorName = currentConnectorStatus.ConnectorName;
+                        csvm.LastStatus = currentConnectorStatus.LastStatus;
+                        csvm.LastStatusTime = currentConnectorStatus.LastStatusTime;
+                        csvm.LastMeter = currentConnectorStatus.LastMeter;
+                        csvm.LastMeterTime = currentConnectorStatus.LastMeterTime;
                     }
+
+                    string viewName = (currentConnectorStatus != null) ? "ConnectorDetail" : "ConnectorList";
+                    return View(viewName, csvm);
                 }
             }
             catch (Exception exp)

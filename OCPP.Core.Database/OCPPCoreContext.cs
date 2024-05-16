@@ -29,13 +29,6 @@ namespace OCPP.Core.Database
 {
     public partial class OCPPCoreContext : DbContext
     {
-        private IConfiguration _configuration;
-
-        public OCPPCoreContext(IConfiguration config) : base()
-        {
-            _configuration = config;
-        }
-
         public OCPPCoreContext(DbContextOptions<OCPPCoreContext> options)
             : base(options)
         {
@@ -46,23 +39,6 @@ namespace OCPP.Core.Database
         public virtual DbSet<ConnectorStatus> ConnectorStatuses { get; set; }
         public virtual DbSet<MessageLog> MessageLogs { get; set; }
         public virtual DbSet<Transaction> Transactions { get; set; }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                string sqlConnString = _configuration.GetConnectionString("SqlServer");
-                string liteConnString = _configuration.GetConnectionString("SQLite");
-                if (!string.IsNullOrWhiteSpace(sqlConnString))
-                {
-                    optionsBuilder.UseSqlServer(sqlConnString);
-                }
-                else if (!string.IsNullOrWhiteSpace(liteConnString))
-                {
-                    optionsBuilder.UseSqlite(liteConnString);
-                }
-            }
-        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -151,6 +127,8 @@ namespace OCPP.Core.Database
                     .HasForeignKey(d => d.ChargePointId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Transactions_ChargePoint");
+
+                entity.HasIndex(e => new { e.ChargePointId, e.ConnectorId });
             });
 
             OnModelCreatingPartial(modelBuilder);

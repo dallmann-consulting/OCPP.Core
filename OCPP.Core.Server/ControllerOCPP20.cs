@@ -42,8 +42,8 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Constructor
         /// </summary>
-        public ControllerOCPP20(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus) :
-            base(config, loggerFactory, chargePointStatus)
+        public ControllerOCPP20(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus, OCPPCoreContext dbContext) :
+            base(config, loggerFactory, chargePointStatus, dbContext)
         {
             Logger = loggerFactory.CreateLogger(typeof(ControllerOCPP20));
         }
@@ -174,19 +174,16 @@ namespace OCPP.Core.Server
 
                     if (doLog)
                     {
-                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
-                        {
-                            MessageLog msgLog = new MessageLog();
-                            msgLog.ChargePointId = chargePointId;
-                            msgLog.ConnectorId = connectorId;
-                            msgLog.LogTime = DateTime.UtcNow;
-                            msgLog.Message = message;
-                            msgLog.Result = result;
-                            msgLog.ErrorCode = errorCode;
-                            dbContext.MessageLogs.Add(msgLog);
-                            Logger.LogTrace("MessageLog => Writing entry '{0}'", message);
-                            dbContext.SaveChanges();
-                        }
+                        MessageLog msgLog = new MessageLog();
+                        msgLog.ChargePointId = chargePointId;
+                        msgLog.ConnectorId = connectorId;
+                        msgLog.LogTime = DateTime.UtcNow;
+                        msgLog.Message = message;
+                        msgLog.Result = result;
+                        msgLog.ErrorCode = errorCode;
+                        DbContext.MessageLogs.Add(msgLog);
+                        Logger.LogTrace("MessageLog => Writing entry '{0}'", message);
+                        DbContext.SaveChanges();
                         return true;
                     }
                 }

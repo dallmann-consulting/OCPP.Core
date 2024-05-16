@@ -45,36 +45,33 @@ namespace OCPP.Core.Server
                 authorizeResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow.AddMinutes(5);   // default: 5 minutes
                 try
                 {
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                    ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
+                    if (ct != null)
                     {
-                        ChargeTag ct = dbContext.Find<ChargeTag>(idTag);
-                        if (ct != null)
+                        if (ct.ExpiryDate.HasValue)
                         {
-                            if (ct.ExpiryDate.HasValue)
-                            {
-                                authorizeResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
-                            }
-                            authorizeResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
-                            if (ct.Blocked.HasValue && ct.Blocked.Value)
-                            {
-                                authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
-                            }
-                            else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                            {
-                                authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
-                            }
-                            else
-                            {
-                                authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-                            }
+                            authorizeResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
+                        }
+                        authorizeResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
+                        if (ct.Blocked.HasValue && ct.Blocked.Value)
+                        {
+                            authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
+                        }
+                        else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                        {
+                            authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
                         }
                         else
                         {
-                            authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                            authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
                         }
-
-                        Logger.LogInformation("Authorize => Status: {0}", authorizeResponse.IdTagInfo.Status);
                     }
+                    else
+                    {
+                        authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                    }
+
+                    Logger.LogInformation("Authorize => Status: {0}", authorizeResponse.IdTagInfo.Status);
                 }
                 catch (Exception exp)
                 {
