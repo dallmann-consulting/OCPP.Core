@@ -44,7 +44,6 @@ namespace OCPP.Core.Database
         public virtual DbSet<ChargePoint> ChargePoints { get; set; }
         public virtual DbSet<ChargeTag> ChargeTags { get; set; }
         public virtual DbSet<ConnectorStatus> ConnectorStatuses { get; set; }
-        public virtual DbSet<ConnectorStatusView> ConnectorStatusViews { get; set; }
         public virtual DbSet<MessageLog> MessageLogs { get; set; }
         public virtual DbSet<Transaction> Transactions { get; set; }
 
@@ -110,29 +109,6 @@ namespace OCPP.Core.Database
                 entity.Property(e => e.ConnectorName).HasMaxLength(100);
 
                 entity.Property(e => e.LastStatus).HasMaxLength(100);
-            });
-
-            modelBuilder.Entity<ConnectorStatusView>(entity =>
-            {
-                entity.HasNoKey();
-
-                entity.ToView("ConnectorStatusView");
-
-                entity.Property(e => e.ChargePointId)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.ConnectorName).HasMaxLength(100);
-
-                entity.Property(e => e.LastStatus).HasMaxLength(100);
-
-                entity.Property(e => e.StartResult).HasMaxLength(100);
-
-                entity.Property(e => e.StartTagId).HasMaxLength(50);
-
-                entity.Property(e => e.StopReason).HasMaxLength(100);
-
-                entity.Property(e => e.StopTagId).HasMaxLength(50);
             });
 
             modelBuilder.Entity<MessageLog>(entity =>
