@@ -101,7 +101,7 @@ namespace OCPP.Core.Server
                             }
                             if (basicAuthSuccess == false)
                             {
-                                context.Response.Headers.Add("WWW-Authenticate", "Basic realm=\"OCPP.Core\"");
+                                context.Response.Headers.Append("WWW-Authenticate", "Basic realm=\"OCPP.Core\"");
                                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                                 return;
                             }

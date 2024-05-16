@@ -136,12 +136,10 @@ namespace OCPP.Core.Management.Controllers
                 }
                 #endregion
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
-                {
                     // List of charge point status (OCPP messages) with latest transaction (if one exist)
-                    var connectorStatusViewList = dbContext.ConnectorStatuses
+                    var connectorStatusViewList = DbContext.ConnectorStatuses
                         .GroupJoin(
-                            dbContext.Transactions,
+                            DbContext.Transactions,
                             cs => new { cs.ChargePointId, cs.ConnectorId },
                             t => new { t.ChargePointId, t.ConnectorId },
                             (cs, transactions) => new { cs, transactions }
@@ -169,36 +167,36 @@ namespace OCPP.Core.Management.Controllers
                             }
                         )
                         .Where(x => x.TransactionId == null ||
-                                    x.TransactionId == dbContext.Transactions
+                                    x.TransactionId == DbContext.Transactions
                                         .Where(t => t.ChargePointId == x.ChargePointId && t.ConnectorId == x.ConnectorId)
                                         .Select(t => t.TransactionId)
                                         .Max())
                         .ToList();
 
 
-                // Count connectors for every charge point (=> naming scheme)
-                Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
-                foreach(ConnectorStatusView csv in connectorStatusViewList)
-                {
-                    if (dictConnectorCount.ContainsKey(csv.ChargePointId))
+                    // Count connectors for every charge point (=> naming scheme)
+                    Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
+                    foreach (ConnectorStatusView csv in connectorStatusViewList)
                     {
-                        // > 1 connector
-                        dictConnectorCount[csv.ChargePointId] = dictConnectorCount[csv.ChargePointId] + 1;
+                        if (dictConnectorCount.ContainsKey(csv.ChargePointId))
+                        {
+                            // > 1 connector
+                            dictConnectorCount[csv.ChargePointId] = dictConnectorCount[csv.ChargePointId] + 1;
+                        }
+                        else
+                        {
+                            // first connector
+                            dictConnectorCount.Add(csv.ChargePointId, 1);
+                        }
                     }
-                    else
-                    {
-                        // first connector
-                        dictConnectorCount.Add(csv.ChargePointId, 1);
-                    }
-                }
 
 
-                // List of configured charge points
-                List<ChargePoint> dbChargePoints = DbContext.ChargePoints.ToList<ChargePoint>();
+                    // List of configured charge points
+                    List<ChargePoint> dbChargePoints = DbContext.ChargePoints.ToList<ChargePoint>();
                 if (dbChargePoints != null)
                 {
                     // Iterate through all charge points in database
-                    foreach(ChargePoint cp in dbChargePoints)
+                    foreach (ChargePoint cp in dbChargePoints)
                     {
                         ChargePointStatus cpOnlineStatus = null;
                         dictOnlineStatus.TryGetValue(cp.ChargePointId, out cpOnlineStatus);
@@ -313,7 +311,7 @@ namespace OCPP.Core.Management.Controllers
                             overviewModel.ChargePoints.Add(cpovm);
                         }
                     }
-                }
+                }                
 
                 Logger.LogInformation("Index: Found {0} charge points / connectors", overviewModel.ChargePoints?.Count);
             }

@@ -119,7 +119,7 @@ namespace OCPP.Core.Server
             }
             else
             {
-                Logger.LogError("ControllerOCPP20 => Protocol error: wrong message type", msgIn.MessageType);
+                Logger.LogError("ControllerOCPP20 => Protocol error: wrong message type '{0}'", msgIn.MessageType);
                 errorCode = ErrorCodes.ProtocolError;
             }
 
