@@ -234,15 +234,18 @@ namespace OCPP.Core.Server
             if (!string.IsNullOrWhiteSpace(dumpDir))
             {
                 // Write outgoing message into dump directory
+                // Write outgoing message into dump directory
                 string path = Path.Combine(dumpDir, string.Format("{0}_ocpp20-out.txt", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-ffff")));
-                try
+                _ = File.WriteAllTextAsync(path, ocppTextMessage).ContinueWith(task =>
                 {
-                    File.WriteAllText(path, ocppTextMessage);
-                }
-                catch (Exception exp)
-                {
-                    logger.LogError(exp, "OCPPMiddleware.SendOcpp20Message=> Error dumping message to path: '{0}'", path);
-                }
+                    if (task.IsFaulted && task.Exception != null)
+                    {
+                        foreach (var exp in task.Exception.InnerExceptions)
+                        {
+                            logger.LogError(exp, "OCPPMiddleware.SendOcpp20Message=> Error dumping message to path: '{0}'", path);
+                        }
+                    }
+                });
             }
 
             byte[] binaryMessage = UTF8Encoding.UTF8.GetBytes(ocppTextMessage);
