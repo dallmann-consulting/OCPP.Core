@@ -39,7 +39,7 @@ namespace OCPP.Core.Server
             {
                 UnlockConnectorResponse unlockConnectorResponse = DeserializeMessage<UnlockConnectorResponse>(msgIn);
                 Logger.LogInformation("HandleUnlockConnector => Answer status: {0}", unlockConnectorResponse?.Status);
-                WriteMessageLog(ChargePointStatus?.Id, null, msgOut.Action, unlockConnectorResponse?.Status.ToString(), msgIn.ErrorCode);
+                _ = WriteMessageLog(ChargePointStatus?.Id, null, msgOut.Action, unlockConnectorResponse?.Status.ToString(), msgIn.ErrorCode);
 
                 if (msgOut.TaskCompletionSource != null)
                 {

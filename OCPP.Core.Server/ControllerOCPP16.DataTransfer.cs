@@ -30,7 +30,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        public string HandleDataTransfer(OCPPMessage msgIn, OCPPMessage msgOut)
+        public async Task<string> HandleDataTransfer(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
             DataTransferResponse dataTransferResponse = new DataTransferResponse();
@@ -46,7 +46,7 @@ namespace OCPP.Core.Server
                 if (ChargePointStatus != null)
                 {
                     // Known charge station
-                    msgWritten = WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, string.Format("VendorId={0} / MessageId={1} / Data={2}", dataTransferRequest.VendorId, dataTransferRequest.MessageId, dataTransferRequest.Data), errorCode);
+                    msgWritten = await WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, string.Format("VendorId={0} / MessageId={1} / Data={2}", dataTransferRequest.VendorId, dataTransferRequest.MessageId, dataTransferRequest.Data), errorCode);
                     dataTransferResponse.Status = DataTransferResponseStatus.Accepted;
                 }
                 else
@@ -66,7 +66,7 @@ namespace OCPP.Core.Server
 
             if (!msgWritten)
             {
-                WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, null, errorCode);
+                _ = WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, null, errorCode);
             }
             return errorCode;
         }

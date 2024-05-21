@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -31,7 +32,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        public string HandleStartTransaction(OCPPMessage msgIn, OCPPMessage msgOut)
+        public async Task<string> HandleStartTransaction(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
             StartTransactionResponse startTransactionResponse = new StartTransactionResponse();
@@ -81,12 +82,12 @@ namespace OCPP.Core.Server
                                 if (denyConcurrentTx)
                                 {
                                     // Check that no open transaction with this idTag exists
-                                    Transaction tx = DbContext.Transactions
+                                    var existsTx = await DbContext.Transactions
                                         .Where(t => !t.StopTime.HasValue && t.StartTagId == idTag)
                                         .OrderByDescending(t => t.TransactionId)
-                                        .FirstOrDefault();
+                                        .AnyAsync();
 
-                                    if (tx != null)
+                                    if (existsTx)
                                     {
                                         startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.ConcurrentTx;
                                     }
@@ -146,7 +147,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, startTransactionResponse.IdTagInfo?.Status.ToString(), errorCode);
+            _ = WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, startTransactionResponse.IdTagInfo?.Status.ToString(), errorCode);
             return errorCode;
         }
     }

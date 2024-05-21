@@ -75,7 +75,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, bootReason, errorCode);
+            _ = WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, bootReason, errorCode);
             return errorCode;
         }
     }

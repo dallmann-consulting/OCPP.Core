@@ -30,7 +30,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        public string HandleStatusNotification(OCPPMessage msgIn, OCPPMessage msgOut)
+        public async Task<string> HandleStatusNotificationAsync(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
             StatusNotificationResponse statusNotificationResponse = new StatusNotificationResponse();
@@ -47,7 +47,7 @@ namespace OCPP.Core.Server
                 connectorId = statusNotificationRequest.ConnectorId;
 
                 // Write raw status in DB
-                msgWritten = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Info={0} / Status={1} / ", statusNotificationRequest.Info, statusNotificationRequest.Status), statusNotificationRequest.ErrorCode.ToString());
+                msgWritten = await WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Info={0} / Status={1} / ", statusNotificationRequest.Info, statusNotificationRequest.Status), statusNotificationRequest.ErrorCode.ToString());
 
                 ConnectorStatusEnum newStatus = ConnectorStatusEnum.Undefined;
 
@@ -116,7 +116,7 @@ namespace OCPP.Core.Server
 
             if (!msgWritten)
             {
-                WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, null, errorCode);
+                _ = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, null, errorCode);
             }
             return errorCode;
         }

@@ -79,7 +79,7 @@ namespace OCPP.Core.Server
                                 if (msgIn.MessageType == "2")
                                 {
                                     // Request from chargepoint to OCPP server
-                                    OCPPMessage msgOut = controller16.ProcessRequest(msgIn);
+                                    OCPPMessage msgOut = await controller16.ProcessRequest(msgIn);
 
                                     // Send OCPP message with optional logging/dump
                                     await SendOcpp16Message(msgOut, logger, chargePointStatus.WebSocket);

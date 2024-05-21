@@ -69,7 +69,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.InternalError;
             }
 
-            WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, source, errorCode);
+            _ = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, source, errorCode);
             return errorCode;
         }
     }
