@@ -234,7 +234,6 @@ namespace OCPP.Core.Server
             if (!string.IsNullOrWhiteSpace(dumpDir))
             {
                 // Write outgoing message into dump directory
-                // Write outgoing message into dump directory
                 string path = Path.Combine(dumpDir, string.Format("{0}_ocpp20-out.txt", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-ffff")));
                 _ = File.WriteAllTextAsync(path, ocppTextMessage).ContinueWith(task =>
                 {
