@@ -31,5 +31,10 @@ namespace OCPP.Core.Database
         public string ParentTagId { get; set; }
         public DateTime? ExpiryDate { get; set; }
         public bool? Blocked { get; set; }
+
+        public override string ToString()
+        {
+            return TagName;
+        }
     }
 }

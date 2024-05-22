@@ -115,15 +115,7 @@ namespace OCPP.Core.Management.Controllers
 
                 // load charge tags for name resolution
                 Logger.LogTrace("Export: Loading charge tags...");
-                List<ChargeTag> chargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
-                tlvm.ChargeTags = new Dictionary<string, ChargeTag>();
-                if (chargeTags != null)
-                {
-                    foreach (ChargeTag tag in chargeTags)
-                    {
-                        tlvm.ChargeTags.Add(tag.TagId, tag);
-                    }
-                }
+                tlvm.ChargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
 
                 if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
                 {
@@ -179,29 +171,18 @@ namespace OCPP.Core.Management.Controllers
             {
                 foreach (Transaction t in tlvm.Transactions)
                 {
-                    string startTag = t.StartTagId;
-                    string stopTag = t.StopTagId;
-                    if (!string.IsNullOrEmpty(t.StartTagId) && tlvm.ChargeTags != null && tlvm.ChargeTags.ContainsKey(t.StartTagId))
-                    {
-                        startTag = tlvm.ChargeTags[t.StartTagId]?.TagName;
-                    }
-                    if (!string.IsNullOrEmpty(t.StopTagId) && tlvm.ChargeTags != null && tlvm.ChargeTags.ContainsKey(t.StopTagId))
-                    {
-                        stopTag = tlvm.ChargeTags[t.StopTagId]?.TagName;
-                    }
-
                     csv.AppendLine();
                     csv.Append(EscapeCsvValue(currentConnectorName));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(t.StartTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
                     csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(startTag));
+                    csv.Append(EscapeCsvValue(t.StartTag.ToString()));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(string.Format("{0:0.0##}", t.MeterStart)));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(((t.StopTime != null) ? t.StopTime.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)));
                     csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(stopTag));
+                    csv.Append(EscapeCsvValue(t.StopTag.ToString()));
                     csv.Append(CSV_Seperator);
                     csv.Append(EscapeCsvValue(((t.MeterStop != null) ? string.Format("{0:0.0##}", t.MeterStop) : string.Empty)));
                     csv.Append(CSV_Seperator);

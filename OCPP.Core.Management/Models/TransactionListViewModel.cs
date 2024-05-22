@@ -31,7 +31,7 @@ namespace OCPP.Core.Management.Models
 
         public List<ConnectorStatus> ConnectorStatuses { get; set; }
 
-        public Dictionary<string, ChargeTag> ChargeTags { get; set; }
+        public List<ChargeTag> ChargeTags { get; set; }
 
         public string CurrentChargePointId { get; set; }
 
