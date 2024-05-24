@@ -95,15 +95,7 @@ namespace OCPP.Core.Management.Controllers
 
                 // load charge tags for name resolution
                 Logger.LogTrace("Transactions: Loading charge tags...");
-                List<ChargeTag> chargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
-                tlvm.ChargeTags = new Dictionary<string, ChargeTag>();
-                if (chargeTags != null)
-                {
-                    foreach(ChargeTag tag in chargeTags)
-                    {
-                        tlvm.ChargeTags.Add(tag.TagId, tag);
-                    }
-                }
+                tlvm.ChargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
 
                 if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
                 {

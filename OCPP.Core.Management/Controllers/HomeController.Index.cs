@@ -156,11 +156,11 @@ namespace OCPP.Core.Management.Controllers
                                 LastMeter = x.cs.LastMeter,
                                 LastMeterTime = x.cs.LastMeterTime,
                                 TransactionId = (int?)transaction.TransactionId,
-                                StartTagId = transaction.StartTagId,
+                                StartTagId = transaction.StartTag.TagId,
                                 StartTime = transaction.StartTime,
                                 MeterStart = transaction.MeterStart,
                                 StartResult = transaction.StartResult,
-                                StopTagId = transaction.StopTagId,
+                                StopTagId = transaction.StopTag.TagId,
                                 StopTime = transaction.StopTime,
                                 MeterStop = transaction.MeterStop,
                                 StopReason = transaction.StopReason

@@ -116,17 +116,21 @@ namespace OCPP.Core.Database
 
                 entity.Property(e => e.StartResult).HasMaxLength(100);
 
-                entity.Property(e => e.StartTagId).HasMaxLength(50);
-
                 entity.Property(e => e.StopReason).HasMaxLength(100);
-
-                entity.Property(e => e.StopTagId).HasMaxLength(50);
 
                 entity.HasOne(d => d.ChargePoint)
                     .WithMany(p => p.Transactions)
                     .HasForeignKey(d => d.ChargePointId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Transactions_ChargePoint");
+
+                entity.HasOne(d => d.StartTag)
+                    .WithMany()
+                    .HasForeignKey("StartTagId");
+
+                entity.HasOne(d => d.StopTag)
+                    .WithMany()
+                    .HasForeignKey("StopTagId");
 
                 entity.HasIndex(e => new { e.ChargePointId, e.ConnectorId });
             });
