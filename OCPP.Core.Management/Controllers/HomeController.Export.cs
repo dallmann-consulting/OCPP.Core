@@ -18,7 +18,7 @@ namespace OCPP.Core.Management.Controllers
         private const char DefaultCSVSeparator = ';';
 
         [Authorize]
-        public IActionResult ExportCsv(string Id, string ConnectorId)
+        public IActionResult Export(string Id, string ConnectorId)
         {
             try
             {

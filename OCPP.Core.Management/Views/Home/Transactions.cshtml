@@ -111,7 +111,7 @@
         <div class="col-3">
         </div>
         <div class="col-md-auto align-self-center">
-            <a href="~/Home/ExportCsv/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@timespan" data-toggle="tooltip" data-placement="top" title="@Localizer["DownloadCsv"]">
+            <a href="~/Home/Export/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@timespan" data-toggle="tooltip" data-placement="top" title="@Localizer["DownloadCsv"]">
                 <i class="fas fa-file-csv fa-2x"></i>
             </a>
             <a href="~/Home/ExportXlsx/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@timespan" data-toggle="tooltip" data-placement="top" title="@Localizer["DownloadXlsx"]">
