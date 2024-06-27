@@ -20,7 +20,6 @@
         }
     }
 
-
     // Count connectors for every charge point (=> naming scheme)
     Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
     string currentConnectorName = string.Empty;
@@ -91,15 +90,15 @@
                 <button class="btn btn-secondary dropdown-toggle" type="button" id="ddbTimespan" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     @if (Model.Timespan == 2)
                     {
-                        @Localizer["TimeSpan90"];
+                        @Localizer["TimeSpan90"]
                     }
                     else if (Model.Timespan == 3)
                     {
-                        @Localizer["TimeSpan365"];
+                        @Localizer["TimeSpan365"]
                     }
                     else
                     {
-                        @Localizer["TimeSpan30"];
+                        @Localizer["TimeSpan30"]
                     }
                 </button>
                 <div class="dropdown-menu" aria-labelledby="ddbTimespan">
@@ -114,6 +113,9 @@
         <div class="col-md-auto align-self-center">
             <a href="~/Home/Export/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@timespan" data-toggle="tooltip" data-placement="top" title="@Localizer["DownloadCsv"]">
                 <i class="fas fa-file-csv fa-2x"></i>
+            </a>
+            <a href="~/Home/ExportXlsx/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@timespan" data-toggle="tooltip" data-placement="top" title="@Localizer["DownloadXlsx"]">
+                <i class="fas fa-file-excel fa-2x"></i>
             </a>
         </div>
     </div>
@@ -166,4 +168,3 @@
         </tbody>
     </table>
 }
-
