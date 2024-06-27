@@ -1,4 +1,23 @@
-﻿using System;
+﻿/*
+ * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
+ * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * All Rights Reserved.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -156,13 +175,17 @@ namespace OCPP.Core.Management.Controllers
                     }
 
                     worksheet.Cell(row, 1).Value = tlvm.CurrentConnectorName;
-                    worksheet.Cell(row, 2).Value = t.StartTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+                    worksheet.Cell(row, 2).SetValue(t.StartTime.ToLocalTime());
                     worksheet.Cell(row, 3).Value = startTag;
-                    worksheet.Cell(row, 4).Value = $"{t.MeterStart:0.0##}";
-                    worksheet.Cell(row, 5).Value = t.StopTime?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty;
+                    worksheet.Cell(row, 4).SetValue(t.MeterStart);
+                    if (t.StopTime.HasValue)
+                        worksheet.Cell(row, 5).SetValue(t.StopTime?.ToLocalTime());
                     worksheet.Cell(row, 6).Value = stopTag;
-                    worksheet.Cell(row, 7).Value = t.MeterStop.HasValue ? $"{t.MeterStop:0.0##}" : string.Empty;
-                    worksheet.Cell(row, 8).Value = t.MeterStop.HasValue ? $"{t.MeterStop - t.MeterStart:0.0##}" : string.Empty;
+                    if (t.MeterStop.HasValue)
+                    {
+                        worksheet.Cell(row, 7).SetValue(t.MeterStop);
+                        worksheet.Cell(row, 8).SetValue(t.MeterStop - t.MeterStart);
+                    }
 
                     row++;
                 }
