@@ -51,7 +51,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Processes the charge point message and returns the answer message
         /// </summary>
-        public OCPPMessage ProcessRequest(OCPPMessage msgIn)
+        public async Task<OCPPMessage> ProcessRequest(OCPPMessage msgIn)
         {
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "3";
@@ -74,7 +74,7 @@ namespace OCPP.Core.Server
                     break;
 
                 case "StartTransaction":
-                    errorCode = HandleStartTransaction(msgIn, msgOut);
+                    errorCode = await HandleStartTransaction(msgIn, msgOut);
                     break;
 
                 case "StopTransaction":
@@ -86,16 +86,16 @@ namespace OCPP.Core.Server
                     break;
 
                 case "StatusNotification":
-                    errorCode = HandleStatusNotification(msgIn, msgOut);
+                    errorCode = await HandleStatusNotificationAsync(msgIn, msgOut);
                     break;
 
                 case "DataTransfer":
-                    errorCode = HandleDataTransfer(msgIn, msgOut);
+                    errorCode = await HandleDataTransfer(msgIn, msgOut);
                     break;
 
                 default:
                     errorCode = ErrorCodes.NotSupported;
-                    WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
+                    _ = WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
                     break;
             }
 
@@ -128,7 +128,7 @@ namespace OCPP.Core.Server
                     break;
 
                 default:
-                    WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");
+                    _ = WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");
                     break;
             }
         }
@@ -136,7 +136,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Helper function for writing a log entry in database
         /// </summary>
-        private bool WriteMessageLog(string chargePointId, int? connectorId, string message, string result, string errorCode)
+        private async Task<bool> WriteMessageLog(string chargePointId, int? connectorId, string message, string result, string errorCode)
         {
             try
             {
@@ -160,7 +160,7 @@ namespace OCPP.Core.Server
                         msgLog.ErrorCode = errorCode;
                         DbContext.MessageLogs.Add(msgLog);
                         Logger.LogTrace("MessageLog => Writing entry '{0}'", message);
-                        DbContext.SaveChanges();
+                        await DbContext.SaveChangesAsync();
                         return true;
                     }
                 }

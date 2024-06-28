@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -31,7 +32,7 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP20
     {
-        public string HandleTransactionEvent(OCPPMessage msgIn, OCPPMessage msgOut)
+        public async Task<string> HandleTransactionEvent(OCPPMessage msgIn, OCPPMessage msgOut)
         {
             string errorCode = null;
             TransactionEventResponse transactionEventResponse = new TransactionEventResponse();
@@ -96,12 +97,12 @@ namespace OCPP.Core.Server
                                     if (denyConcurrentTx)
                                     {
                                         // Check that no open transaction with this idTag exists
-                                        Transaction tx = DbContext.Transactions
+                                        var existsTx = await DbContext.Transactions
                                             .Where(t => !t.StopTime.HasValue && t.StartTagId == idTag)
                                             .OrderByDescending(t => t.TransactionId)
-                                            .FirstOrDefault();
+                                            .AnyAsync();
 
-                                        if (tx != null)
+                                        if (existsTx)
                                         {
                                             transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.ConcurrentTx;
                                         }
@@ -176,7 +177,7 @@ namespace OCPP.Core.Server
                         else
                         {
                             Logger.LogError("UpdateTransaction => Unknown or not matching transaction: uid='{0}' / chargepoint='{1}' / tag={2}", transactionEventRequest.TransactionInfo?.TransactionId, ChargePointStatus?.Id, idTag);
-                            WriteMessageLog(ChargePointStatus?.Id, null, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest.MeterValue)), errorCode);
+                            _ = WriteMessageLog(ChargePointStatus?.Id, null, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest.MeterValue)), errorCode);
                             errorCode = ErrorCodes.PropertyConstraintViolation;
                         }
                         #endregion
@@ -228,14 +229,13 @@ namespace OCPP.Core.Server
                             }
                         }
 
-                        Transaction transaction = DbContext.Transactions
+                        Transaction transaction = await DbContext.Transactions
                             .Where(t => t.Uid == transactionEventRequest.TransactionInfo.TransactionId)
-                            .OrderByDescending(t => t.TransactionId)
-                            .FirstOrDefault();
+                            .Where(t => t.ChargePointId == ChargePointStatus.Id)
+                            .Where(t => !t.StopTime.HasValue)
+                            .FirstOrDefaultAsync();
 
-                        if (transaction != null &&
-                            transaction.ChargePointId == ChargePointStatus.Id &&
-                            !transaction.StopTime.HasValue)
+                        if (transaction != null)
                         {
                             // check current tag against start tag
                             bool valid = true;
@@ -278,7 +278,7 @@ namespace OCPP.Core.Server
                         else
                         {
                             Logger.LogError("EndTransaction => Unknown or not matching transaction: uid='{0}' / chargepoint='{1}' / tag={2}", transactionEventRequest.TransactionInfo?.TransactionId, ChargePointStatus?.Id, idTag);
-                            WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest.MeterValue)), errorCode);
+                            _ = WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest.MeterValue)), errorCode);
                             errorCode = ErrorCodes.PropertyConstraintViolation;
                         }
                         #endregion
@@ -299,7 +299,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, transactionEventResponse.IdTokenInfo.Status.ToString(), errorCode);
+            _ = WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, transactionEventResponse.IdTokenInfo.Status.ToString(), errorCode);
             return errorCode;
         }
 
