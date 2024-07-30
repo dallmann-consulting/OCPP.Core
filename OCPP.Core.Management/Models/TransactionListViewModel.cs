@@ -37,7 +37,7 @@ namespace OCPP.Core.Management.Models
 
         public int CurrentConnectorId { get; set; }
 
-        //public string CurrentConnectorName { get; set; }
+        public string CurrentConnectorName { get; set; }
 
         public List<Transaction> Transactions { get; set; }
 

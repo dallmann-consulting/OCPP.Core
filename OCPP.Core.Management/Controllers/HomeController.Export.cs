@@ -1,4 +1,4 @@
-﻿/*
+/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
  * Copyright (C) 2020-2021 dallmann consulting GmbH.
  * All Rights Reserved.
@@ -19,197 +19,201 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
+using ClosedXML.Excel;
+using Microsoft.EntityFrameworkCore;
 
 namespace OCPP.Core.Management.Controllers
 {
     public partial class HomeController : BaseController
     {
-        const char CSV_Seperator = ';';
+        private const char DefaultCSVSeparator = ';';
 
         [Authorize]
         public IActionResult Export(string Id, string ConnectorId)
         {
-            Logger.LogTrace("Export: Loading charge point transactions...");
-
-            int currentConnectorId = -1;
-            int.TryParse(ConnectorId, out currentConnectorId);
-
-            TransactionListViewModel tlvm = new TransactionListViewModel();
-            tlvm.CurrentChargePointId = Id;
-            tlvm.CurrentConnectorId = currentConnectorId;
-            tlvm.ConnectorStatuses = new List<ConnectorStatus>();
-            tlvm.Transactions = new List<Transaction>();
-
             try
             {
-                string ts = Request.Query["t"];
-                int days = 30;
-                if (ts == "2")
-                {
-                    // 90 days
-                    days = 90;
-                    tlvm.Timespan = 2;
-                }
-                else if (ts == "3")
-                {
-                    // 365 days
-                    days = 365;
-                    tlvm.Timespan = 3;
-                }
-                else
-                {
-                    // 30 days
-                    days = 30;
-                    tlvm.Timespan = 1;
-                }
+                var tlvm = LoadTransactionListViewModel(Id, ConnectorId);
+                var workbook = CreateSpreadsheet(tlvm);
 
-                string currentConnectorName = string.Empty;
+                using var memoryStream = new MemoryStream();
+                IEnumerable<string> lines = workbook.Worksheet(1).RowsUsed().Select(row =>
+                    string.Join(DefaultCSVSeparator, row.Cells(1, row.LastCellUsed(XLCellsUsedOptions.AllContents).Address.ColumnNumber)
+                                                    .Select(cell => EscapeCsvValue(cell.GetValue<string>(), DefaultCSVSeparator))));
 
-                Logger.LogTrace("Export: Loading charge points...");
-                tlvm.ConnectorStatuses = DbContext.ConnectorStatuses.ToList<ConnectorStatus>();
-
-                // Preferred: use specific connector name
-                foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
+                using (var writer = new StreamWriter(memoryStream, Encoding.GetEncoding("ISO-8859-1"), 1024, true))
                 {
-                    if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
+                    foreach (var line in lines)
                     {
-                        currentConnectorName = cs.ConnectorName;
-                        /*
-                        if (string.IsNullOrEmpty(tlvm.CurrentConnectorName))
-                        {
-                            currentConnectorName = $"{Id}:{cs.ConnectorId}";
-                        }
-                        */
-                        break;
-                    }
-                }
-                // default: combined name with charge point and connector
-                if (string.IsNullOrEmpty(currentConnectorName))
-                {
-                    tlvm.ChargePoints = DbContext.ChargePoints.ToList<ChargePoint>();
-                    foreach(ChargePoint cp in tlvm.ChargePoints)
-                    {
-                        if (cp.ChargePointId == Id)
-                        {
-                            currentConnectorName = $"{cp.Name}:{currentConnectorId}";
-                            break;
-                        }
-                    }
-                    if (string.IsNullOrEmpty(currentConnectorName))
-                    {
-                        // Fallback: ID + connector
-                        currentConnectorName = $"{Id}:{currentConnectorId}";
+                        writer.WriteLine(line);
                     }
                 }
 
-                // load charge tags for name resolution
-                Logger.LogTrace("Export: Loading charge tags...");
-                tlvm.ChargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
-
-                if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
-                {
-                    Logger.LogTrace("Export: Loading charge point transactions...");
-                    tlvm.Transactions = DbContext.Transactions
-                                        .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
-                                                    t.ConnectorId == tlvm.CurrentConnectorId &&
-                                                    t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
-                                        .OrderByDescending(t => t.TransactionId)
-                                        .ToList<Transaction>();
-                }
-
-                StringBuilder connectorName = new StringBuilder(currentConnectorName);
-                foreach (char c in Path.GetInvalidFileNameChars())
-                {
-                    connectorName.Replace(c, '_');
-                }
-
-                string filename = string.Format("Transactions_{0}.csv", connectorName);
-                string csv = CreateCsv(tlvm, currentConnectorName);
-                Logger.LogInformation("Export: File => {0} Chars / Name '{1}'", csv.Length, filename);
-
-                return File(Encoding.GetEncoding("ISO-8859-1").GetBytes(csv), "text/csv", filename);
+                memoryStream.Position = 0;
+                return File(memoryStream.ToArray(), "text/csv", $"Transactions_{SanitizeFileName(tlvm.CurrentConnectorName)}.csv");
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "Export: Error loading data from database");
+                Logger.LogError(exp, "Export CSV: Error loading data from database");
+                return StatusCode(500, "Internal server error");
             }
-
-            return View(tlvm);
         }
 
-        private string CreateCsv(TransactionListViewModel tlvm, string currentConnectorName)
+        [Authorize]
+        public IActionResult ExportXlsx(string Id, string ConnectorId)
         {
-            StringBuilder csv = new StringBuilder(8192);
-            csv.Append(EscapeCsvValue(_localizer["Connector"]));
-            csv.Append(CSV_Seperator);
-            csv.Append(EscapeCsvValue(_localizer["StartTime"]));
-            csv.Append(CSV_Seperator);
-            csv.Append(EscapeCsvValue(_localizer["StartTag"]));
-            csv.Append(CSV_Seperator);
-            csv.Append(EscapeCsvValue(_localizer["StartMeter"]));
-            csv.Append(CSV_Seperator);
-            csv.Append(EscapeCsvValue(_localizer["StopTime"]));
-            csv.Append(CSV_Seperator);
-            csv.Append(EscapeCsvValue(_localizer["StopTag"]));
-            csv.Append(CSV_Seperator);
-            csv.Append(EscapeCsvValue(_localizer["StopMeter"]));
-            csv.Append(CSV_Seperator);
-            csv.Append(EscapeCsvValue(_localizer["ChargeSum"]));
-
-            if (tlvm != null && tlvm.Transactions != null)
+            try
             {
-                foreach (Transaction t in tlvm.Transactions)
-                {
-                    csv.AppendLine();
-                    csv.Append(EscapeCsvValue(currentConnectorName));
-                    csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(t.StartTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
-                    csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(t.StartTag.ToString()));
-                    csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(string.Format("{0:0.0##}", t.MeterStart)));
-                    csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(((t.StopTime != null) ? t.StopTime.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)));
-                    csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(t.StopTag.ToString()));
-                    csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(((t.MeterStop != null) ? string.Format("{0:0.0##}", t.MeterStop) : string.Empty)));
-                    csv.Append(CSV_Seperator);
-                    csv.Append(EscapeCsvValue(((t.MeterStop != null) ? string.Format("{0:0.0##}", (t.MeterStop - t.MeterStart)) : string.Empty)));
-                }
-            }
+                var tlvm = LoadTransactionListViewModel(Id, ConnectorId);
+                var workbook = CreateSpreadsheet(tlvm);
 
-            return csv.ToString();
+                using var memoryStream = new MemoryStream();
+                workbook.SaveAs(memoryStream);
+                memoryStream.Position = 0;
+
+                return File(memoryStream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Transactions_{SanitizeFileName(tlvm.CurrentConnectorName)}.xlsx");
+            }
+            catch (Exception exp)
+            {
+                Logger.LogError(exp, "Export XLSX: Error loading data from database");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
-        private string EscapeCsvValue(string value)
+        private TransactionListViewModel LoadTransactionListViewModel(string Id, string ConnectorId)
         {
-            if (!string.IsNullOrEmpty(value))
+            Logger.LogTrace("Export: Loading charge point transactions...");
+
+            if (!int.TryParse(ConnectorId, out int currentConnectorId))
             {
-                if (value.Contains(CSV_Seperator))
+                currentConnectorId = -1;
+            }
+
+            var tlvm = new TransactionListViewModel
+            {
+                CurrentChargePointId = Id,
+                CurrentConnectorId = currentConnectorId,
+                ConnectorStatuses = new List<ConnectorStatus>(),
+                Transactions = new List<Transaction>()
+            };
+
+            string ts = Request.Query["t"];
+            int days = ts switch
+            {
+                "2" => 90,
+                "3" => 365,
+                _ => 30,
+            };
+            tlvm.Timespan = ts switch
+            {
+                "2" => 2,
+                "3" => 3,
+                _ => 1,
+            };
+
+            Logger.LogTrace("Export: Loading charge points...");
+            tlvm.ConnectorStatuses = DbContext.ConnectorStatuses.Include(cs => cs.ChargePoint).ToList();
+
+            tlvm.CurrentConnectorName = tlvm.ConnectorStatuses
+                .FirstOrDefault(cs => cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)?.ToString() ?? $"{Id}:{currentConnectorId}";
+
+            Logger.LogTrace("Export: Loading charge tags...");
+            var chargeTags = DbContext.ChargeTags.ToList();
+            tlvm.ChargeTags = chargeTags.ToDictionary(tag => tag.TagId);
+
+            if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
+            {
+                Logger.LogTrace("Export: Loading charge point transactions...");
+                tlvm.Transactions = DbContext.Transactions
+                    .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
+                                t.ConnectorId == tlvm.CurrentConnectorId &&
+                                t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
+                    .OrderByDescending(t => t.TransactionId)
+                    .AsNoTracking()
+                    .ToList();
+            }
+
+            return tlvm;
+        }
+
+        private XLWorkbook CreateSpreadsheet(TransactionListViewModel tlvm)
+        {
+            var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Transactions");
+
+            worksheet.Cell(1, 1).Value = _localizer["Connector"].ToString();
+            worksheet.Cell(1, 2).Value = _localizer["StartTime"].ToString();
+            worksheet.Cell(1, 3).Value = _localizer["StartTag"].ToString();
+            worksheet.Cell(1, 4).Value = _localizer["StartMeter"].ToString();
+            worksheet.Cell(1, 5).Value = _localizer["StopTime"].ToString();
+            worksheet.Cell(1, 6).Value = _localizer["StopTag"].ToString();
+            worksheet.Cell(1, 7).Value = _localizer["StopMeter"].ToString();
+            worksheet.Cell(1, 8).Value = _localizer["ChargeSum"].ToString();
+
+            if (tlvm?.Transactions != null)
+            {
+                int row = 2;
+                foreach (var t in tlvm.Transactions)
                 {
-                    if (value.Contains('"'))
+                    string startTag = t.StartTagId;
+                    string stopTag = t.StopTagId;
+                    if (!string.IsNullOrEmpty(t.StartTagId) && tlvm.ChargeTags != null && tlvm.ChargeTags.ContainsKey(t.StartTagId))
                     {
-                        // replace '"' with '""'
-                        value.Replace("\"", "\"\"");
+                        startTag = tlvm.ChargeTags[t.StartTagId]?.TagName;
+                    }
+                    if (!string.IsNullOrEmpty(t.StopTagId) && tlvm.ChargeTags != null && tlvm.ChargeTags.ContainsKey(t.StopTagId))
+                    {
+                        stopTag = tlvm.ChargeTags[t.StopTagId]?.TagName;
                     }
 
-                    // put value in "
-                    value = string.Format("\"{0}\"", value);
+                    worksheet.Cell(row, 1).Value = tlvm.CurrentConnectorName;
+                    worksheet.Cell(row, 2).SetValue(t.StartTime.ToLocalTime());
+                    worksheet.Cell(row, 3).Value = startTag;
+                    worksheet.Cell(row, 4).SetValue(t.MeterStart);
+                    if (t.StopTime.HasValue)
+                        worksheet.Cell(row, 5).SetValue(t.StopTime?.ToLocalTime());
+                    worksheet.Cell(row, 6).Value = stopTag;
+                    if (t.MeterStop.HasValue)
+                    {
+                        worksheet.Cell(row, 7).SetValue(t.MeterStop);
+                        worksheet.Cell(row, 8).SetValue(t.MeterStop - t.MeterStart);
+                    }
+
+                    row++;
                 }
             }
+
+            worksheet.Columns().AdjustToContents();
+
+            return workbook;
+        }
+
+        private string EscapeCsvValue(string value, char separator)
+        {
+            if (!string.IsNullOrEmpty(value) && (value.Contains(separator) || value.Contains('"')))
+            {
+                value = $"\"{value.Replace("\"", "\"\"")}\"";
+            }
             return value;
+        }
+
+        private string SanitizeFileName(string fileName)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var sanitizedFileName = new StringBuilder(fileName);
+            foreach (var c in invalidChars)
+            {
+                sanitizedFileName.Replace(c, '_');
+            }
+            return sanitizedFileName.ToString();
         }
     }
 }
