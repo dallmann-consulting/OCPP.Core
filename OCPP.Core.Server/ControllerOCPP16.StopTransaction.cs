@@ -43,6 +43,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("StopTransaction => Message deserialized");
 
                 string idTag = CleanChargeTagId(stopTransactionRequest.IdTag, Logger);
+                ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
 
                 if (string.IsNullOrWhiteSpace(idTag))
                 {
@@ -56,7 +57,6 @@ namespace OCPP.Core.Server
 
                     try
                     {
-                        ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
                         if (ct != null)
                         {
                             if (ct.ExpiryDate.HasValue) stopTransactionResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
@@ -106,15 +106,15 @@ namespace OCPP.Core.Server
 
                             // check current tag against start tag
                             bool valid = true;
-                            if (!string.Equals(transaction.StartTagId, idTag, StringComparison.InvariantCultureIgnoreCase))
+                            if (transaction.StartTag == ct)
                             {
                                 // tags are different => same group?
-                                ChargeTag startTag = DbContext.Find<ChargeTag>(transaction.StartTagId);
+                                ChargeTag startTag = DbContext.Find<ChargeTag>(transaction.StartTag);
                                 if (startTag != null)
                                 {
                                     if (!string.Equals(startTag.ParentTagId, stopTransactionResponse.IdTagInfo.ParentIdTag, StringComparison.InvariantCultureIgnoreCase))
                                     {
-                                        Logger.LogInformation("StopTransaction => Start-Tag ('{0}') and End-Tag ('{1}') do not match: Invalid!", transaction.StartTagId, idTag);
+                                        Logger.LogInformation("StopTransaction => Start-Tag ('{0}') and End-Tag ('{1}') do not match: Invalid!", transaction.StartTag.TagId, idTag);
                                         stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
                                         valid = false;
                                     }
@@ -125,14 +125,14 @@ namespace OCPP.Core.Server
                                 }
                                 else
                                 {
-                                    Logger.LogError("StopTransaction => Start-Tag not found: '{0}'", transaction.StartTagId);
+                                    Logger.LogError("StopTransaction => Start-Tag not found: '{0}'", transaction.StartTag.TagId);
                                     // assume "valid" and allow to end the transaction
                                 }
                             }
 
                             if (valid)
                             {
-                                transaction.StopTagId = idTag;
+                                transaction.StopTag = ct;
                                 transaction.MeterStop =  (double)stopTransactionRequest.MeterStop / 1000; // Meter value here is always Wh
                                 transaction.StopReason = stopTransactionRequest.Reason.ToString();
                                 transaction.StopTime = stopTransactionRequest.Timestamp.UtcDateTime;

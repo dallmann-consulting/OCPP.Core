@@ -48,6 +48,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("TransactionEvent => Message deserialized");
 
                 string idTag = CleanChargeTagId(transactionEventRequest.IdToken?.IdToken, Logger);
+                ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
                 connectorId = (transactionEventRequest.Evse != null) ? transactionEventRequest.Evse.ConnectorId : 0;
 
 
@@ -78,7 +79,6 @@ namespace OCPP.Core.Server
                         }
                         else
                         {
-                            ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
                             if (ct != null)
                             {
                                 if (ct.Blocked.HasValue && ct.Blocked.Value)
@@ -97,7 +97,7 @@ namespace OCPP.Core.Server
                                     {
                                         // Check that no open transaction with this idTag exists
                                         Transaction tx = DbContext.Transactions
-                                            .Where(t => !t.StopTime.HasValue && t.StartTagId == idTag)
+                                            .Where(t => !t.StopTime.HasValue && t.StartTag.TagId == idTag)
                                             .OrderByDescending(t => t.TransactionId)
                                             .FirstOrDefault();
 
@@ -129,7 +129,7 @@ namespace OCPP.Core.Server
                                 transaction.Uid = transactionEventRequest.TransactionInfo.TransactionId;
                                 transaction.ChargePointId = ChargePointStatus?.Id;
                                 transaction.ConnectorId = connectorId;
-                                transaction.StartTagId = idTag;
+                                transaction.StartTag = ct;
                                 transaction.StartTime = transactionEventRequest.Timestamp.UtcDateTime;
                                 transaction.MeterStart = meterKWH;
                                 transaction.StartResult = transactionEventRequest.TriggerReason.ToString();
@@ -192,7 +192,7 @@ namespace OCPP.Core.Server
                     try
                     {
                         #region End Transaction
-                        ChargeTag ct = null;
+                        ct = null;
 
                         if (string.IsNullOrWhiteSpace(idTag))
                         {
@@ -239,15 +239,15 @@ namespace OCPP.Core.Server
                         {
                             // check current tag against start tag
                             bool valid = true;
-                            if (!string.Equals(transaction.StartTagId, idTag, StringComparison.InvariantCultureIgnoreCase))
+                            if (!string.Equals(transaction.StartTag.TagId, idTag, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 // tags are different => same group?
-                                ChargeTag startTag = DbContext.Find<ChargeTag>(transaction.StartTagId);
+                                ChargeTag startTag = DbContext.Find<ChargeTag>(transaction.StartTag.TagId);
                                 if (startTag != null)
                                 {
                                     if (!string.Equals(startTag.ParentTagId, ct?.ParentTagId, StringComparison.InvariantCultureIgnoreCase))
                                     {
-                                        Logger.LogInformation("EndTransaction => Start-Tag ('{0}') and End-Tag ('{1}') do not match: Invalid!", transaction.StartTagId, ct?.TagId);
+                                        Logger.LogInformation("EndTransaction => Start-Tag ('{0}') and End-Tag ('{1}') do not match: Invalid!", transaction.StartTag.TagId, ct?.TagId);
                                         transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
                                         valid = false;
                                     }
@@ -258,7 +258,7 @@ namespace OCPP.Core.Server
                                 }
                                 else
                                 {
-                                    Logger.LogError("EndTransaction => Start-Tag not found: '{0}'", transaction.StartTagId);
+                                    Logger.LogError("EndTransaction => Start-Tag not found: '{0}'", transaction.StartTag.TagId);
                                     // assume "valid" and allow to end the transaction
                                 }
                             }
@@ -270,7 +270,7 @@ namespace OCPP.Core.Server
 
                                 transaction.StopTime = transactionEventRequest.Timestamp.UtcDateTime;
                                 transaction.MeterStop = meterKWH;
-                                transaction.StopTagId = idTag;
+                                transaction.StopTag = ct;
                                 transaction.StopReason = transactionEventRequest.TriggerReason.ToString();
                                 DbContext.SaveChanges();
                             }

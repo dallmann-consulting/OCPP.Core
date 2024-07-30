@@ -143,23 +143,13 @@
             {
                 foreach (Transaction t in Model.Transactions)
                 {
-                    string startTag = t.StartTagId;
-                    string stopTag = t.StopTagId;
-                    if (!string.IsNullOrEmpty(t.StartTagId) && Model.ChargeTags != null && Model.ChargeTags.ContainsKey(t.StartTagId))
-                    {
-                        startTag = Model.ChargeTags[t.StartTagId]?.TagName;
-                    }
-                    if (!string.IsNullOrEmpty(t.StopTagId) && Model.ChargeTags != null && Model.ChargeTags.ContainsKey(t.StopTagId))
-                    {
-                        stopTag = Model.ChargeTags[t.StopTagId]?.TagName;
-                    }
                     <tr>
                         <td>@currentConnectorName</td>
                         <td>@string.Format("{0} {1}", t.StartTime.ToLocalTime().ToShortDateString(), t.StartTime.ToLocalTime().ToShortTimeString())</td>
-                        <td>@startTag</td>
+                        <td>@t.StartTag</td>
                         <td>@string.Format("{0:0.0##}", t.MeterStart)</td>
                         <td>@((t.StopTime != null) ? string.Format("{0} {1}", t.StopTime.Value.ToLocalTime().ToShortDateString(), t.StopTime.Value.ToLocalTime().ToShortTimeString()) : string.Empty)</td>
-                        <td>@stopTag</td>
+                        <td>@t.StopTag?</td>
                         <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", t.MeterStop) : string.Empty)</td>
                         <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", (t.MeterStop - t.MeterStart)) : string.Empty)</td>
                     </tr>
