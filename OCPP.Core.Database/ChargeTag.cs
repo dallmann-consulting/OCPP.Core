@@ -34,7 +34,10 @@ namespace OCPP.Core.Database
 
         public override string ToString()
         {
-            return TagName;
+            if (!string.IsNullOrEmpty(TagName))
+                return TagName;
+            else
+                return TagId;
         }
     }
 }

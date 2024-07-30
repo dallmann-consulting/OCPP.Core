@@ -125,9 +125,9 @@ namespace OCPP.Core.Management.Controllers
             tlvm.CurrentConnectorName = tlvm.ConnectorStatuses
                 .FirstOrDefault(cs => cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)?.ToString() ?? $"{Id}:{currentConnectorId}";
 
+            // load charge tags for id/name resolution
             Logger.LogTrace("Export: Loading charge tags...");
-            var chargeTags = DbContext.ChargeTags.ToList();
-            tlvm.ChargeTags = chargeTags.ToDictionary(tag => tag.TagId);
+            tlvm.ChargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
 
             if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
             {
@@ -137,8 +137,7 @@ namespace OCPP.Core.Management.Controllers
                                 t.ConnectorId == tlvm.CurrentConnectorId &&
                                 t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
                     .OrderByDescending(t => t.TransactionId)
-                    .AsNoTracking()
-                    .ToList();
+                    .ToList<Transaction>();
             }
 
             return tlvm;
@@ -163,24 +162,13 @@ namespace OCPP.Core.Management.Controllers
                 int row = 2;
                 foreach (var t in tlvm.Transactions)
                 {
-                    string startTag = t.StartTagId;
-                    string stopTag = t.StopTagId;
-                    if (!string.IsNullOrEmpty(t.StartTagId) && tlvm.ChargeTags != null && tlvm.ChargeTags.ContainsKey(t.StartTagId))
-                    {
-                        startTag = tlvm.ChargeTags[t.StartTagId]?.TagName;
-                    }
-                    if (!string.IsNullOrEmpty(t.StopTagId) && tlvm.ChargeTags != null && tlvm.ChargeTags.ContainsKey(t.StopTagId))
-                    {
-                        stopTag = tlvm.ChargeTags[t.StopTagId]?.TagName;
-                    }
-
                     worksheet.Cell(row, 1).Value = tlvm.CurrentConnectorName;
                     worksheet.Cell(row, 2).SetValue(t.StartTime.ToLocalTime());
-                    worksheet.Cell(row, 3).Value = startTag;
+                    worksheet.Cell(row, 3).Value = t.StartTag?.ToString();
                     worksheet.Cell(row, 4).SetValue(t.MeterStart);
                     if (t.StopTime.HasValue)
                         worksheet.Cell(row, 5).SetValue(t.StopTime?.ToLocalTime());
-                    worksheet.Cell(row, 6).Value = stopTag;
+                    worksheet.Cell(row, 6).Value = t.StopTag?.ToString();
                     if (t.MeterStop.HasValue)
                     {
                         worksheet.Cell(row, 7).SetValue(t.MeterStop);

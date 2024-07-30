@@ -24,6 +24,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
@@ -93,7 +94,7 @@ namespace OCPP.Core.Management.Controllers
                 }
 
 
-                // load charge tags for name resolution
+                // load charge tags for id/name resolution
                 Logger.LogTrace("Transactions: Loading charge tags...");
                 tlvm.ChargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
 
