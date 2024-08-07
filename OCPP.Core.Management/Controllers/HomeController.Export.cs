@@ -29,6 +29,7 @@ using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
+using DocumentFormat.OpenXml.InkML;
 
 namespace OCPP.Core.Management.Controllers
 {
@@ -49,7 +50,7 @@ namespace OCPP.Core.Management.Controllers
                     string.Join(DefaultCSVSeparator, row.Cells(1, row.LastCellUsed(XLCellsUsedOptions.AllContents).Address.ColumnNumber)
                                                     .Select(cell => EscapeCsvValue(cell.GetValue<string>(), DefaultCSVSeparator))));
 
-                using (var writer = new StreamWriter(memoryStream, Encoding.GetEncoding("ISO-8859-1"), 1024, true))
+                using (var writer = new StreamWriter(memoryStream, Encoding.GetEncoding("ISO-8859-1"), 4096, true))
                 {
                     foreach (var line in lines)
                     {
@@ -102,7 +103,7 @@ namespace OCPP.Core.Management.Controllers
                 CurrentChargePointId = Id,
                 CurrentConnectorId = currentConnectorId,
                 ConnectorStatuses = new List<ConnectorStatus>(),
-                Transactions = new List<Transaction>()
+                Transactions = new List<TransactionExtended>()
             };
 
             string ts = Request.Query["t"];
@@ -119,25 +120,45 @@ namespace OCPP.Core.Management.Controllers
                 _ => 1,
             };
 
-            Logger.LogTrace("Export: Loading charge points...");
+            Logger.LogTrace("Export: Loading charge points and connectors...");
             tlvm.ConnectorStatuses = DbContext.ConnectorStatuses.Include(cs => cs.ChargePoint).ToList();
 
             tlvm.CurrentConnectorName = tlvm.ConnectorStatuses
                 .FirstOrDefault(cs => cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)?.ToString() ?? $"{Id}:{currentConnectorId}";
 
-            // load charge tags for id/name resolution
-            Logger.LogTrace("Export: Loading charge tags...");
-            tlvm.ChargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
-
             if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
             {
                 Logger.LogTrace("Export: Loading charge point transactions...");
-                tlvm.Transactions = DbContext.Transactions
-                    .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
-                                t.ConnectorId == tlvm.CurrentConnectorId &&
-                                t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
-                    .OrderByDescending(t => t.TransactionId)
-                    .ToList<Transaction>();
+                tlvm.Transactions = (from t in DbContext.Transactions
+                                      join startCT in DbContext.ChargeTags on t.StartTagId equals startCT.TagId into ft_tmp
+                                      from startCT in ft_tmp.DefaultIfEmpty()
+                                      join stopCT in DbContext.ChargeTags on t.StopTagId equals stopCT.TagId into ft
+                                      from stopCT in ft.DefaultIfEmpty()
+                                      where (t.ChargePointId == tlvm.CurrentChargePointId &&
+                                                t.ConnectorId == tlvm.CurrentConnectorId &&
+                                                t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
+                                     select new TransactionExtended
+                                      {
+                                          TransactionId = t.TransactionId,
+                                          Uid = t.Uid,
+                                          ChargePointId = t.ChargePointId,
+                                          ConnectorId = t.ConnectorId,
+                                          StartTagId = t.StartTagId,
+                                          StartTime = t.StartTime,
+                                          MeterStart = t.MeterStart,
+                                          StartResult = t.StartResult,
+                                          StopTagId = t.StopTagId,
+                                          StopTime = t.StopTime,
+                                          MeterStop = t.MeterStop,
+                                          StopReason = t.StopReason,
+                                          StartTagName = startCT.TagName,
+                                          StartTagParentId = startCT.ParentTagId,
+                                          StopTagName = stopCT.TagName,
+                                          StopTagParentId = stopCT.ParentTagId
+                                      })
+                                        .OrderByDescending(t => t.TransactionId)
+                                        .AsNoTracking()
+                                        .ToList();
             }
 
             return tlvm;
@@ -160,15 +181,15 @@ namespace OCPP.Core.Management.Controllers
             if (tlvm?.Transactions != null)
             {
                 int row = 2;
-                foreach (var t in tlvm.Transactions)
+                foreach (TransactionExtended t in tlvm?.Transactions)
                 {
                     worksheet.Cell(row, 1).Value = tlvm.CurrentConnectorName;
                     worksheet.Cell(row, 2).SetValue(t.StartTime.ToLocalTime());
-                    worksheet.Cell(row, 3).Value = t.StartTag?.ToString();
+                    worksheet.Cell(row, 3).Value = string.IsNullOrEmpty(t.StartTagName) ? t.StartTagId : t.StartTagName;
                     worksheet.Cell(row, 4).SetValue(t.MeterStart);
                     if (t.StopTime.HasValue)
                         worksheet.Cell(row, 5).SetValue(t.StopTime?.ToLocalTime());
-                    worksheet.Cell(row, 6).Value = t.StopTag?.ToString();
+                    worksheet.Cell(row, 6).Value = string.IsNullOrEmpty(t.StopTagName) ? t.StopTagId : t.StopTagName;
                     if (t.MeterStop.HasValue)
                     {
                         worksheet.Cell(row, 7).SetValue(t.MeterStop);

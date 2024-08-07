@@ -129,6 +129,9 @@
   <data name="DownloadCsv" xml:space="preserve">
     <value>Download as CSV</value>
   </data>
+  <data name="DownloadXlsx" xml:space="preserve">
+    <value>Download as XLSX</value>
+  </data>
   <data name="StartMeter" xml:space="preserve">
     <value>Start-Meter</value>
   </data>

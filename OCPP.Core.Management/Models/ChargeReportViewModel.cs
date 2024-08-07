@@ -5,8 +5,8 @@ namespace OCPP.Core.Management.Models
 {
     public class ChargeReportViewModel
     {
-        public DateTime StartTime { get; set; }
-        public DateTime StopTime { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime StopDate { get; set; }
         public List<GroupReport> Groups { get; set; }
     }
 

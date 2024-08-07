@@ -129,11 +129,14 @@
   <data name="DownloadCsv" xml:space="preserve">
     <value>Als CSV herunterladen</value>
   </data>
+  <data name="DownloadXlsx" xml:space="preserve">
+    <value>Als XLSX herunterladen</value>
+  </data>
   <data name="StartMeter" xml:space="preserve">
     <value>Beginn-Zähler</value>
   </data>
   <data name="StartTag" xml:space="preserve">
-    <value>Token</value>
+    <value>RFID-Karte</value>
   </data>
   <data name="StartTime" xml:space="preserve">
     <value>Beginn</value>
@@ -142,7 +145,7 @@
     <value>Ende-Zähler</value>
   </data>
   <data name="StopTag" xml:space="preserve">
-    <value>Token</value>
+    <value>RFID-Karte</value>
   </data>
   <data name="StopTime" xml:space="preserve">
     <value>Ende</value>

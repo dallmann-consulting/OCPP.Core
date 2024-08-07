@@ -123,6 +123,9 @@
   <data name="ChargePoints" xml:space="preserve">
     <value>Charge points</value>
   </data>
+  <data name="ChargeReport" xml:space="preserve">
+    <value>Charge Report</value>
+  </data>
   <data name="ChargeTags" xml:space="preserve">
     <value>RFID-Tags</value>
   </data>

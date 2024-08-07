@@ -127,13 +127,13 @@
     <value>RFID-Nummer</value>
   </data>
   <data name="ChargeTagIdPlaceholder" xml:space="preserve">
-    <value>Nummer des RFID-Anhängers</value>
+    <value>Nummer der RFID-Karte</value>
   </data>
   <data name="ChargeTagNameLabel" xml:space="preserve">
     <value>Bezeichnung</value>
   </data>
   <data name="ChargeTagNamePlaceholder" xml:space="preserve">
-    <value>Anzeigename des RFID-Anhängers</value>
+    <value>Anzeigename der RFID-Karte</value>
   </data>
   <data name="EditChargeTag" xml:space="preserve">
     <value>RFID-Schlüssel bearbeiten</value>

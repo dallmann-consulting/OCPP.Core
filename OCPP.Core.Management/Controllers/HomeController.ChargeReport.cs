@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using OCPP.Core.Database;
 using ClosedXML.Excel;
-using DocumentFormat.OpenXml.InkML;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
@@ -17,11 +16,12 @@ namespace OCPP.Core.Management.Controllers
     public partial class HomeController : BaseController
     {
         [Authorize]
-        public IActionResult ChargeReport(DateTime? startTime, DateTime? stopTime)
+        public IActionResult ChargeReport(DateTime? startDate, DateTime? stopDate)
         {
             try
             {
-                var report = GenerateReport(startTime, stopTime);
+                Logger.LogTrace("ChargeReport: GenerateReport()...");
+                var report = GenerateReport(startDate, stopDate);
                 return View(report);
             }
             catch (Exception exp)
@@ -33,14 +33,20 @@ namespace OCPP.Core.Management.Controllers
         }
 
         [Authorize]
-        public IActionResult ChargeReportCsv(DateTime? startTime, DateTime? stopTime)
+        public IActionResult ChargeReportCsv(DateTime? startDate, DateTime? stopDate)
         {
             try
             {
-                var report = GenerateReport(startTime, stopTime);
+                Logger.LogTrace("ChargeReport: ChargeReportCsv()...");
+                var report = GenerateReport(startDate, stopDate);
                 var csv = new StringBuilder();
 
-                csv.AppendLine("Group Name,Tag Name,Energy (kWh)");
+                csv.Append(_localizer["ChargeReportGroup"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["ChargeReportTag"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.AppendLine(_localizer["ChargeReportEnergy"]);
+
                 foreach (var group in report.Groups)
                 {
                     foreach (var tag in group.Tags)
@@ -48,12 +54,17 @@ namespace OCPP.Core.Management.Controllers
                         var totalEnergy = tag.Transactions
                             .Where(t => t.Energy.HasValue)
                             .Sum(t => t.Energy.Value);
-                        csv.AppendLine($"{group.GroupName},{tag.TagName},{Math.Round(totalEnergy, 2)}");
+                        csv.Append(EscapeCsvValue(group.GroupName, DefaultCSVSeparator));
+                        csv.Append(DefaultCSVSeparator);
+                        csv.Append(EscapeCsvValue(tag.TagName, DefaultCSVSeparator));
+                        csv.Append(DefaultCSVSeparator);
+                        csv.Append(Math.Round(totalEnergy, 3));
+                        csv.AppendLine();
                     }
                 }
 
                 var fileName = $"ChargeReport_{DateTime.Now:yyyyMMddHHmmss}.csv";
-                return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv", fileName);
+                return File(Encoding.GetEncoding("ISO-8859-1").GetBytes(csv.ToString()), "text/csv", fileName);
             }
             catch (Exception exp)
             {
@@ -64,17 +75,18 @@ namespace OCPP.Core.Management.Controllers
         }
 
         [Authorize]
-        public IActionResult ChargeReportXlsx(DateTime? startTime, DateTime? stopTime)
+        public IActionResult ChargeReportXlsx(DateTime? startDate, DateTime? stopDate)
         {
             try
             {
-                var report = GenerateReport(startTime, stopTime);
+                Logger.LogTrace("ChargeReport: ChargeReportXslx()...");
+                var report = GenerateReport(startDate, stopDate);
                 using var workbook = new XLWorkbook();
-                var worksheet = workbook.Worksheets.Add("Charge Report");
+                var worksheet = workbook.Worksheets.Add(_localizer["ChargeReport"]);
 
-                worksheet.Cell(1, 1).Value = "Group Name";
-                worksheet.Cell(1, 2).Value = "Tag Name";
-                worksheet.Cell(1, 3).Value = "Energy (kWh)";
+                worksheet.Cell(1, 1).Value = _localizer["ChargeReportGroup"].ToString();
+                worksheet.Cell(1, 2).Value = _localizer["ChargeReportTag"].ToString();
+                worksheet.Cell(1, 3).Value = _localizer["ChargeReportEnergy"].ToString();
 
                 var row = 2;
                 foreach (var group in report.Groups)
@@ -87,7 +99,7 @@ namespace OCPP.Core.Management.Controllers
 
                         worksheet.Cell(row, 1).Value = group.GroupName;
                         worksheet.Cell(row, 2).Value = tag.TagName;
-                        worksheet.Cell(row, 3).Value = Math.Round(totalEnergy, 2);
+                        worksheet.Cell(row, 3).Value = Math.Round(totalEnergy, 3);
                         row++;
                     }
                 }
@@ -109,22 +121,82 @@ namespace OCPP.Core.Management.Controllers
         }
 
         [Authorize]
-        public IActionResult AllTransactionsCsv(DateTime? startTime, DateTime? stopTime)
+        public IActionResult AllTransactionsCsv(DateTime? startDate, DateTime? stopDate)
         {
             try
             {
-                var transactions = GetAllTransactions(startTime, stopTime);
-                var csv = new StringBuilder();
+                Logger.LogTrace("ChargeReport: AllTransactionsCsv()...");
+                var tlvm = GetAllTransactions(startDate, stopDate);
 
-                csv.AppendLine("Transaction ID,Charge Point ID,Connector ID,Start Tag ID,Start Tag Name,Start Time,Meter Start,Start Result,Stop Tag ID,Stop Tag Name,Stop Time,Meter Stop,Stop Reason,Energy (kWh)");
-                foreach (var transaction in transactions)
+                // Join transactions with chargepoints and connector names
+                var fullTransactions =
+                     from t in tlvm.Transactions
+                     join cs in tlvm.ConnectorStatuses on new { t.ChargePointId, t.ConnectorId } equals new { cs.ChargePointId, cs.ConnectorId }
+                     select new { t, cs };
+
+                Logger.LogTrace("ChargeReport: AllTransactionsCsv() - Build Csv");
+
+                var csv = new StringBuilder();
+                csv.Append(_localizer["TransactionID"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["ChargePointId"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["Connector"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["StartTagID"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["StartTag"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["ChargeReportGroup"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["StartTime"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["StartMeter"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["StopTagID"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["StopTag"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["StopTime"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.Append(_localizer["StopMeter"]);
+                csv.Append(DefaultCSVSeparator);
+                csv.AppendLine(_localizer["Energy-kWh"]);
+
+                foreach (var ft in fullTransactions)
                 {
-                    var energy = transaction.MeterStop.HasValue ? (transaction.MeterStop.Value - transaction.MeterStart) : (double?)null;
-                    csv.AppendLine($"{transaction.TransactionId},{transaction.ChargePointId},{transaction.ConnectorId},{transaction.StartTag.TagId},{transaction.StartTag.TagName},{transaction.StartTime},{transaction.MeterStart},{transaction.StartResult},{transaction.StopTag?.TagId},{transaction.StopTag?.TagName},{transaction.StopTime},{transaction.MeterStop},{transaction.StopReason},{energy}");
+                    double? energy = ft.t.MeterStop.HasValue ? (ft.t.MeterStop.Value - ft.t.MeterStart) : null;
+
+                    csv.Append(ft.t.TransactionId);
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(EscapeCsvValue(string.IsNullOrEmpty(ft.cs?.ChargePoint?.Name) ? ft.t.ChargePointId : ft.cs.ChargePoint.Name, DefaultCSVSeparator));
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(EscapeCsvValue(string.IsNullOrEmpty(ft.cs?.ConnectorName) ? ft.t.ConnectorId.ToString() : ft.cs.ConnectorName, DefaultCSVSeparator));
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(EscapeCsvValue(ft.t.StartTagId, DefaultCSVSeparator));
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(EscapeCsvValue(ft.t.StartTagName, DefaultCSVSeparator));
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(EscapeCsvValue(ft.t.StartTagParentId, DefaultCSVSeparator));
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(ft.t.StartTime.ToLocalTime());
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(ft.t.MeterStart);
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(EscapeCsvValue(ft.t.StopTagId, DefaultCSVSeparator));
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(EscapeCsvValue(ft.t.StopTagName, DefaultCSVSeparator));
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(ft.t.StopTime?.ToLocalTime());
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(ft.t.MeterStop);
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(energy);
+                    csv.AppendLine();
                 }
 
                 var fileName = $"AllTransactions_{DateTime.Now:yyyyMMddHHmmss}.csv";
-                return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv", fileName);
+                return File(Encoding.GetEncoding("ISO-8859-1").GetBytes(csv.ToString()), "text/csv", fileName);
             }
             catch (Exception exp)
             {
@@ -135,50 +207,64 @@ namespace OCPP.Core.Management.Controllers
         }
 
         [Authorize]
-        public IActionResult AllTransactionsXlsx(DateTime? startTime, DateTime? stopTime)
+        public IActionResult AllTransactionsXlsx(DateTime? startDate, DateTime? stopDate)
         {
             try
             {
-                var transactions = GetAllTransactions(startTime, stopTime);
-                using var workbook = new XLWorkbook();
-                var worksheet = workbook.Worksheets.Add("All Transactions");
+                Logger.LogTrace("ChargeReport: AllTransactionsXlsx()...");
+                var tlvm = GetAllTransactions(startDate, stopDate);
 
-                worksheet.Cell(1, 1).Value = "Transaction ID";
-                worksheet.Cell(1, 2).Value = "Charge Point ID";
-                worksheet.Cell(1, 3).Value = "Connector ID";
-                worksheet.Cell(1, 4).Value = "Start Tag ID";
-                worksheet.Cell(1, 5).Value = "Start Tag Name";
-                worksheet.Cell(1, 6).Value = "Start Time";
-                worksheet.Cell(1, 7).Value = "Meter Start";
-                worksheet.Cell(1, 8).Value = "Start Result";
-                worksheet.Cell(1, 9).Value = "Stop Tag ID";
-                worksheet.Cell(1, 10).Value = "Stop Tag Name";
-                worksheet.Cell(1, 11).Value = "Stop Time";
-                worksheet.Cell(1, 12).Value = "Meter Stop";
-                worksheet.Cell(1, 13).Value = "Stop Reason";
-                worksheet.Cell(1, 14).Value = "Energy (kWh)";
+                // Join transactions with chargepoints and connector names
+                var fullTransactions =
+                     from t in tlvm.Transactions
+                     join cs in tlvm.ConnectorStatuses on new { t.ChargePointId, t.ConnectorId } equals new { cs.ChargePointId, cs.ConnectorId }
+                     select new { t, cs};
+
+                Logger.LogTrace("ChargeReport: AllTransactionsXlsx() - Build XLS-Workbook");
+
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.Worksheets.Add(_localizer["ReportSheetName"]);
+
+                worksheet.Cell(1, 1).Value = _localizer["TransactionID"].Value;
+                worksheet.Cell(1, 2).Value = _localizer["ChargePointId"].Value;
+                worksheet.Cell(1, 3).Value = _localizer["Connector"].Value;
+                worksheet.Cell(1, 4).Value = _localizer["StartTagID"].Value;
+                worksheet.Cell(1, 5).Value = _localizer["StartTag"].Value;
+                worksheet.Cell(1, 6).Value = _localizer["ChargeReportGroup"].Value;
+                worksheet.Cell(1, 7).Value = _localizer["StartTime"].Value;
+                worksheet.Cell(1, 8).Value = _localizer["StartMeter"].Value;
+                worksheet.Cell(1, 9).Value = _localizer["StopTagID"].Value;
+                worksheet.Cell(1, 10).Value = _localizer["StopTag"].Value;
+                worksheet.Cell(1, 11).Value = _localizer["StopTime"].Value;
+                worksheet.Cell(1, 12).Value = _localizer["StopMeter"].Value;
+                worksheet.Cell(1, 13).Value = _localizer["Energy-kWh"].Value;
 
                 var row = 2;
-                foreach (var transaction in transactions)
+                foreach (var ft in fullTransactions)
                 {
-                    var energy = transaction.MeterStop.HasValue ? (transaction.MeterStop.Value - transaction.MeterStart) : (double?)null;
-                    worksheet.Cell(row, 1).Value = transaction.TransactionId;
-                    worksheet.Cell(row, 2).Value = transaction.ChargePointId;
-                    worksheet.Cell(row, 3).Value = transaction.ConnectorId;
-                    worksheet.Cell(row, 4).Value = transaction.StartTag.TagId;
-                    worksheet.Cell(row, 5).Value = transaction.StartTag.TagName;
-                    worksheet.Cell(row, 6).Value = transaction.StartTime;
-                    worksheet.Cell(row, 7).Value = transaction.MeterStart;
-                    worksheet.Cell(row, 8).Value = transaction.StartResult;
-                    worksheet.Cell(row, 9).Value = transaction.StopTag?.TagId;
-                    worksheet.Cell(row, 10).Value = transaction.StopTag?.TagName;
-                    worksheet.Cell(row, 11).Value = transaction.StopTime;
-                    worksheet.Cell(row, 12).Value = transaction.MeterStop;
-                    worksheet.Cell(row, 13).Value = transaction.StopReason;
-                    worksheet.Cell(row, 14).Value = energy;
+                    var energy = ft.t.MeterStop.HasValue ? (ft.t.MeterStop.Value - ft.t.MeterStart) : (double?)null;
+                    worksheet.Cell(row, 1).Value = ft.t.TransactionId;
+                    worksheet.Cell(row, 2).Value = (string.IsNullOrEmpty(ft.cs?.ChargePoint?.Name)) ? ft.t.ChargePointId : ft.cs.ChargePoint.Name;
+                    worksheet.Cell(row, 3).Value = (string.IsNullOrEmpty(ft.cs?.ConnectorName)) ? ft.t.ConnectorId : ft.cs. ConnectorName;
+                    worksheet.Cell(row, 4).Value = ft.t.StartTagId;
+                    worksheet.Cell(row, 5).Value = ft.t.StartTagName;
+                    worksheet.Cell(row, 6).Value = ft.t.StartTagParentId;
+                    worksheet.Cell(row, 7).SetValue(ft.t.StartTime.ToLocalTime());
+                    worksheet.Cell(row, 8).SetValue(ft.t.MeterStart);
+                    if (ft.t.StopTagId != null)
+                    {
+                        worksheet.Cell(row, 9).Value = ft.t.StopTagId;
+                        worksheet.Cell(row, 10).Value = ft.t.StopTagName;
+                    }
+                    if (ft.t.StopTime.HasValue)
+                        worksheet.Cell(row, 11).SetValue(ft.t.StopTime.Value.ToLocalTime());
+                    if (ft.t.MeterStop.HasValue)
+                        worksheet.Cell(row, 12).SetValue(ft.t.MeterStop);
+                    if (energy.HasValue)
+                        worksheet.Cell(row, 13).SetValue(energy);
+
                     row++;
                 }
-
                 worksheet.Columns().AdjustToContents(); // Auto-scaling the column width
 
                 using var stream = new MemoryStream();
@@ -195,30 +281,64 @@ namespace OCPP.Core.Management.Controllers
             }
         }
 
-
-        private ChargeReportViewModel GenerateReport(DateTime? startTime, DateTime? stopTime)
+        private ChargeReportViewModel GenerateReport(DateTime? startDate, DateTime? stopDate)
         {
-            startTime ??= new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1); // Default to first day of previous month
-            stopTime = stopTime.HasValue ? stopTime.Value.Date.AddDays(1).AddSeconds(-1) : new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddSeconds(-1); // Default to last second of previous month
+            Logger.LogTrace("ChargeReport: GenerateReport({0}, {1})", startDate?.ToString("s"), stopDate?.ToString("s"));
 
-            var transactions = DbContext.Set<Transaction>()
-                .Include(t => t.StartTag) // Ensure StartTag is included in the query
-                .Where(t => t.StartTime >= startTime && t.StartTime <= stopTime && (!t.StopTime.HasValue || t.StopTime <= stopTime))
-                .ToList();
+            startDate ??= new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1); // Default to first day of previous month
+            stopDate ??= new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddDays(-1); // Default to last day of previous month
 
-            var tags = DbContext.Set<ChargeTag>().ToList();
+            // Restrict DateTime to date
+            startDate = startDate.Value.Date;
+            stopDate = stopDate.Value.Date;
 
+            // Timestamps in DB are UTC
+            DateTime dbStartDate = startDate.Value.ToUniversalTime();
+            // Stop date => use next day and compare with "<" (no clock times needed)
+            DateTime dbStopDate = stopDate.Value.AddDays(1).ToUniversalTime();
+
+            // Load transactions with LEFT JOIN charge tags
+            var transactions = (from t in DbContext.Transactions
+                                 join startCT in DbContext.ChargeTags on t.StartTagId equals startCT.TagId into ft_tmp
+                                 from startCT in ft_tmp.DefaultIfEmpty()
+                                 join stopCT in DbContext.ChargeTags on t.StopTagId equals stopCT.TagId into ft
+                                 from stopCT in ft.DefaultIfEmpty()
+                                 where (t.StartTime >= dbStartDate &&
+                                        t.StartTime <= dbStopDate &&
+                                        (!t.StopTime.HasValue || t.StopTime < dbStopDate))
+                                 select new TransactionExtended
+                                 {
+                                     TransactionId = t.TransactionId,
+                                     Uid = t.Uid,
+                                     ChargePointId = t.ChargePointId,
+                                     ConnectorId = t.ConnectorId,
+                                     StartTagId = t.StartTagId,
+                                     StartTime = t.StartTime,
+                                     MeterStart = t.MeterStart,
+                                     StartResult = t.StartResult,
+                                     StopTagId = t.StopTagId,
+                                     StopTime = t.StopTime,
+                                     MeterStop = t.MeterStop,
+                                     StopReason = t.StopReason,
+                                     StartTagName = startCT.TagName,
+                                     StartTagParentId = startCT.ParentTagId,
+                                     StopTagName = stopCT.TagName,
+                                     StopTagParentId = stopCT.ParentTagId
+                                 }).AsNoTracking()
+                                   .ToList();
+
+            // generate and return grouped data
             return new ChargeReportViewModel
             {
-                StartTime = startTime.Value,
-                StopTime = stopTime.Value,
+                StartDate = startDate.Value,
+                StopDate = stopDate.Value,
                 Groups = transactions
-                    .GroupBy(t => t.StartTag.ParentTagId)
+                    .GroupBy(t => t.StartTagParentId)
                     .OrderBy(g => g.Key) // Order groups by name
                     .Select(g => new GroupReport
                     {
                         GroupName = g.Key,
-                        Tags = g.GroupBy(t => tags.FirstOrDefault(tag => tag.TagId == t.StartTag.TagId)?.TagName)
+                        Tags = g.GroupBy(t => (string.IsNullOrEmpty(t.StartTagName) ? t.StartTagId : t.StartTagName))
                                 .OrderBy(tg => tg.Key) // Order tags by name
                                 .Select(tg => new TagReport
                                 {
@@ -228,11 +348,11 @@ namespace OCPP.Core.Management.Controllers
                                         TransactionId = t.TransactionId,
                                         ChargePointId = t.ChargePointId,
                                         ConnectorId = t.ConnectorId,
-                                        StartTagId = t.StartTag.TagId,
+                                        StartTagId = string.IsNullOrEmpty(t.StartTagName) ? t.StartTagId : t.StartTagName,
                                         StartTime = t.StartTime,
                                         MeterStart = t.MeterStart,
                                         StartResult = t.StartResult,
-                                        StopTagId = t.StartTag.TagId,
+                                        StopTagId = string.IsNullOrEmpty(t.StopTagName) ? t.StopTagId : t.StopTagName,
                                         StopTime = t.StopTime,
                                         MeterStop = t.MeterStop,
                                         StopReason = t.StopReason
@@ -242,17 +362,60 @@ namespace OCPP.Core.Management.Controllers
             };
         }
 
-        private List<Transaction> GetAllTransactions(DateTime? startTime, DateTime? stopTime)
+        private TransactionListViewModel GetAllTransactions(DateTime? startDate, DateTime? stopDate)
         {
-            startTime ??= new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1); // Default to first day of previous month
-            stopTime = stopTime.HasValue ? stopTime.Value.Date.AddDays(1).AddSeconds(-1) : new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddSeconds(-1); // Default to last second of previous month
+            startDate ??= new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1); // Default to first day of previous month
+            stopDate ??= new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddDays(-1); // Default to last day of previous month
 
-            return DbContext.Set<Transaction>()
-                .Include(t => t.StartTag)
-                .Include(t => t.StopTag)
-                .Where(t => t.StartTime >= startTime && t.StartTime <= stopTime && (!t.StopTime.HasValue || t.StopTime <= stopTime))
-                .AsNoTracking()
-                .ToList();
+            // Restrict DateTime to date
+            startDate = startDate.Value.Date;
+            stopDate = stopDate.Value.Date;
+
+            // Timestamps in DB are UTC
+            DateTime dbStartDate = startDate.Value.ToUniversalTime();
+            // Stop date => use next day and compare with "<" (no clock times needed)
+            DateTime dbStopDate = stopDate.Value.AddDays(1).ToUniversalTime();
+
+            var tlvm = new TransactionListViewModel
+            {
+                ConnectorStatuses = new List<ConnectorStatus>(),
+                Transactions = new List<TransactionExtended>()
+            };
+
+            Logger.LogTrace("ChargeReport: Loading charge points and connectors...");
+            tlvm.ConnectorStatuses = DbContext.ConnectorStatuses.Include(cs => cs.ChargePoint).ToList();
+
+            Logger.LogTrace("ChargeReport: Loading transactions...");
+            tlvm.Transactions = (from t in DbContext.Transactions
+                                 join startCT in DbContext.ChargeTags on t.StartTagId equals startCT.TagId into ft_tmp
+                                 from startCT in ft_tmp.DefaultIfEmpty()
+                                 join stopCT in DbContext.ChargeTags on t.StopTagId equals stopCT.TagId into ft
+                                 from stopCT in ft.DefaultIfEmpty()
+                                 where (t.StartTime >= dbStartDate && 
+                                        t.StartTime <= dbStopDate && 
+                                        (!t.StopTime.HasValue || t.StopTime < dbStopDate))
+                                 select new TransactionExtended
+                                 {
+                                     TransactionId = t.TransactionId,
+                                     Uid = t.Uid,
+                                     ChargePointId = t.ChargePointId,
+                                     ConnectorId = t.ConnectorId,
+                                     StartTagId = t.StartTagId,
+                                     StartTime = t.StartTime,
+                                     MeterStart = t.MeterStart,
+                                     StartResult = t.StartResult,
+                                     StopTagId = t.StopTagId,
+                                     StopTime = t.StopTime,
+                                     MeterStop = t.MeterStop,
+                                     StopReason = t.StopReason,
+                                     StartTagName = startCT.TagName,
+                                     StartTagParentId = startCT.ParentTagId,
+                                     StopTagName = stopCT.TagName,
+                                     StopTagParentId = stopCT.ParentTagId
+                                 }).AsNoTracking()
+                      .ToList();
+
+            return tlvm;
         }
     }
 }

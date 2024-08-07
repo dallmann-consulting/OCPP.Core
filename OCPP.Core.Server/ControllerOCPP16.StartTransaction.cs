@@ -83,7 +83,7 @@ namespace OCPP.Core.Server
                                 {
                                     // Check that no open transaction with this idTag exists
                                     Transaction tx = DbContext.Transactions
-                                        .Where(t => !t.StopTime.HasValue && t.StartTag == ct)
+                                        .Where(t => !t.StopTime.HasValue && t.StartTagId == ct.TagId)
                                         .OrderByDescending(t => t.TransactionId)
                                         .FirstOrDefault();
 
@@ -121,7 +121,7 @@ namespace OCPP.Core.Server
                         Transaction transaction = new Transaction();
                         transaction.ChargePointId = ChargePointStatus?.Id;
                         transaction.ConnectorId = startTransactionRequest.ConnectorId;
-                        transaction.StartTag = ct;
+                        transaction.StartTagId = ct.TagId;
                         transaction.StartTime = startTransactionRequest.Timestamp.UtcDateTime;
                         transaction.MeterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh
                         transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();

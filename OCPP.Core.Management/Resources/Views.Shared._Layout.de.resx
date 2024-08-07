@@ -123,8 +123,11 @@
   <data name="ChargePoints" xml:space="preserve">
     <value>Ladestationen</value>
   </data>
+  <data name="ChargeReport" xml:space="preserve">
+    <value>Lade-Auswertung</value>
+  </data>
   <data name="ChargeTags" xml:space="preserve">
-    <value>RFID-Schlüssel</value>
+    <value>RFID-Karte</value>
   </data>
   <data name="Connectors" xml:space="preserve">
     <value>Anschlüsse</value>

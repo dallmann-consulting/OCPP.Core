@@ -141,15 +141,15 @@
         <tbody>
             @if (Model.Transactions != null)
             {
-                foreach (Transaction t in Model.Transactions)
+                foreach (TransactionExtended t in Model.Transactions)
                 {
                     <tr>
                         <td>@currentConnectorName</td>
                         <td>@string.Format("{0} {1}", t.StartTime.ToLocalTime().ToShortDateString(), t.StartTime.ToLocalTime().ToShortTimeString())</td>
-                        <td>@t.StartTag</td>
+                        <td>@(string.IsNullOrEmpty(t.StartTagName) ? t.StartTagId : t.StartTagName)</td>
                         <td>@string.Format("{0:0.0##}", t.MeterStart)</td>
                         <td>@((t.StopTime != null) ? string.Format("{0} {1}", t.StopTime.Value.ToLocalTime().ToShortDateString(), t.StopTime.Value.ToLocalTime().ToShortTimeString()) : string.Empty)</td>
-                        <td>@t.StopTag</td>
+                        <td>@(string.IsNullOrEmpty(t.StopTagName) ? t.StopTagId : t.StopTagName)</td>
                         <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", t.MeterStop) : string.Empty)</td>
                         <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", (t.MeterStop - t.MeterStart)) : string.Empty)</td>
                     </tr>

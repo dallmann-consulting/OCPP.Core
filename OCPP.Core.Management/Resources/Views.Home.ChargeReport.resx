@@ -117,7 +117,67 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ChargeReportEnergy" xml:space="preserve">
+    <value>Energy (kWh)</value>
+  </data>
+  <data name="ChargeReportGroup" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="ChargeReportTag" xml:space="preserve">
+    <value>Charge Tag</value>
+  </data>
+  <data name="Energy-kWh" xml:space="preserve">
+    <value>Energy (kWh)</value>
+  </data>
+  <data name="ExpDetails" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="ExpDetailsCSVTooltipp" xml:space="preserve">
+    <value>Export all transactions as CSV file</value>
+  </data>
+  <data name="ExpDetailsXLSXTooltipp" xml:space="preserve">
+    <value>Export all transactions as XLSX file</value>
+  </data>
+  <data name="ExpSummaryCSVTooltipp" xml:space="preserve">
+    <value>Export summery as CSV file</value>
+  </data>
+  <data name="ExpSummaryXLSXTooltipp" xml:space="preserve">
+    <value>Export summery as XLSX file</value>
+  </data>
+  <data name="ExpSummery" xml:space="preserve">
+    <value>Summery</value>
+  </data>
+  <data name="NoData" xml:space="preserve">
+    <value>- No data -</value>
+  </data>
+  <data name="PreviousMonth" xml:space="preserve">
+    <value>Previous month</value>
+  </data>
+  <data name="PreviousWeek" xml:space="preserve">
+    <value>Previous week</value>
+  </data>
+  <data name="PreviousYear" xml:space="preserve">
+    <value>Previous year</value>
+  </data>
+  <data name="ReportTitle" xml:space="preserve">
+    <value>Report from {0} to {1}</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>Start date</value>
+  </data>
+  <data name="StopDate" xml:space="preserve">
+    <value>Stop date</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>Load</value>
+  </data>
+  <data name="TagName" xml:space="preserve">
+    <value>Charge Tag</value>
+  </data>
   <data name="Title" xml:space="preserve">
     <value>Charge Report</value>
+  </data>
+  <data name="YearToDate" xml:space="preserve">
+    <value>Year to date</value>
   </data>
 </root>

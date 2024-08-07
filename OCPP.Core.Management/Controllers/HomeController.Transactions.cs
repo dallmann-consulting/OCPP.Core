@@ -46,7 +46,7 @@ namespace OCPP.Core.Management.Controllers
             tlvm.CurrentChargePointId = Id;
             tlvm.CurrentConnectorId = currentConnectorId;
             tlvm.ConnectorStatuses = new List<ConnectorStatus>();
-            tlvm.Transactions = new List<Transaction>();
+            tlvm.Transactions = new List<TransactionExtended>();
 
             try
             {
@@ -93,20 +93,39 @@ namespace OCPP.Core.Management.Controllers
                     }
                 }
 
-
-                // load charge tags for id/name resolution
-                Logger.LogTrace("Transactions: Loading charge tags...");
-                tlvm.ChargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
-
                 if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
                 {
                     Logger.LogTrace("Transactions: Loading charge point transactions...");
-                    tlvm.Transactions = DbContext.Transactions
-                                        .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
+                    tlvm.Transactions = (from t in DbContext.Transactions
+                                         join startCT in DbContext.ChargeTags on t.StartTagId equals startCT.TagId into ft_tmp
+                                         from startCT in ft_tmp.DefaultIfEmpty()
+                                         join stopCT in DbContext.ChargeTags on t.StopTagId equals stopCT.TagId into ft
+                                         from stopCT in ft.DefaultIfEmpty()
+                                         where (t.ChargePointId == tlvm.CurrentChargePointId &&
                                                     t.ConnectorId == tlvm.CurrentConnectorId &&
                                                     t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
-                                        .OrderByDescending(t => t.TransactionId)
-                                        .ToList<Transaction>();
+                                         select new TransactionExtended
+                                         {
+                                             TransactionId = t.TransactionId,
+                                             Uid = t.Uid,
+                                             ChargePointId = t.ChargePointId,
+                                             ConnectorId = t.ConnectorId,
+                                             StartTagId = t.StartTagId,
+                                             StartTime = t.StartTime,
+                                             MeterStart = t.MeterStart,
+                                             StartResult = t.StartResult,
+                                             StopTagId = t.StopTagId,
+                                             StopTime = t.StopTime,
+                                             MeterStop = t.MeterStop,
+                                             StopReason = t.StopReason,
+                                             StartTagName = startCT.TagName,
+                                             StartTagParentId = startCT.ParentTagId,
+                                             StopTagName = stopCT.TagName,
+                                             StopTagParentId = stopCT.ParentTagId
+                                         })
+                                         .OrderByDescending(t => t.TransactionId)
+                                         .AsNoTracking()
+                                         .ToList();
                 }
             }
             catch (Exception exp)

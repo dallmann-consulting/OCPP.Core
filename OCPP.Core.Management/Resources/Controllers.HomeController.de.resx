@@ -126,6 +126,18 @@
   <data name="ChargePointIdRequired" xml:space="preserve">
     <value>Bitte geben Sie die Kennung der Ladestation an.</value>
   </data>
+  <data name="ChargeReport" xml:space="preserve">
+    <value>RFID Auswertung</value>
+  </data>
+  <data name="ChargeReportEnergy" xml:space="preserve">
+    <value>Energie</value>
+  </data>
+  <data name="ChargeReportGroup" xml:space="preserve">
+    <value>Gruppe</value>
+  </data>
+  <data name="ChargeReportTag" xml:space="preserve">
+    <value>RFID-Karte</value>
+  </data>
   <data name="ChargeSum" xml:space="preserve">
     <value>Geladen</value>
   </data>
@@ -138,14 +150,23 @@
   <data name="Connector" xml:space="preserve">
     <value>Anschluss</value>
   </data>
+  <data name="Energy-kWh" xml:space="preserve">
+    <value>Energie (kWh)</value>
+  </data>
   <data name="ErrorOCPPServer" xml:space="preserve">
     <value>Es konnte kein aktueller Status vom OCPP-Server abgerufen werden.</value>
+  </data>
+  <data name="ReportSheetName" xml:space="preserve">
+    <value>Transaktionen</value>
   </data>
   <data name="StartMeter" xml:space="preserve">
     <value>Beginn-Zähler</value>
   </data>
   <data name="StartTag" xml:space="preserve">
-    <value>Token</value>
+    <value>RFID-Karte</value>
+  </data>
+  <data name="StartTagID" xml:space="preserve">
+    <value>RFID-Nummer</value>
   </data>
   <data name="StartTime" xml:space="preserve">
     <value>Beginn</value>
@@ -154,9 +175,15 @@
     <value>Ende-Zähler</value>
   </data>
   <data name="StopTag" xml:space="preserve">
-    <value>Token</value>
+    <value>RFID-Karte</value>
+  </data>
+  <data name="StopTagID" xml:space="preserve">
+    <value>RFID-Nummer</value>
   </data>
   <data name="StopTime" xml:space="preserve">
     <value>Ende</value>
+  </data>
+  <data name="TransactionID" xml:space="preserve">
+    <value>Transaktions-ID</value>
   </data>
 </root>

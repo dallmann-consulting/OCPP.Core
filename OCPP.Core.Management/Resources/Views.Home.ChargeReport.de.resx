@@ -117,73 +117,67 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ChargePointId" xml:space="preserve">
-    <value>Charging station</value>
-  </data>
-  <data name="ChargePointIdExists" xml:space="preserve">
-    <value>A charging station with that ID already exists.</value>
-  </data>
-  <data name="ChargePointIdRequired" xml:space="preserve">
-    <value>Please enter an charging station ID.</value>
-  </data>
-  <data name="ChargeReport" xml:space="preserve">
-    <value>ChargeReport</value>
-  </data>
   <data name="ChargeReportEnergy" xml:space="preserve">
-    <value>Energy</value>
+    <value>Energie (kWh)</value>
   </data>
   <data name="ChargeReportGroup" xml:space="preserve">
-    <value>Group</value>
+    <value>Gruppe</value>
   </data>
   <data name="ChargeReportTag" xml:space="preserve">
-    <value>Charge-Tag</value>
-  </data>
-  <data name="ChargeSum" xml:space="preserve">
-    <value>Charged</value>
-  </data>
-  <data name="ChargeTagIdExists" xml:space="preserve">
-    <value>The RFID number already exists.</value>
-  </data>
-  <data name="ChargeTagIdRequired" xml:space="preserve">
-    <value>Please enter an RFID number.</value>
-  </data>
-  <data name="Connector" xml:space="preserve">
-    <value>Connector</value>
+    <value>RFID-Karte</value>
   </data>
   <data name="Energy-kWh" xml:space="preserve">
-    <value>Energy (kWh)</value>
+    <value>Energie (kWh)</value>
   </data>
-  <data name="ErrorOCPPServer" xml:space="preserve">
-    <value>No current status could be retrieved from the OCPP server.</value>
+  <data name="ExpDetails" xml:space="preserve">
+    <value>Details</value>
   </data>
-  <data name="ReportSheetName" xml:space="preserve">
-    <value>Transactions</value>
+  <data name="ExpDetailsCSVTooltipp" xml:space="preserve">
+    <value>Transaktionsliste als CSV herunterladen</value>
   </data>
-  <data name="StartMeter" xml:space="preserve">
-    <value>Start-Meter</value>
+  <data name="ExpDetailsXLSXTooltipp" xml:space="preserve">
+    <value>Transaktionsliste  als XLSX herunterladen</value>
   </data>
-  <data name="StartTag" xml:space="preserve">
-    <value>Start-Tag</value>
+  <data name="ExpSummaryCSVTooltipp" xml:space="preserve">
+    <value>Summen als CSV herunterladen</value>
   </data>
-  <data name="StartTagID" xml:space="preserve">
-    <value>Start-Tag ID</value>
+  <data name="ExpSummaryXLSXTooltipp" xml:space="preserve">
+    <value>Summen als XLSX herunterladen</value>
   </data>
-  <data name="StartTime" xml:space="preserve">
-    <value>Start</value>
+  <data name="ExpSummery" xml:space="preserve">
+    <value>Summen</value>
   </data>
-  <data name="StopMeter" xml:space="preserve">
-    <value>Stop-Meter</value>
+  <data name="NoData" xml:space="preserve">
+    <value>- keine Daten -</value>
   </data>
-  <data name="StopTag" xml:space="preserve">
-    <value>Stop-Tag</value>
+  <data name="PreviousMonth" xml:space="preserve">
+    <value>Letzter Monat</value>
   </data>
-  <data name="StopTagID" xml:space="preserve">
-    <value>Stop-Tag ID</value>
+  <data name="PreviousWeek" xml:space="preserve">
+    <value>Letzte Woche</value>
   </data>
-  <data name="StopTime" xml:space="preserve">
-    <value>Stop</value>
+  <data name="PreviousYear" xml:space="preserve">
+    <value>Letztes Jahr</value>
   </data>
-  <data name="TransactionID" xml:space="preserve">
-    <value>Trancaction ID</value>
+  <data name="ReportTitle" xml:space="preserve">
+    <value>Zeitraum von {0} bis {1}</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>Von:</value>
+  </data>
+  <data name="StopDate" xml:space="preserve">
+    <value>bis:</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>Laden</value>
+  </data>
+  <data name="TagName" xml:space="preserve">
+    <value>RFID-Karte</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Lade-Auswertung</value>
+  </data>
+  <data name="YearToDate" xml:space="preserve">
+    <value>Aktuelles Jahr</value>
   </data>
 </root>
