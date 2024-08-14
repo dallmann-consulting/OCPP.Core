@@ -194,11 +194,14 @@ namespace OCPP.Core.Server
             return idTag;
         }
 
+        /// <summary>
+        /// Return UtcNow + 1 year
+        /// </summary>
         protected static DateTimeOffset MaxExpiryDate
         {
             get
             {
-                return new DateTime(2199, 12, 31);
+                return DateTime.UtcNow.Date.AddYears(1);
             }
         }
     }
