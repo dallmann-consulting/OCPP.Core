@@ -39,7 +39,6 @@ namespace OCPP.Core.Server
             statusNotificationResponse.CustomData.VendorId = VendorId;
 
             int connectorId = 0;
-            bool msgWritten = false;
 
             try
             {
@@ -50,7 +49,7 @@ namespace OCPP.Core.Server
                 connectorId = statusNotificationRequest.ConnectorId;
 
                 // Write raw status in DB
-                msgWritten = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Status={0}", statusNotificationRequest.ConnectorStatus), string.Empty);
+                WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Status={0}", statusNotificationRequest.ConnectorStatus), string.Empty);
 
                 ConnectorStatusEnum newStatus = ConnectorStatusEnum.Undefined;
 
@@ -112,10 +111,6 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.InternalError;
             }
 
-            if (!msgWritten)
-            {
-                WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, null, errorCode);
-            }
             return errorCode;
         }
     }

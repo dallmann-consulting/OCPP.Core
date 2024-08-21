@@ -36,7 +36,6 @@ namespace OCPP.Core.Server
             StatusNotificationResponse statusNotificationResponse = new StatusNotificationResponse();
 
             int connectorId = 0;
-            bool msgWritten = false;
 
             try
             {
@@ -47,7 +46,7 @@ namespace OCPP.Core.Server
                 connectorId = statusNotificationRequest.ConnectorId;
 
                 // Write raw status in DB
-                msgWritten = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Info={0} / Status={1} / ", statusNotificationRequest.Info, statusNotificationRequest.Status), statusNotificationRequest.ErrorCode.ToString());
+                WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Info={0} / Status={1} / ", statusNotificationRequest.Info, statusNotificationRequest.Status), statusNotificationRequest.ErrorCode.ToString());
 
                 ConnectorStatusEnum newStatus = ConnectorStatusEnum.Undefined;
 
@@ -114,10 +113,6 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.InternalError;
             }
 
-            if (!msgWritten)
-            {
-                WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, null, errorCode);
-            }
             return errorCode;
         }
     }

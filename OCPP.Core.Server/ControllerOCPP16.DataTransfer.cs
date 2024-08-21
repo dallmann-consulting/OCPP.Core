@@ -35,8 +35,6 @@ namespace OCPP.Core.Server
             string errorCode = null;
             DataTransferResponse dataTransferResponse = new DataTransferResponse();
 
-            bool msgWritten = false;
-
             try
             {
                 Logger.LogTrace("Processing data transfer...");
@@ -46,7 +44,7 @@ namespace OCPP.Core.Server
                 if (ChargePointStatus != null)
                 {
                     // Known charge station
-                    msgWritten = WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, string.Format("VendorId={0} / MessageId={1} / Data={2}", dataTransferRequest.VendorId, dataTransferRequest.MessageId, dataTransferRequest.Data), errorCode);
+                    WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, string.Format("VendorId={0} / MessageId={1} / Data={2}", dataTransferRequest.VendorId, dataTransferRequest.MessageId, dataTransferRequest.Data), errorCode);
                     dataTransferResponse.Status = DataTransferResponseStatus.Accepted;
                 }
                 else
@@ -64,10 +62,6 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.InternalError;
             }
 
-            if (!msgWritten)
-            {
-                WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, null, errorCode);
-            }
             return errorCode;
         }
     }

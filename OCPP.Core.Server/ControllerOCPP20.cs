@@ -159,7 +159,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Helper function for writing a log entry in database
         /// </summary>
-        private bool WriteMessageLog(string chargePointId, int? connectorId, string message, string result, string errorCode)
+        private void WriteMessageLog(string chargePointId, int? connectorId, string message, string result, string errorCode)
         {
             try
             {
@@ -183,8 +183,16 @@ namespace OCPP.Core.Server
                         msgLog.ErrorCode = errorCode;
                         DbContext.MessageLogs.Add(msgLog);
                         Logger.LogTrace("MessageLog => Writing entry '{0}'", message);
-                        DbContext.SaveChanges();
-                        return true;
+                        _ = DbContext.SaveChangesAsync().ContinueWith(task =>
+                        {
+                            if (task.IsFaulted && task.Exception != null)
+                            {
+                                foreach (var exp in task.Exception.InnerExceptions)
+                                {
+                                    Logger.LogError(exp, "ControllerOCPP20.WriteMessageLog=> Error writing message async to DB: '{0}'", message);
+                                }
+                            }
+                        });
                     }
                 }
             }
@@ -192,7 +200,6 @@ namespace OCPP.Core.Server
             {
                 Logger.LogError(exp, "MessageLog => Error writing entry '{0}'", message);
             }
-            return false;
         }
     }
 }
