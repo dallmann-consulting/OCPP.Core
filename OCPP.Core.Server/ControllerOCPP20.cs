@@ -150,6 +150,14 @@ namespace OCPP.Core.Server
                     HandleUnlockConnector(msgIn, msgOut);
                     break;
 
+                case "SetChargingProfile":
+                    HandleSetChargingProfile(msgIn, msgOut);
+                    break;
+
+                case "ClearChargingProfile":
+                    HandleClearChargingProfile(msgIn, msgOut);
+                    break;
+
                 default:
                     WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");
                     break;

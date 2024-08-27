@@ -1,4 +1,23 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿/*
+ * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
+ * Copyright (C) 2020-2024 dallmann consulting GmbH.
+ * All Rights Reserved.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -13,6 +32,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using OCPP.Core.Server.Messages_OCPP20;
 using OCPP.Core.Database;
+using OCPP.Core.Server.Messages_OCPP16;
 
 namespace OCPP.Core.Server
 {
@@ -176,7 +196,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Sends a Unlock-Request to the chargepoint
         /// </summary>
-        private async Task UnlockConnector20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext)
+        private async Task UnlockConnector20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext, string urlConnectorId)
         {
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
             ControllerOCPP20 controller20 = new ControllerOCPP20(_configuration, _logFactory, chargePointStatus, dbContext);
@@ -186,11 +206,138 @@ namespace OCPP.Core.Server
             unlockConnectorRequest.CustomData = new CustomDataType();
             unlockConnectorRequest.CustomData.VendorId = ControllerOCPP20.VendorId;
 
+            if (!string.IsNullOrEmpty(urlConnectorId))
+            {
+                if (int.TryParse(urlConnectorId, out int iConnectorId))
+                {
+                    unlockConnectorRequest.EvseId = iConnectorId;
+                }
+            }
+            logger.LogTrace("OCPPMiddleware.OCPP20 => UnlockConnector20: ChargePoint='{0}' / EvseId={1}", chargePointStatus.Id, unlockConnectorRequest.EvseId);
+
+
             string jsonResetRequest = JsonConvert.SerializeObject(unlockConnectorRequest);
 
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "UnlockConnector";
+            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.JsonPayload = jsonResetRequest;
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
+
+            // store HttpContext with MsgId for later answer processing (=> send anwer to API caller)
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            // Send OCPP message with optional logging/dump
+            await SendOcpp20Message(msgOut, logger, chargePointStatus.WebSocket);
+
+            // Wait for asynchronous chargepoint response and processing
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            // 
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        /// <summary>
+        /// Sends a SetChargingProfile-Request to the chargepoint
+        /// </summary>
+        private async Task SetChargingProfile20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext, string urlConnectorId, double power, string unit)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
+            ControllerOCPP20 controller20 = new ControllerOCPP20(_configuration, _logFactory, chargePointStatus, dbContext);
+
+            Messages_OCPP20.SetChargingProfileRequest setChargingProfileRequest = new Messages_OCPP20.SetChargingProfileRequest();
+            setChargingProfileRequest.ChargingProfile = new ChargingProfileType();
+            // Default values
+            setChargingProfileRequest.ChargingProfile.Id = 100;
+            setChargingProfileRequest.ChargingProfile.StackLevel = 1;
+            setChargingProfileRequest.ChargingProfile.ChargingProfilePurpose = ChargingProfilePurposeEnumType.ChargingStationExternalConstraints;
+            setChargingProfileRequest.ChargingProfile.ChargingProfileKind = ChargingProfileKindEnumType.Recurring;
+            setChargingProfileRequest.ChargingProfile.RecurrencyKind = RecurrencyKindEnumType.Daily;
+            setChargingProfileRequest.ChargingProfile.ChargingSchedule = new List<ChargingScheduleType>() {
+                new ChargingScheduleType()
+                {
+                    Id = 101,
+                    Duration = 24*60*60, // 24h every day => always
+                    ChargingRateUnit = string.Equals(unit, "A", StringComparison.InvariantCultureIgnoreCase) ? ChargingRateUnitEnumType.A : ChargingRateUnitEnumType.W,
+                    ChargingSchedulePeriod = new List<ChargingSchedulePeriodType>()
+                    {
+                        new ChargingSchedulePeriodType()
+                        {
+                            StartPeriod = 0,    // Start 0:00h
+                            Limit = power
+                        }
+                    }
+                }
+            };  
+
+            setChargingProfileRequest.EvseId = 0;
+            if (!string.IsNullOrEmpty(urlConnectorId))
+            {
+                if (int.TryParse(urlConnectorId, out int iConnectorId))
+                {
+                    setChargingProfileRequest.EvseId = iConnectorId;
+                }
+            }
+            logger.LogTrace("OCPPMiddleware.OCPP20 => SetChargingProfile20: ChargePoint='{0}' / ConnectorId={1} / Power='{2}{3}'", chargePointStatus.Id, setChargingProfileRequest.EvseId, power, unit);
+
+            string jsonResetRequest = JsonConvert.SerializeObject(setChargingProfileRequest);
+
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = "SetChargingProfile";
+            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.JsonPayload = jsonResetRequest;
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
+
+            // store HttpContext with MsgId for later answer processing (=> send anwer to API caller)
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            // Send OCPP message with optional logging/dump
+            await SendOcpp20Message(msgOut, logger, chargePointStatus.WebSocket);
+
+            // Wait for asynchronous chargepoint response and processing
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            // 
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        /// <summary>
+        /// Sends a ClearChargingProfile-Request to the chargepoint
+        /// </summary>
+        private async Task ClearChargingProfile20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext, string urlConnectorId)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
+            ControllerOCPP20 controller20 = new ControllerOCPP20(_configuration, _logFactory, chargePointStatus, dbContext);
+
+            Messages_OCPP20.ClearChargingProfileRequest clearChargingProfileRequest = new Messages_OCPP20.ClearChargingProfileRequest();
+            // Default values
+            clearChargingProfileRequest.ChargingProfileId = 100;
+            clearChargingProfileRequest.ChargingProfileCriteria = new ClearChargingProfileType()
+            {
+                StackLevel = 1,
+                ChargingProfilePurpose = ChargingProfilePurposeEnumType.ChargingStationExternalConstraints
+            };
+            clearChargingProfileRequest.ChargingProfileCriteria.EvseId = 0;
+            if (!string.IsNullOrEmpty(urlConnectorId))
+            {
+                if (int.TryParse(urlConnectorId, out int iConnectorId))
+                {
+                    clearChargingProfileRequest.ChargingProfileCriteria.EvseId = iConnectorId;
+                }
+            }
+            logger.LogTrace("OCPPMiddleware.OCPP20 => ClearChargingProfile20: ChargePoint='{0}' / ConnectorId={1}", chargePointStatus.Id, clearChargingProfileRequest.ChargingProfileCriteria.EvseId);
+
+            string jsonResetRequest = JsonConvert.SerializeObject(clearChargingProfileRequest);
+
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = "ClearChargingProfile";
             msgOut.UniqueId = Guid.NewGuid().ToString("N");
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();

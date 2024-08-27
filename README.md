@@ -22,6 +22,8 @@ OCPP V1.6:
 * DataTransfer
 * Reset
 * UnlockConnector
+* SetChargingProfile (not verified)
+* ClearChargingProfile (not verified)
 
 OCPP V2.0:
 * BootNotification
@@ -38,6 +40,8 @@ OCPP V2.0:
 * NotifyEVChargingSchedule
 * Reset
 * UnlockConnector
+* SetChargingProfile (not verified)
+* ClearChargingProfile (not verified)
 
 ## Management Web-UI
 The Web-UI is **localized in English and German**. It has an overview page with all charge stations and their availabilty.
@@ -121,7 +125,8 @@ An easy way to test the OCPP-Server are simulators:
 * [OCPP-2.0-CP-Simulator](https://github.com/JavaIsJavaScript/OCPP-2.0-CP-Simulator)
 
 Attention: Both simulators have minor and major bugs in certain actions. That's why I modified them both and included copies in this project.
-There also is an extended version of the 1.6 simulator with two connectors.
+There also is an extended version of the 1.6 simulator with two connectors:
+* [OCPP1.6 Multi-Connector Simulator](Simulators/simple simulator1.6_multi_connector.html)
 
 Open one of the simulators in the browser and enter "ws://localhost:8081/OCPP/station42" as the central station URL.
 "station42" is the ID of the chargepoint you created in the previous step.

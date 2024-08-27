@@ -230,12 +230,26 @@
 
                             break;
                         case "UnlockConnector": /////////ERROR!!!!!!!!
-                            //connectorId
+                            var connectorId = (JSON.parse(msg.data)[3].connectorId);
                             var UC = JSON.stringify([3, id, {"status": "Unlocked"}]);
                             _websocket.send(UC);
                              connector_locked = false;
 							setTransactionStatus(1, false);
                             logMsg("Connector status changed to: "+connector_locked);
+                            break;
+                        case "SetChargingProfile":
+                            var connectorId = (JSON.parse(msg.data)[3].connectorId);
+                            var power = (JSON.parse(msg.data)[3].csChargingProfiles.chargingSchedule.chargingSchedulePeriod[0].limit);
+                            var unit = (JSON.parse(msg.data)[3].csChargingProfiles.chargingSchedule.chargingRateUnit);
+                            var UC = JSON.stringify([3, id, { "status": "Accepted" }]);
+                            _websocket.send(UC);
+                            logMsg("    SetChargingProfile => ConnectorId=" + connectorId + " / Power=" + power + unit);
+                            break;
+                        case "ClearChargingProfile":
+                            var connectorId = (JSON.parse(msg.data)[3].connectorId);
+                            var UC = JSON.stringify([3, id, { "status": "Accepted" }]);
+                            _websocket.send(UC);
+                            logMsg("    ClearChargingProfile => ConnectorId=" + connectorId);
                             break;
                         default:
                             var error = JSON.stringify([4, id]);
