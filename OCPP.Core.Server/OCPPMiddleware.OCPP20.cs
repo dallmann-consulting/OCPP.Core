@@ -248,19 +248,28 @@ namespace OCPP.Core.Server
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
             ControllerOCPP20 controller20 = new ControllerOCPP20(_configuration, _logFactory, chargePointStatus, dbContext);
 
+            // Parse connector id (int value)
+            int connectorId = 0;
+            if (!string.IsNullOrEmpty(urlConnectorId))
+            {
+                int.TryParse(urlConnectorId, out connectorId);
+            }
+
             Messages_OCPP20.SetChargingProfileRequest setChargingProfileRequest = new Messages_OCPP20.SetChargingProfileRequest();
-            setChargingProfileRequest.ChargingProfile = new ChargingProfileType();
+            setChargingProfileRequest.EvseId = connectorId;
+            setChargingProfileRequest.ChargingProfile = new Messages_OCPP20.ChargingProfileType();
             // Default values
             setChargingProfileRequest.ChargingProfile.Id = 100;
             setChargingProfileRequest.ChargingProfile.StackLevel = 1;
-            setChargingProfileRequest.ChargingProfile.ChargingProfilePurpose = ChargingProfilePurposeEnumType.ChargingStationExternalConstraints;
-            setChargingProfileRequest.ChargingProfile.ChargingProfileKind = ChargingProfileKindEnumType.Recurring;
-            setChargingProfileRequest.ChargingProfile.RecurrencyKind = RecurrencyKindEnumType.Daily;
-            setChargingProfileRequest.ChargingProfile.ChargingSchedule = new List<ChargingScheduleType>() {
+            setChargingProfileRequest.ChargingProfile.ChargingProfilePurpose = ChargingProfilePurposeEnumType.TxDefaultProfile;
+            setChargingProfileRequest.ChargingProfile.ChargingProfileKind = ChargingProfileKindEnumType.Absolute;
+            setChargingProfileRequest.ChargingProfile.ValidFrom = DateTime.UtcNow;
+            setChargingProfileRequest.ChargingProfile.ValidTo = DateTime.UtcNow.AddYears(1);
+            setChargingProfileRequest.ChargingProfile.ChargingSchedule = new List<ChargingScheduleType>()
+            {
                 new ChargingScheduleType()
                 {
                     Id = 101,
-                    Duration = 24*60*60, // 24h every day => always
                     ChargingRateUnit = string.Equals(unit, "A", StringComparison.InvariantCultureIgnoreCase) ? ChargingRateUnitEnumType.A : ChargingRateUnitEnumType.W,
                     ChargingSchedulePeriod = new List<ChargingSchedulePeriodType>()
                     {
@@ -271,17 +280,9 @@ namespace OCPP.Core.Server
                         }
                     }
                 }
-            };  
+            };
 
-            setChargingProfileRequest.EvseId = 0;
-            if (!string.IsNullOrEmpty(urlConnectorId))
-            {
-                if (int.TryParse(urlConnectorId, out int iConnectorId))
-                {
-                    setChargingProfileRequest.EvseId = iConnectorId;
-                }
-            }
-            logger.LogTrace("OCPPMiddleware.OCPP20 => SetChargingProfile20: ChargePoint='{0}' / ConnectorId={1} / Power='{2}{3}'", chargePointStatus.Id, setChargingProfileRequest.EvseId, power, unit);
+            logger.LogInformation("OCPPMiddleware.OCPP20 => SetChargingProfile20: ChargePoint='{0}' / ConnectorId={1} / Power='{2}{3}'", chargePointStatus.Id, setChargingProfileRequest.EvseId, power, unit);
 
             string jsonResetRequest = JsonConvert.SerializeObject(setChargingProfileRequest);
 
@@ -321,7 +322,7 @@ namespace OCPP.Core.Server
             clearChargingProfileRequest.ChargingProfileCriteria = new ClearChargingProfileType()
             {
                 StackLevel = 1,
-                ChargingProfilePurpose = ChargingProfilePurposeEnumType.ChargingStationExternalConstraints
+                ChargingProfilePurpose = ChargingProfilePurposeEnumType.TxDefaultProfile
             };
             clearChargingProfileRequest.ChargingProfileCriteria.EvseId = 0;
             if (!string.IsNullOrEmpty(urlConnectorId))

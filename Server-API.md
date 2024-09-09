@@ -77,6 +77,9 @@ The answer should be:
 {"status"="Accepted"} or {"status"="Rejected"} or 
 OCPP1.6 {"status"="NotSupported"}
 
+Comment:
+Our Keba chargers are rejecting limits for specific connectors. But they accept connectorId=0 as the setting for all connectors.
+
 
 ### ClearChargingProfile
 Clears the charging limit (power) for a certain connector.

@@ -18,11 +18,11 @@ namespace OCPP.Core.Database
 
             if (string.IsNullOrWhiteSpace(sqlServerConnectionString))
             {
-                services.AddDbContext<OCPPCoreContext>(options => options.UseSqlite(sqliteConnectionString));
+                services.AddDbContext<OCPPCoreContext>(options => options.UseSqlite(sqliteConnectionString), ServiceLifetime.Transient);
             }
             else
             {
-                services.AddDbContext<OCPPCoreContext>(options => options.UseSqlServer(sqlServerConnectionString));
+                services.AddDbContext<OCPPCoreContext>(options => options.UseSqlServer(sqlServerConnectionString), ServiceLifetime.Transient);
             }
         }
     }

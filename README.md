@@ -22,8 +22,8 @@ OCPP V1.6:
 * DataTransfer
 * Reset
 * UnlockConnector
-* SetChargingProfile (not verified)
-* ClearChargingProfile (not verified)
+* SetChargingProfile
+* ClearChargingProfile
 
 OCPP V2.0:
 * BootNotification
@@ -40,8 +40,8 @@ OCPP V2.0:
 * NotifyEVChargingSchedule
 * Reset
 * UnlockConnector
-* SetChargingProfile (not verified)
-* ClearChargingProfile (not verified)
+* SetChargingProfile
+* ClearChargingProfile
 
 ## Management Web-UI
 The Web-UI is **localized in English and German**. It has an overview page with all charge stations and their availabilty.

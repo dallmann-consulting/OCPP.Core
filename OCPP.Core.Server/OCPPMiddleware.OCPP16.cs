@@ -17,6 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+using Azure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.EntityFrameworkCore;
@@ -243,37 +244,38 @@ namespace OCPP.Core.Server
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
             ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus, dbContext);
 
+            // Parse connector id (int value)
+            int connectorId = 0;
+            if (!string.IsNullOrEmpty(urlConnectorId))
+            {
+                int.TryParse(urlConnectorId, out connectorId);
+            }
+
             Messages_OCPP16.SetChargingProfileRequest setChargingProfileRequest = new Messages_OCPP16.SetChargingProfileRequest();
+            setChargingProfileRequest.ConnectorId = connectorId;
             setChargingProfileRequest.CsChargingProfiles = new Messages_OCPP16.CsChargingProfiles();
             // Default values
             setChargingProfileRequest.CsChargingProfiles.ChargingProfileId = 100;
             setChargingProfileRequest.CsChargingProfiles.StackLevel = 1;
-            setChargingProfileRequest.CsChargingProfiles.ChargingProfilePurpose = CsChargingProfilesChargingProfilePurpose.ChargePointMaxProfile;
-            setChargingProfileRequest.CsChargingProfiles.ChargingProfileKind = CsChargingProfilesChargingProfileKind.Recurring;
-            setChargingProfileRequest.CsChargingProfiles.RecurrencyKind = CsChargingProfilesRecurrencyKind.Daily;
+            setChargingProfileRequest.CsChargingProfiles.ChargingProfilePurpose = CsChargingProfilesChargingProfilePurpose.TxDefaultProfile;
+            setChargingProfileRequest.CsChargingProfiles.ChargingProfileKind = CsChargingProfilesChargingProfileKind.Absolute;
+            setChargingProfileRequest.CsChargingProfiles.ValidFrom = DateTime.UtcNow;
+            setChargingProfileRequest.CsChargingProfiles.ValidTo = DateTime.UtcNow.AddYears(1);
             setChargingProfileRequest.CsChargingProfiles.ChargingSchedule = new ChargingSchedule()
             {
-                Duration = 24 * 60 * 60, // 24h every day => always
                 ChargingRateUnit = string.Equals(unit, "A", StringComparison.InvariantCultureIgnoreCase) ? ChargingScheduleChargingRateUnit.A : ChargingScheduleChargingRateUnit.W,
                 ChargingSchedulePeriod = new List<ChargingSchedulePeriod>()
                 {
                     new ChargingSchedulePeriod()
                     {
                         StartPeriod = 0,    // Start 0:00h
-                        Limit = power
+                        Limit = power,
+                        NumberPhases = null
                     }
                 }
             };
 
-            setChargingProfileRequest.ConnectorId = 0;
-            if (!string.IsNullOrEmpty(urlConnectorId))
-            {
-                if (int.TryParse(urlConnectorId, out int iConnectorId))
-                {
-                    setChargingProfileRequest.ConnectorId = iConnectorId;
-                }
-            }
-            logger.LogTrace("OCPPMiddleware.OCPP16 => SetChargingProfile16: ChargePoint='{0}' / ConnectorId={1} / Power='{2}{3}'", chargePointStatus.Id, setChargingProfileRequest.ConnectorId, power, unit);
+            logger.LogInformation ("OCPPMiddleware.OCPP16 => SetChargingProfile16: ChargePoint='{0}' / ConnectorId={1} / Power='{2}{3}'", chargePointStatus.Id, setChargingProfileRequest.ConnectorId, power, unit);
 
             string jsonResetRequest = JsonConvert.SerializeObject(setChargingProfileRequest);
 
@@ -309,9 +311,9 @@ namespace OCPP.Core.Server
 
             Messages_OCPP16.ClearChargingProfileRequest clearChargingProfileRequest = new Messages_OCPP16.ClearChargingProfileRequest();
             // Default values
-            clearChargingProfileRequest.Id =100;
+            clearChargingProfileRequest.Id = 100;
             clearChargingProfileRequest.StackLevel = 1;
-            clearChargingProfileRequest.ChargingProfilePurpose = ClearChargingProfileRequestChargingProfilePurpose.ChargePointMaxProfile;
+            clearChargingProfileRequest.ChargingProfilePurpose = ClearChargingProfileRequestChargingProfilePurpose.TxDefaultProfile;
 
             clearChargingProfileRequest.ConnectorId = 0;
             if (!string.IsNullOrEmpty(urlConnectorId))
