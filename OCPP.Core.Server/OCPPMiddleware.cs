@@ -194,10 +194,14 @@ namespace OCPP.Core.Server
                                         {
                                             // Closed or aborted => remove
                                             _chargePointStatusDict.Remove(chargepointIdentifier);
+                                            _chargePointStatusDict.Add(chargepointIdentifier, chargePointStatus);
                                         }
                                     }
+                                    else
+                                    {
+                                        _chargePointStatusDict.Add(chargepointIdentifier, chargePointStatus);
+                                    }
 
-                                    _chargePointStatusDict.Add(chargepointIdentifier, chargePointStatus);
                                     statusSuccess = true;
                                 }
                             }
