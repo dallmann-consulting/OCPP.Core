@@ -7,13 +7,19 @@ using OCPP.Core.Database;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Azure.Messaging.ServiceBus;
+using Microsoft.Azure.Devices.Client;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace OCPP.Core.Server
 {
@@ -33,6 +39,11 @@ namespace OCPP.Core.Server
         private readonly ILoggerFactory _logFactory;
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
+        private readonly string _dumpDir;
+        private readonly DeviceClient _hubClient;
+        private readonly ServiceBusClient _serviceBusClient;
+        private readonly string _serviceBusQueue;
+
 
         // Dictionary with status objects for each charge point
         private static Dictionary<string, ChargePointStatus> _chargePointStatusDict = new Dictionary<string, ChargePointStatus>();
@@ -47,6 +58,20 @@ namespace OCPP.Core.Server
             _configuration = configuration;
 
             _logger = logFactory.CreateLogger("OCPPMiddleware");
+            
+            _dumpDir = _configuration.GetValue<string>("MessageDumpDir");
+            
+            //Connect to Azure IoT Hub if connection string is provided
+            var hubConnectionString = _configuration.GetConnectionString("IotHub");
+            if(!string.IsNullOrEmpty(hubConnectionString))
+                _hubClient = DeviceClient.CreateFromConnectionString(hubConnectionString);
+            
+            //Connect to Azure Service Bus if connectionstring is provided
+            var serviceBusConnectionString = _configuration.GetConnectionString("ServiceBusEndpoint");
+            if(!string.IsNullOrEmpty(serviceBusConnectionString))
+                _serviceBusClient = new ServiceBusClient(serviceBusConnectionString, new ServiceBusClientOptions { TransportType = ServiceBusTransportType.AmqpWebSockets });
+
+            _serviceBusQueue = _configuration.GetValue<string>("ServiceBusQueue");
         }
 
         public async Task Invoke(HttpContext context, OCPPCoreContext dbContext)
@@ -190,7 +215,7 @@ namespace OCPP.Core.Server
                                     if (_chargePointStatusDict.ContainsKey(chargepointIdentifier))
                                     {
                                         // exists => check status
-                                        if (_chargePointStatusDict[chargepointIdentifier].WebSocket.State != WebSocketState.Open)
+                                        if (_chargePointStatusDict[chargepointIdentifier].WebSocket == null ||  _chargePointStatusDict[chargepointIdentifier].WebSocket.State != WebSocketState.Open)
                                         {
                                             // Closed or aborted => remove
                                             _chargePointStatusDict.Remove(chargepointIdentifier);
@@ -522,6 +547,88 @@ namespace OCPP.Core.Server
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
             }
         }
+
+
+        private async Task DumpMessage(string ocppTextMessage, string protocolVersion, string direction) =>
+            await DumpMessage(Encoding.ASCII.GetBytes(ocppTextMessage), protocolVersion, direction);
+        
+        private async Task DumpMessage(byte [] bMessage, string protocolVersion,  string direction)
+        {
+            await Task.Delay(0);
+            if (string.IsNullOrWhiteSpace(_dumpDir))
+                return;
+            
+            // Write outgoing message into dump directory
+            var path = Path.Combine(_dumpDir, string.Format("{0}_{1}-{2}.txt", DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss-ffff"), protocolVersion, direction));
+            try
+            {
+                _ = File.WriteAllBytesAsync(path, bMessage).ContinueWith(task =>
+                {
+                    if (task.IsFaulted && task.Exception != null)
+                    {
+                        foreach (var exp in task.Exception.InnerExceptions)
+                        {
+                            _logger.LogError(exp, "OCPPMiddleware.Receive16=> Error async dumping message to path: '{0}'", path);
+                        }
+                    }
+                });
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError(exp, "OCPPMiddleware.DumpMessage=> Error dumping message to path: '{0}'", path);
+            }
+        }
+        private async Task ForwardMessage(OCPPMessage message, ChargePointStatus chargePointStatus)
+        {
+            await ForwardMessageToAzureIotHub(message, chargePointStatus);
+            await ForwardMessageToAzureServiceBus(message, chargePointStatus);
+        }
+        private async Task ForwardMessageToAzureServiceBus(OCPPMessage message, ChargePointStatus chargePointStatus)
+        {
+            if (_serviceBusClient == null || string.IsNullOrEmpty(_serviceBusQueue))
+                return;
+            var sender = _serviceBusClient.CreateSender(_serviceBusQueue);
+            var forwardObject = new
+            {
+                OCPPMessage = message,
+                ChargePointStatus = chargePointStatus
+            };
+            var serializedMessage = JsonConvert.SerializeObject(forwardObject);
+            var messageBody = new ServiceBusMessage(Encoding.UTF8.GetBytes(serializedMessage));
+            try
+            {
+                await sender.SendMessageAsync(messageBody);    
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception while forwarding message to Azure Service Bus");
+            }
+        }
+        private async Task ForwardMessageToAzureIotHub(OCPPMessage message, ChargePointStatus chargePointStatus)
+        {
+            if (_hubClient == null)
+                return;
+            var forwardObject = new
+            {
+                OCPPMessage = message,
+                ChargePointStatus = chargePointStatus
+            };
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            var serializedMessage = System.Text.Json.JsonSerializer.Serialize(forwardObject, options);
+            
+            var payload = Encoding.UTF8.GetBytes(serializedMessage);
+            var payloadBase64 = Encoding.UTF8.GetBytes(Convert.ToBase64String(payload));
+            var hubMessage = new Message(payloadBase64); ;
+            try
+            {
+                await _hubClient.SendEventAsync(hubMessage);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception while forwarding message to Azure IoT Hub");
+            }
+        }
+
     }
 
     public static class OCPPMiddlewareExtensions

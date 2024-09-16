@@ -33,6 +33,20 @@ namespace OCPP.Core.Server
         /// </summary>
         public string MessageType { get; set; }
 
+        public OCPPMessageType OCPPMessageType
+        {
+            get
+            {
+                return MessageType switch
+                {
+                    "2" => OCPPMessageType.CALL,
+                    "3" => OCPPMessageType.CALLRESULT,
+                    "4" => OCPPMessageType.CALLERROR,
+                    _ => OCPPMessageType.UNKNOWN
+                };
+            }
+        }
+
         /// <summary>
         /// Message ID
         /// </summary>
@@ -83,4 +97,12 @@ namespace OCPP.Core.Server
             JsonPayload = jsonPayload;
         }
     }
+    public enum OCPPMessageType
+    {
+        UNKNOWN = -1,
+        CALL    = 2,    
+        CALLRESULT = 3,
+        CALLERROR = 4
+    }
+
 }
