@@ -1,4 +1,22 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿/*
+ * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
+ * Copyright (C) 2020-2024 dallmann consulting GmbH.
+ * All Rights Reserved.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -8,9 +26,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -47,6 +67,8 @@ namespace OCPP.Core.Server
             _configuration = configuration;
 
             _logger = logFactory.CreateLogger("OCPPMiddleware");
+
+            LoadExtensions();
         }
 
         public async Task Invoke(HttpContext context, OCPPCoreContext dbContext)
@@ -201,7 +223,7 @@ namespace OCPP.Core.Server
                                     statusSuccess = true;
                                 }
                             }
-                            catch(Exception exp)
+                            catch (Exception exp)
                             {
                                 _logger.LogError(exp, "OCPPMiddleware => Error storing status object in dictionary => refuse connection");
                                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
@@ -520,6 +542,27 @@ namespace OCPP.Core.Server
             {
                 _logger.LogWarning("OCPPMiddleware => Bad path request");
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            }
+        }
+
+        /// <summary>
+        /// Dumps an OCPP message in the dump dir
+        /// </summary>
+        private void DumpMessage(string nameSuffix, string message)
+        {
+            string dumpDir = _configuration.GetValue<string>("MessageDumpDir");
+            if (!string.IsNullOrWhiteSpace(dumpDir))
+            {
+                string path = Path.Combine(dumpDir, string.Format("{0}_{1}.txt", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-ffff"), nameSuffix));
+                try
+                {
+                    // Write incoming message into dump directory
+                    File.WriteAllText(path, message);
+                }
+                catch (Exception exp)
+                {
+                    _logger.LogError(exp, "OCPPMiddleware.DumpMessage => Error dumping message '{0}' to path: '{1}'", nameSuffix, path);
+                }
             }
         }
     }

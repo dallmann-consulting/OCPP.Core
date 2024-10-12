@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Database", "OCPP.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Management", "OCPP.Core.Management\OCPP.Core.Management.csproj", "{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Server.Extensions", "OCPP.Core.Server.Extensions\OCPP.Core.Server.Extensions.csproj", "{6874E4F8-2679-46C1-B55B-C1DC96AF066B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Extensions.AzureServiceBus", "Extensions\OCPP.Core.Extensions.AzureServiceBus\OCPP.Core.Extensions.AzureServiceBus.csproj", "{ADFE2098-320F-4C2C-ADA8-2BD7068B152E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6874E4F8-2679-46C1-B55B-C1DC96AF066B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6874E4F8-2679-46C1-B55B-C1DC96AF066B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6874E4F8-2679-46C1-B55B-C1DC96AF066B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6874E4F8-2679-46C1-B55B-C1DC96AF066B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADFE2098-320F-4C2C-ADA8-2BD7068B152E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADFE2098-320F-4C2C-ADA8-2BD7068B152E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADFE2098-320F-4C2C-ADA8-2BD7068B152E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADFE2098-320F-4C2C-ADA8-2BD7068B152E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

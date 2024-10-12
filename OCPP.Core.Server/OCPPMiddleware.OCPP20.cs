@@ -32,7 +32,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using OCPP.Core.Server.Messages_OCPP20;
 using OCPP.Core.Database;
-using OCPP.Core.Server.Messages_OCPP16;
 
 namespace OCPP.Core.Server
 {
@@ -69,31 +68,13 @@ namespace OCPP.Core.Server
                             // reset memory stream für next message
                             memStream = new MemoryStream(buffer.Length);
 
-                            string dumpDir = _configuration.GetValue<string>("MessageDumpDir");
-                            if (!string.IsNullOrWhiteSpace(dumpDir))
-                            {
-                                string path = Path.Combine(dumpDir, string.Format("{0}_ocpp20-in.txt", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-ffff")));
-                                try
-                                {
-                                    // Write incoming message into dump directory
-                                    _ = File.WriteAllBytesAsync(path, bMessage).ContinueWith(task =>
-                                    {
-                                        if (task.IsFaulted && task.Exception != null)
-                                        {
-                                            foreach (var exp in task.Exception.InnerExceptions)
-                                            {
-                                                logger.LogError(exp, "OCPPMiddleware.Receive20=> Error async dumping message to path: '{0}'", path);
-                                            }
-                                        }
-                                    });
-                                }
-                                catch (Exception exp)
-                                {
-                                    logger.LogError(exp, "OCPPMiddleware.Receive20 => Error dumping incoming message to path: '{0}'", path);
-                                }
-                            }
-
                             string ocppMessage = UTF8Encoding.UTF8.GetString(bMessage);
+
+                            // write message (async) to dump directory
+                            _ = Task.Run(() =>
+                            {
+                                DumpMessage("ocpp20-in", ocppMessage);
+                            });
 
                             Match match = Regex.Match(ocppMessage, MessageRegExp);
                             if (match != null && match.Groups != null && match.Groups.Count >= 3)
@@ -105,13 +86,20 @@ namespace OCPP.Core.Server
                                 logger.LogInformation("OCPPMiddleware.Receive20 => OCPP-Message: Type={0} / ID={1} / Action={2})", messageTypeId, uniqueId, action);
 
                                 OCPPMessage msgIn = new OCPPMessage(messageTypeId, uniqueId, action, jsonPaylod);
+
+                                // Send raw incoming messages to extensions
+                                _ = Task.Run(() =>
+                                {
+                                    ProcessRawIncomingMessageSinks(chargePointStatus.Protocol, chargePointStatus.Id, msgIn);
+                                });
+
                                 if (msgIn.MessageType == "2")
                                 {
                                     // Request from chargepoint to OCPP server
                                     OCPPMessage msgOut = controller20.ProcessRequest(msgIn);
 
                                     // Send OCPP message with optional logging/dump
-                                    await SendOcpp20Message(msgOut, logger, chargePointStatus.WebSocket);
+                                    await SendOcpp20Message(msgOut, logger, chargePointStatus);
                                 }
                                 else if (msgIn.MessageType == "3" || msgIn.MessageType == "4")
                                 {
@@ -182,7 +170,7 @@ namespace OCPP.Core.Server
             _requestQueue.Add(msgOut.UniqueId, msgOut);
 
             // Send OCPP message with optional logging/dump
-            await SendOcpp20Message(msgOut, logger, chargePointStatus.WebSocket);
+            await SendOcpp20Message(msgOut, logger, chargePointStatus);
 
             // Wait for asynchronous chargepoint response and processing
             string apiResult = await msgOut.TaskCompletionSource.Task;
@@ -229,7 +217,7 @@ namespace OCPP.Core.Server
             _requestQueue.Add(msgOut.UniqueId, msgOut);
 
             // Send OCPP message with optional logging/dump
-            await SendOcpp20Message(msgOut, logger, chargePointStatus.WebSocket);
+            await SendOcpp20Message(msgOut, logger, chargePointStatus);
 
             // Wait for asynchronous chargepoint response and processing
             string apiResult = await msgOut.TaskCompletionSource.Task;
@@ -297,7 +285,7 @@ namespace OCPP.Core.Server
             _requestQueue.Add(msgOut.UniqueId, msgOut);
 
             // Send OCPP message with optional logging/dump
-            await SendOcpp20Message(msgOut, logger, chargePointStatus.WebSocket);
+            await SendOcpp20Message(msgOut, logger, chargePointStatus);
 
             // Wait for asynchronous chargepoint response and processing
             string apiResult = await msgOut.TaskCompletionSource.Task;
@@ -347,7 +335,7 @@ namespace OCPP.Core.Server
             _requestQueue.Add(msgOut.UniqueId, msgOut);
 
             // Send OCPP message with optional logging/dump
-            await SendOcpp20Message(msgOut, logger, chargePointStatus.WebSocket);
+            await SendOcpp20Message(msgOut, logger, chargePointStatus);
 
             // Wait for asynchronous chargepoint response and processing
             string apiResult = await msgOut.TaskCompletionSource.Task;
@@ -358,8 +346,14 @@ namespace OCPP.Core.Server
             await apiCallerContext.Response.WriteAsync(apiResult);
         }
 
-        private async Task SendOcpp20Message(OCPPMessage msg, ILogger logger, WebSocket webSocket)
+        private async Task SendOcpp20Message(OCPPMessage msg, ILogger logger, ChargePointStatus chargePointStatus)
         {
+            // Send raw outgoing messages to extensions
+            _ = Task.Run(() =>
+            {
+                ProcessRawOutgoingMessageSinks(chargePointStatus.Protocol, chargePointStatus.Id, msg);
+            });
+
             string ocppTextMessage = null;
 
             if (string.IsNullOrEmpty(msg.ErrorCode))
@@ -387,32 +381,15 @@ namespace OCPP.Core.Server
                 ocppTextMessage = string.Format("[{0},\"{1}\",\"{2}\",\"{3}\",{4}]", "4", string.Empty, Messages_OCPP20.ErrorCodes.ProtocolError, string.Empty, "{}");
             }
 
-            string dumpDir = _configuration.GetValue<string>("MessageDumpDir");
-            if (!string.IsNullOrWhiteSpace(dumpDir))
+            // write message (async) to dump directory
+            _ = Task.Run(() =>
             {
-                // Write outgoing message into dump directory
-                string path = Path.Combine(dumpDir, string.Format("{0}_ocpp20-out.txt", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-ffff")));
-                try
-                {
-                    _ = File.WriteAllTextAsync(path, ocppTextMessage).ContinueWith(task =>
-                    {
-                        if (task.IsFaulted && task.Exception != null)
-                        {
-                            foreach (var exp in task.Exception.InnerExceptions)
-                            {
-                                logger.LogError(exp, "OCPPMiddleware.SendOcpp20Message=> Error async dumping message to path: '{0}'", path);
-                            }
-                        }
-                    });
-                }
-                catch (Exception exp)
-                {
-                    logger.LogError(exp, "OCPPMiddleware.SendOcpp20Message=> Error dumping message to path: '{0}'", path);
-                }
-            }
+                DumpMessage("ocpp16-out", ocppTextMessage);
+            });
+
 
             byte[] binaryMessage = UTF8Encoding.UTF8.GetBytes(ocppTextMessage);
-            await webSocket.SendAsync(new ArraySegment<byte>(binaryMessage, 0, binaryMessage.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            await chargePointStatus.WebSocket.SendAsync(new ArraySegment<byte>(binaryMessage, 0, binaryMessage.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
     }
 }

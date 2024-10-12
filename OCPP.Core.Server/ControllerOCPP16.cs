@@ -169,6 +169,9 @@ namespace OCPP.Core.Server
                         msgLog.ErrorCode = errorCode;
                         DbContext.MessageLogs.Add(msgLog);
                         Logger.LogTrace("MessageLog => Writing entry '{0}'", message);
+                        DbContext.SaveChanges();
+                        /*
+                         * Problem with async operation and ID generation (conflict with EF tracking)
                         _ = DbContext.SaveChangesAsync().ContinueWith(task =>
                         {
                             if (task.IsFaulted && task.Exception != null)
@@ -179,6 +182,7 @@ namespace OCPP.Core.Server
                                 }
                             }
                         });
+                        */
                     }
                 }
             }

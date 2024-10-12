@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2024 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,13 +20,14 @@
 using System;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using OCPP.Core.Server.Extensions.Interfaces;
 
 namespace OCPP.Core.Server
 {
     /// <summary>
     /// Warpper object for OCPP Message
     /// </summary>
-    public class OCPPMessage
+    public class OCPPMessage : IOCPPMessage
     {
         /// <summary>
         /// Message type
