@@ -16,13 +16,13 @@ namespace OCPP.Core.Database
             string sqlServerConnectionString = configuration.GetConnectionString("SqlServer");
             string sqliteConnectionString = configuration.GetConnectionString("SQLite");
 
-            if (string.IsNullOrWhiteSpace(sqlServerConnectionString))
-            {
-                services.AddDbContext<OCPPCoreContext>(options => options.UseSqlite(sqliteConnectionString), ServiceLifetime.Transient);
-            }
-            else
+            if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
             {
                 services.AddDbContext<OCPPCoreContext>(options => options.UseSqlServer(sqlServerConnectionString), ServiceLifetime.Transient);
+            }
+            else if (!string.IsNullOrWhiteSpace(sqliteConnectionString))
+            {
+                services.AddDbContext<OCPPCoreContext>(options => options.UseSqlite(sqliteConnectionString), ServiceLifetime.Transient);
             }
         }
     }

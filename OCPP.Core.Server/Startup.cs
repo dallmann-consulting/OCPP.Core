@@ -49,6 +49,13 @@ namespace OCPP.Core.Server
 
         public Startup(IConfiguration configuration)
         {
+            if (!configuration.GetSection("ConnectionStrings").Exists())
+            {
+                // Running the exe (Kestrel) hasn't loaded the config at this point!?
+                // => Workaround: use the created configuration from main()
+                configuration = Program._configuration;
+            }            
+
             Configuration = configuration;
         }
 
