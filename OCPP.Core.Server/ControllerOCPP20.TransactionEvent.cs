@@ -129,7 +129,7 @@ namespace OCPP.Core.Server
                                 transaction.Uid = transactionEventRequest.TransactionInfo.TransactionId;
                                 transaction.ChargePointId = ChargePointStatus?.Id;
                                 transaction.ConnectorId = connectorId;
-                                transaction.StartTagId = ct.TagId;
+                                transaction.StartTagId = ct?.TagId;
                                 transaction.StartTime = transactionEventRequest.Timestamp.UtcDateTime;
                                 transaction.MeterStart = meterKWH;
                                 transaction.StartResult = transactionEventRequest.TriggerReason.ToString();
@@ -328,7 +328,7 @@ namespace OCPP.Core.Server
             meterTime = null;
             stateOfCharge = -1;
 
-            foreach (MeterValueType meterValue in meterValues)
+            foreach (MeterValueType meterValue in meterValues ?? [])
             {
                 foreach (SampledValueType sampleValue in meterValue.SampledValue)
                 {
