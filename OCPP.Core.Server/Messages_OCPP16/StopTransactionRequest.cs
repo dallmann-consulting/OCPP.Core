@@ -350,6 +350,9 @@ namespace OCPP.Core.Server.Messages_OCPP16
         [System.Runtime.Serialization.EnumMember(Value = @"Celcius")]
         Celcius = 13,
 
+        [System.Runtime.Serialization.EnumMember(Value = @"Celsius")]
+        Celsius = 16,
+
         [System.Runtime.Serialization.EnumMember(Value = @"Fahrenheit")]
         Fahrenheit = 14,
 
