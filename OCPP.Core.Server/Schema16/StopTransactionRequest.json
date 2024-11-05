@@ -132,24 +132,25 @@
                                 "unit": {
                                     "type": "string",
                                     "additionalProperties": false,
-                                    "enum": [
-                                        "Wh",
-                                        "kWh",
-                                        "varh",
-                                        "kvarh",
-                                        "W",
-                                        "kW",
-                                        "VA",
-                                        "kVA",
-                                        "var",
-                                        "kvar",
-                                        "A",
-                                        "V",
-                                        "K",
-                                        "Celcius",
-                                        "Fahrenheit",
-                                        "Percent"
-                                    ]
+                                  "enum": [
+                                    "Wh",
+                                    "kWh",
+                                    "varh",
+                                    "kvarh",
+                                    "W",
+                                    "kW",
+                                    "VA",
+                                    "kVA",
+                                    "var",
+                                    "kvar",
+                                    "A",
+                                    "V",
+                                    "K",
+                                    "Celcius",
+                                    "Celsius",
+                                    "Fahrenheit",
+                                    "Percent"
+                                  ]
                                 }
                             },
                             "additionalProperties": false,
