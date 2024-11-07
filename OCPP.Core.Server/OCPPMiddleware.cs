@@ -312,7 +312,10 @@ namespace OCPP.Core.Server
                             List<ChargePointStatus> statusList = new List<ChargePointStatus>();
                             foreach (ChargePointStatus status in _chargePointStatusDict.Values)
                             {
-                                statusList.Add(status);
+                                if (status.WebSocket != null && status.WebSocket.State == WebSocketState.Open)
+                                {
+                                    statusList.Add(status);
+                                }
                             }
                             string jsonStatus = JsonConvert.SerializeObject(statusList);
                             context.Response.ContentType = "application/json";
