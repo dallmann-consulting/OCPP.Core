@@ -106,7 +106,7 @@ namespace OCPP.Core.Server
 
                             // check current tag against start tag
                             bool valid = true;
-                            if (transaction.StartTagId.Equals(ct.TagId, StringComparison.InvariantCultureIgnoreCase))
+                            if (!transaction.StartTagId.Equals(ct.TagId, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 // tags are different => same group?
                                 ChargeTag startTag = DbContext.Find<ChargeTag>(transaction.StartTagId);
