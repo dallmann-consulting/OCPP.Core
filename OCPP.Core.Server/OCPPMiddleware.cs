@@ -33,6 +33,7 @@ using System.Net.WebSockets;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OCPP.Core.Server
@@ -234,21 +235,49 @@ namespace OCPP.Core.Server
                                 // Handle socket communication
                                 _logger.LogTrace("OCPPMiddleware => Waiting for message...");
 
-                                using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync(subProtocol))
+                                try
                                 {
-                                    _logger.LogTrace("OCPPMiddleware => WebSocket connection with charge point '{0}'", chargepointIdentifier);
-                                    chargePointStatus.WebSocket = webSocket;
-
-                                    if (subProtocol == Protocol_OCPP20)
+                                    using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync(subProtocol))
                                     {
-                                        // OCPP V2.0
-                                        await Receive20(chargePointStatus, context, dbContext);
+                                        _logger.LogTrace("OCPPMiddleware => WebSocket connection with charge point '{0}'", chargepointIdentifier);
+                                        chargePointStatus.WebSocket = webSocket;
+
+                                        if (subProtocol == Protocol_OCPP20)
+                                        {
+                                            // OCPP V2.0
+                                            await Receive20(chargePointStatus, context, dbContext);
+                                        }
+                                        else
+                                        {
+                                            // OCPP V1.6
+                                            await Receive16(chargePointStatus, context, dbContext);
+                                        }
+                                    }
+                                }
+                                catch (Exception exp)
+                                {
+                                    if ((exp is WebSocketException || exp is TaskCanceledException) &&
+                                        chargePointStatus?.WebSocket?.State != WebSocketState.Open)
+                                    {
+                                        _logger.LogInformation("OCPPMiddleware => WebSocket connection lost on charge point '{0}' with state '{1}' / close-status '{2}'", chargePointStatus.Id, chargePointStatus.WebSocket.State, chargePointStatus.WebSocket.CloseStatus);
                                     }
                                     else
                                     {
-                                        // OCPP V1.6
-                                        await Receive16(chargePointStatus, context, dbContext);
+                                        _logger.LogTrace("OCPPMiddleware => Receive() unhandled exception '{0}'", exp.Message);
                                     }
+
+                                    // Receive loop has ended anyway
+                                    // => Close connection
+                                    if (chargePointStatus?.WebSocket?.State == WebSocketState.Open)
+                                    {
+                                        try
+                                        {
+                                            await chargePointStatus?.WebSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
+                                        }
+                                        catch { }
+                                    }
+                                    // Remove chargepoint status
+                                    _chargePointStatusDict.Remove(chargePointStatus.Id);
                                 }
                             }
                         }
