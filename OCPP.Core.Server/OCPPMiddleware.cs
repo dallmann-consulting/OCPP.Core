@@ -47,7 +47,7 @@ namespace OCPP.Core.Server
         // RegExp for splitting ocpp message parts
         // ^\[\s*(\d)\s*,\s*\"([^"]*)\"\s*,(?:\s*\"(\w*)\"\s*,)?\s*(.*)\s*\]$
         // Third block is optional, because responses don't have an action
-        private static string MessageRegExp = "^\\[\\s*(\\d)\\s*,\\s*\"([^\"]*)\"\\s*,(?:\\s*\"(\\w*)\"\\s*,)?\\s*(.*)\\s*\\]$";
+        private static string MessageRegExp = "^\\[\\s*(\\d+)\\s*,\\s*\"([^\"]+)\"\\s*,\\s*(?:\\s*\"(\\w+)\"\\s*,)?\\s*(\\{[^}]+\\}|\\{[\\s\\S]*?\\})\\s*\\]$";
 
         private readonly RequestDelegate _next;
         private readonly ILoggerFactory _logFactory;
