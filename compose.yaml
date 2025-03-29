@@ -1,0 +1,65 @@
+name: OCPP.Core
+
+# Common environment variables
+x-envs: &common-envs
+    # Change your API Key to something long and obscure
+    ApiKey: xxxx
+    Kestrel__Endpoints__Http__Url: http://0.0.0.0:8080
+    Kestrel__Endpoints__HttpsInlineCertFile__Url: https://0.0.0.0:8443
+    ConnectionStrings__SQLite: Filename=/db/OCPP.Core.sqlite;
+    #ConnectionStrings__SqlServer: 
+    Logging__LogLevel__OCPP: "Information"
+    Logging__LogLevel__Default: "Information"
+    DOTNET_ENVIRONMENT: Production
+    ASPNET_ENVIRONMENT: Production
+
+
+services:
+
+    # Core Server
+    server:
+        image: ocpp.core.server:latest
+        container_name: ocpp.core.server
+        build:
+            context: .
+            target: final_server
+            tags:
+                - latest
+        ports:
+            - 47532:8080
+        volumes:
+            - sqlite:/db
+        environment: 
+            <<: *common-envs
+            MessageDumpDir: /tmp/ocpp/
+
+    # Management Interface
+    management:
+        image: ocpp.core.management:latest
+        container_name: ocpp.core.management
+        build:
+            context: .
+            target: final_management
+            tags:
+                - latest
+        ports:
+            - 47533:8080
+        volumes:
+            - sqlite:/db
+        environment: 
+            <<: *common-envs
+            ServerApiUrl: http://server:8080/API
+            Users__0__Username: admin
+            Users__0__Password: t3st
+            Users__0__Administrator: true
+        depends_on:
+            - server
+volumes:
+    # If using SQLite, a mount point with the database is needed.
+    # Remember to initalise the database before starting for the first time.
+    sqlite:
+        driver: local
+        driver_opts:
+            type: none
+            o: bind
+            device: ./SQLite
