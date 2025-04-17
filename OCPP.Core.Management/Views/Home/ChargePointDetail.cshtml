@@ -157,7 +157,28 @@
             }
         </div>
     }
+    <br />
 
+    @if(Model.DeviceConfiguration?.Count > 0)
+    {
+        <h4>@Localizer["TitleDeviceConfiguration"]</h4>
+        <br />
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-5"><b>Key</b></div>
+                <div class="col-sm-6"><b>Value</b></div>
+                <div class="col-sm-1"><b>Writable</b></div>
+            </div>
+            @foreach(var config in Model.DeviceConfiguration)
+            {
+                <div class="row border-top">
+                    <div class="col-sm-5">@config.Key</div>
+                    <div class="col-sm-6">@config.Value.Item1</div>
+                    <div class="col-sm-1"><i class="fas fa-@(config.Value.Item2 ? "times" : "check")"></i></div>
+                </div>
+            }
+        </div>
+    }
 
     @section scripts {
         @if (!string.IsNullOrWhiteSpace(Model.ChargePointId))

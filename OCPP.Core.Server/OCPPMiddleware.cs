@@ -32,6 +32,7 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -508,6 +509,46 @@ namespace OCPP.Core.Server
                             _logger.LogError("OCPPMiddleware ClearChargingProfile => Missing chargepoint ID");
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
+                    }
+                    else if (cmd == "GetConfiguration")
+                    {
+                        if(!string.IsNullOrEmpty(urlChargePointId))
+                        {
+                            try
+                            {
+                                ChargePointStatus status = null;
+                                if(_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
+                                {
+                                    if(status.Protocol == Protocol_OCPP16)
+                                    {
+                                        // OCPP V1.6
+                                        await GetConfiguration16(status, context, dbContext, urlConnectorId);
+                                    }
+                                    else
+                                    {
+                                        throw new NotImplementedException("GetConfiguration not yet implemented for OCPP 2.0");
+                                    }
+                                }
+                                else
+                                {
+									// Chargepoint offline
+									_logger.LogError("OCPPMiddleware GetConfiguration => Chargepoint offline: {0}", urlChargePointId);
+									context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+								}
+                            }
+                            catch(Exception exp)
+                            {
+								_logger.LogError(exp, "OCPPMiddleware GetConfiguration => Error: {0}", exp.Message);
+								context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                                var msg = Encoding.UTF8.GetBytes(exp.Message);
+                                await context.Response.Body.WriteAsync(msg, 0, msg.Length);
+							}
+                        }
+                        else
+						{
+							_logger.LogError("OCPPMiddleware GetConfiguration => Missing chargepoint ID");
+							context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+						}
                     }
                     else
                     {

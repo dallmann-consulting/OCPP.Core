@@ -20,10 +20,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Azure.Core.Pipeline;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
@@ -32,7 +36,7 @@ namespace OCPP.Core.Management.Controllers
     public partial class HomeController : BaseController
     {
         [Authorize]
-        public IActionResult ChargePoint(string Id, ChargePointViewModel cpvm)
+        public async Task<IActionResult> ChargePoint(string Id, ChargePointViewModel cpvm)
         {
             try
             {
@@ -145,6 +149,59 @@ namespace OCPP.Core.Management.Controllers
                         cpvm.Username = currentChargePoint.Username;
                         cpvm.Password = currentChargePoint.Password;
                         cpvm.ClientCertThumb = currentChargePoint.ClientCertThumb;
+
+                        // Attempt to get configuration information from the charge point
+                        try 
+                        {
+                            string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
+                            string apiKeyConfig = base.Config.GetValue<string>("ApiKey");
+                            if(!string.IsNullOrEmpty(serverApiUrl))
+                            {
+                                using var httpClient = new System.Net.Http.HttpClient();
+                                if(!serverApiUrl.EndsWith('/'))
+                                    serverApiUrl += "/";
+
+                                var uri = new Uri(serverApiUrl + "GetConfiguration/" + Id);
+
+								// API-Key authentication?
+								if (!string.IsNullOrWhiteSpace(apiKeyConfig))
+								{
+									httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKeyConfig);
+								}
+								else
+								{
+									Logger.LogWarning("GetConfiguration: No API-Key configured!");
+								}
+
+                                var response = await httpClient.GetAsync(uri);
+								if (response.IsSuccessStatusCode)
+								{
+                                    string jsonResult = await response.Content.ReadAsStringAsync();
+                                    if(!string.IsNullOrEmpty(jsonResult))
+                                    {
+                                        dynamic jsonObject = JsonConvert.DeserializeObject(jsonResult);
+										Logger.LogInformation("GetConfiguration: Result of API request is '{0}'", jsonResult);
+                                        foreach(var kv in jsonObject.configurationKey)
+                                        {
+                                            Logger.LogTrace("GetConfiguration: {0}:{1} ({2})", (string)kv.key, (string)kv.value, (bool)kv.@readonly);
+                                            cpvm.DeviceConfiguration.Add((string)kv.key, ((string)kv.value, (bool) kv.@readonly));
+                                        }
+									}
+                                    else
+                                    {
+                                        Logger.LogError("GetConfiguration: Result is empty");
+                                    }
+								}
+                                else
+                                {
+                                    Logger.LogError("GetConfiguration: Error received {0}: {1}", response.StatusCode, await response.Content.ReadAsStringAsync());
+                                }
+							}
+                        }
+                        catch(Exception exp)
+                        {
+                            Logger.LogError(exp, "GetConfiguration call failed.");
+                        }
                     }
 
                     string viewName = (!string.IsNullOrEmpty(cpvm.ChargePointId) || Id == "@") ? "ChargePointDetail" : "ChargePointList";
