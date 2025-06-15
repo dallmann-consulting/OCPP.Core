@@ -21,15 +21,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Schema;
 using OCPP.Core.Database;
-using OCPP.Core.Server.Messages_OCPP16;
 
 namespace OCPP.Core.Server
 {

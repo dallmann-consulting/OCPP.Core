@@ -18,17 +18,17 @@
  */
 
 using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
+using OCPP.Core.Server.Extensions.Interfaces;
 using OCPP.Core.Server.Messages_OCPP16;
 
 namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        public string HandleAuthorize(OCPPMessage msgIn, OCPPMessage msgOut)
+        public string HandleAuthorize(OCPPMessage msgIn, OCPPMessage msgOut, OCPPMiddleware ocppMiddleware)
         {
             string errorCode = null;
             AuthorizeResponse authorizeResponse = new AuthorizeResponse();
@@ -43,40 +43,65 @@ namespace OCPP.Core.Server
 
                 authorizeResponse.IdTagInfo.ParentIdTag = string.Empty;
                 authorizeResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow.AddMinutes(5);   // default: 5 minutes
+
+                bool? externalAuthResult = null;
                 try
                 {
-                    ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
-                    if (ct != null)
+                    externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.Authorize, idTag, ChargePointStatus.Id, 0, string.Empty, string.Empty);
+                }
+                catch (Exception exp)
+                {
+                    Logger.LogError(exp, "Authorize => Exception from external authorization: {0}", exp.Message);
+                }
+
+                if (externalAuthResult.HasValue)
+                {
+                    if (externalAuthResult.Value)
                     {
-                        if (ct.ExpiryDate.HasValue)
-                        {
-                            authorizeResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
-                        }
-                        authorizeResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
-                        if (ct.Blocked.HasValue && ct.Blocked.Value)
-                        {
-                            authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
-                        }
-                        else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                        {
-                            authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
-                        }
-                        else
-                        {
-                            authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-                        }
+                        authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
                     }
                     else
                     {
                         authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
                     }
-
-                    Logger.LogInformation("Authorize => Status: {0}", authorizeResponse.IdTagInfo.Status);
+                    Logger.LogInformation("Authorize => Extension auth. : Charge tag='{0}' => Status: {1}", idTag, authorizeResponse.IdTagInfo.Status);
                 }
-                catch (Exception exp)
+                else
                 {
-                    Logger.LogError(exp, "Authorize => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
-                    authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                    try
+                    {
+                        ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
+                        if (ct != null)
+                        {
+                            if (ct.ExpiryDate.HasValue)
+                            {
+                                authorizeResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
+                            }
+                            authorizeResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
+                            if (ct.Blocked.HasValue && ct.Blocked.Value)
+                            {
+                                authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
+                            }
+                            else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                            {
+                                authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
+                            }
+                            else
+                            {
+                                authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
+                            }
+                        }
+                        else
+                        {
+                            authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                        }
+                        Logger.LogInformation("Authorize => Inernal auth. : Charge tag='{0}' => Status: {1}", idTag, authorizeResponse.IdTagInfo.Status);
+                    }
+                    catch (Exception exp)
+                    {
+                        Logger.LogError(exp, "Authorize => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
+                        authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                    }
                 }
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(authorizeResponse);

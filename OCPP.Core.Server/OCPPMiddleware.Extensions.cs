@@ -18,6 +18,7 @@
  */
 
 using Microsoft.Extensions.Logging;
+using OCPP.Core.Database;
 using OCPP.Core.Server.Extensions.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -31,6 +32,9 @@ namespace OCPP.Core.Server
     {
         // List with extensions sinks for raw OCPP messages
         private List<Extensions.Interfaces.IRawMessageSink> _rawMessageSinks = new List<Extensions.Interfaces.IRawMessageSink>();
+
+        // List with extensions sinks for external authorizations
+        private List<Extensions.Interfaces.IExternalAuthorization> _authorizationSinks = new List<Extensions.Interfaces.IExternalAuthorization>();
 
         /// <summary>
         /// Load all extensions from extensions directory
@@ -77,17 +81,17 @@ namespace OCPP.Core.Server
                                                 {
                                                     if (extension.InitializeExtension(_logFactory, _configuration))
                                                     {
-                                                        _logger.LogInformation("OCPPMiddleware.Extensions => Extension '{0}' successfully initialized", extension.ExtensionName);
+                                                        _logger.LogInformation("OCPPMiddleware.Extensions => Raw-Extension '{0}' successfully initialized", extension.ExtensionName);
                                                         _rawMessageSinks.Add(extension);
                                                     }
                                                     else
                                                     {
-                                                        _logger.LogError("OCPPMiddleware.Extensions => Extension '{0}' returned false on initialization", extension.ExtensionName);
+                                                        _logger.LogError("OCPPMiddleware.Extensions => Raw-Extension '{0}' returned false on initialization", extension.ExtensionName);
                                                     }
                                                 }
                                                 catch (Exception exp)
                                                 {
-                                                    _logger.LogError(exp, "OCPPMiddleware.Extensions => Extension '{0}': Exception on initialization: {1}", type.FullName, exp.Message);
+                                                    _logger.LogError(exp, "OCPPMiddleware.Extensions => Raw-Extension '{0}': Exception on initialization: {1}", type.FullName, exp.Message);
                                                 }
                                             }
                                             else
@@ -95,13 +99,40 @@ namespace OCPP.Core.Server
                                                 _logger.LogWarning("OCPPMiddleware.Extensions => Unable to create instance of IRawMessageSink '{0}'", type.FullName);
                                             }
                                         }
-                                        else
+                                        else if (typeof(IExternalAuthorization).IsAssignableFrom(type))
                                         {
-                                            _logger.LogError("OCPPMiddleware.Extensions => Type is not assignable '{0}'", type.FullName);
+                                            var t = Activator.CreateInstance(type);
+                                            bool b = t is IExternalAuthorization;
+                                            IExternalAuthorization extension = Activator.CreateInstance(type) as IExternalAuthorization;
+                                            if (extension != null)
+                                            {
+                                                _logger.LogDebug("OCPPMiddleware.Extensions => Created instance of IExternalAuthorization '{0}'", extension.GetType().FullName);
+
+                                                try
+                                                {
+                                                    if (extension.InitializeExtension(_logFactory, _configuration))
+                                                    {
+                                                        _logger.LogInformation("OCPPMiddleware.Extensions => Auth-Extension '{0}' successfully initialized", extension.ExtensionName);
+                                                        _authorizationSinks.Add(extension);
+                                                    }
+                                                    else
+                                                    {
+                                                        _logger.LogError("OCPPMiddleware.Extensions => Auth-Extension '{0}' returned false on initialization", extension.ExtensionName);
+                                                    }
+                                                }
+                                                catch (Exception exp)
+                                                {
+                                                    _logger.LogError(exp, "OCPPMiddleware.Extensions => Auth-Extension '{0}': Exception on initialization: {1}", type.FullName, exp.Message);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                _logger.LogWarning("OCPPMiddleware.Extensions => Unable to create instance of IExternalAuthorization '{0}'", type.FullName);
+                                            }
                                         }
                                     }
                                 }
-                                catch(Exception exp)
+                                catch (Exception exp)
                                 {
                                     _logger.LogError(exp, "OCPPMiddleware.Extensions => Exception loading file: '{0}' / Exp:{1}", file, exp.Message);
                                 }
@@ -121,9 +152,43 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// Sends token authorization request to registered extensions
+        /// </summary>
+        internal bool? ProcessExternalAuthorizations(AuthAction action, string token, string chargePointId, int? connectorId, string transactionId, string transactionStartToken)
+        {
+            if (_authorizationSinks != null && _authorizationSinks.Count > 0)
+            {
+                foreach (IExternalAuthorization extAuth in _authorizationSinks)
+                {
+                    try
+                    {
+                        _logger.LogDebug("OCPPMiddleware => Sending authorization request for token='{0}'; chargePointId='{1}'; connectorId='{2}'; transactionId='{3}'; startToken='{4}' to extension '{5}'", token, chargePointId, connectorId, transactionId, transactionStartToken, extAuth.ExtensionName);
+                        bool? result = extAuth.Authorize(action, token, chargePointId, connectorId, transactionId, transactionStartToken);
+                        _logger.LogDebug("OCPPMiddleware => Authorization result '{0}' for token='{1}'; chargePointId='{2}'; connectorId='{3}'; transactionId='{4}'; startToken='{5}' from extension '{6}'", result, token, chargePointId, connectorId, transactionId, transactionStartToken, extAuth.ExtensionName);
+
+                        if (result.HasValue)
+                        {
+                            // Extension returned an explicit true/false result
+                            // => exit loop and return result
+                            return result.Value;
+                        }
+                    }
+                    catch (Exception exp)
+                    {
+                        _logger.LogError(exp, "OCPPMiddleware => Error sending authorization request for token='{0}'; chargePointId='{1}'; connectorId='{2}'; transactionId='{3}'; startToken='{4}'  to extension '{5}' / Error: {6}", token, chargePointId, connectorId, transactionId, transactionStartToken, extAuth.ExtensionName, exp.Message);
+                    }
+                }
+            }
+
+            // No explicit result from any extension
+            return null;
+        }
+
+
+        /// <summary>
         /// Sends an incoming raw message to all extensions
         /// </summary>
-        private void ProcessRawIncomingMessageSinks(string ocppVersion, string chargerpointId, IOCPPMessage msg)
+        private void ProcessRawIncomingMessageSinks(string ocppVersion, string chargepointId, IOCPPMessage msg)
         {
             // Send raw incoming messages to extensions
             if (_rawMessageSinks != null && _rawMessageSinks.Count > 0)
@@ -132,12 +197,12 @@ namespace OCPP.Core.Server
                 {
                     try
                     {
-                        _logger.LogDebug("OCPPMiddleware => Sending message from charger '{0}' to extension '{1}'", chargerpointId, msgSink.ExtensionName);
-                        msgSink.ReceiveIncomingMessage(ocppVersion, chargerpointId, msg);
+                        _logger.LogDebug("OCPPMiddleware => Sending message from charger '{0}' to extension '{1}'", chargepointId, msgSink.ExtensionName);
+                        msgSink.ReceiveIncomingMessage(ocppVersion, chargepointId, msg);
                     }
                     catch (Exception exp)
                     {
-                        _logger.LogError(exp, "OCPPMiddleware => Error sending message from charger '{0}' to extension '{1}': Error: {2}", chargerpointId, msgSink.ExtensionName, exp.Message);
+                        _logger.LogError(exp, "OCPPMiddleware => Error sending message from charger '{0}' to extension '{1}': Error: {2}", chargepointId, msgSink.ExtensionName, exp.Message);
                     }
                 }
             }
@@ -146,7 +211,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Sends an outgoing raw message to all extensions
         /// </summary>
-        private void ProcessRawOutgoingMessageSinks(string ocppVersion, string chargerpointId, IOCPPMessage msg)
+        private void ProcessRawOutgoingMessageSinks(string ocppVersion, string chargepointId, IOCPPMessage msg)
         {
             // Send raw outgoing messages to extensions
             if (_rawMessageSinks != null && _rawMessageSinks.Count > 0)
@@ -155,15 +220,49 @@ namespace OCPP.Core.Server
                 {
                     try
                     {
-                        _logger.LogDebug("OCPPMiddleware => Sending message to charger '{0}' to extension '{1}'", chargerpointId, msgSink.ExtensionName);
-                        msgSink.ReceiveIncomingMessage(ocppVersion, chargerpointId, msg);
+                        _logger.LogDebug("OCPPMiddleware => Sending message to charger '{0}' to extension '{1}'", chargepointId, msgSink.ExtensionName);
+                        msgSink.ReceiveIncomingMessage(ocppVersion, chargepointId, msg);
                     }
                     catch (Exception exp)
                     {
-                        _logger.LogError(exp, "OCPPMiddleware => Error sending message to charger '{0}' to extension '{1}': Error: {2}", chargerpointId, msgSink.ExtensionName, exp.Message);
+                        _logger.LogError(exp, "OCPPMiddleware => Error sending message to charger '{0}' to extension '{1}': Error: {2}", chargepointId, msgSink.ExtensionName, exp.Message);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Send authorization request to extensions
+        /// </summary>
+        private bool? ProcessExternalAuthorizationSinks(AuthAction action, string token, string chargePointId, int? connectorId, string transactionId, string transactionStartToken)
+        {
+            bool? result = null;
+
+            // Send authorization request to extensions. When the first extension responds with "true" the loop is exited.
+            if (_authorizationSinks != null && _authorizationSinks.Count > 0)
+            {
+                foreach (IExternalAuthorization authSink in _authorizationSinks)
+                {
+                    try
+                    {
+                        _logger.LogDebug("OCPPMiddleware => Sending authorization request for token '{0}' from charger '{1}'/connector '{2}'/tranaction '{3}'/transactionStartToken '{4}' to extension '{5}'", token, chargePointId, connectorId, transactionId, transactionStartToken, authSink.ExtensionName);
+                        bool? authResult = authSink.Authorize(action, token, chargePointId, connectorId, transactionId, transactionStartToken);
+
+                        if (authResult.HasValue)
+                        {
+                            result = authResult.Value;
+                        }
+
+                        if (result.HasValue && result.Value) break;
+                    }
+                    catch (Exception exp)
+                    {
+                        _logger.LogError(exp, "OCPPMiddleware => Error sending authorization for token '{0}' from charger '{1}' to extension '{2}': Error: {3}", token, chargePointId, authSink.ExtensionName, exp.Message);
+                    }
+                }
+            }
+
+            return result;
         }
     }
 
