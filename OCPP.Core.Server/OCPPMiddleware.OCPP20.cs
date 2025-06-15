@@ -75,7 +75,7 @@ namespace OCPP.Core.Server
                                 // write message (async) to dump directory
                                 _ = Task.Run(() =>
                                 {
-                                    DumpMessage("ocpp20-in", ocppMessage);
+                                    DumpMessage("ocpp201-in", ocppMessage);
                                 });
 
                                 Match match = Regex.Match(ocppMessage, MessageRegExp);
