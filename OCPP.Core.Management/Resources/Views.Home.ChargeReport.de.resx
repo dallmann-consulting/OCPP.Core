@@ -144,7 +144,7 @@
   <data name="ExpSummaryXLSXTooltipp" xml:space="preserve">
     <value>Summen als XLSX herunterladen</value>
   </data>
-  <data name="ExpSummery" xml:space="preserve">
+  <data name="ExpSummary" xml:space="preserve">
     <value>Summen</value>
   </data>
   <data name="NoData" xml:space="preserve">

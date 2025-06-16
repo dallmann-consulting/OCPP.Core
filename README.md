@@ -75,7 +75,7 @@ If a connector has a name specified this name overrides the charge point name or
 
 ## System Requirements
 OCPP.Core is written in .NET 8 and therefore runs on different plattforms. I also installed it in Azure for testing purposes.
-The storage is based on the EntityFramework-Core and supports different databases. The project contains script für SQL-Server (SQL-Express) and SQLite.
+The storage is based on the EntityFramework-Core and supports different databases. The project contains script for SQL-Server (SQL-Express) and SQLite.
 
 Referenced Packages:
 * Microsoft.EntityFrameworkCore

@@ -127,7 +127,7 @@
     <value>Name</value>
   </data>
   <data name="ConnectorNamePlaceholder" xml:space="preserve">
-    <value>Bezeichnung (leer für Standard)</value>
+    <value>Bezeichnung (leer for Standard)</value>
   </data>
   <data name="EditConnector" xml:space="preserve">
     <value>Anschluss bearbeiten</value>

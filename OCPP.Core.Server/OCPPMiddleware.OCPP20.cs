@@ -67,7 +67,7 @@ namespace OCPP.Core.Server
                             {
                                 // read complete message into byte array
                                 byte[] bMessage = memStream.ToArray();
-                                // reset memory stream für next message
+                                // reset memory stream for next message
                                 memStream = new MemoryStream(buffer.Length);
 
                                 string ocppMessage = UTF8Encoding.UTF8.GetString(bMessage);
