@@ -340,6 +340,43 @@ namespace OCPP.Core.Server
             await apiCallerContext.Response.WriteAsync(apiResult);
         }
 
+        /// <summary>
+        /// Sends a GetConfiguration message to the chargepoint
+        /// </summary>
+        private async Task GetConfiguration16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext, string urlConnectorId)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
+            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus, dbContext);
+
+            // By default, don't specify any keys, if a reduced set is required then specify keys in object.
+            var getConfigRequest = new GetConfigurationRequest();
+
+            logger.LogTrace("OCPPMiddleware.OCPP16 => GetConfiguration16: ChargePoint='{0}'", chargePointStatus.Id);
+
+            string jsonGetConfigRequest = JsonConvert.SerializeObject(getConfigRequest);
+
+            OCPPMessage msgOut = new OCPPMessage()
+            {
+                MessageType = "2",
+                Action = "GetConfiguration",
+                UniqueId = Guid.NewGuid().ToString("N"),
+                JsonPayload = JsonConvert.SerializeObject(getConfigRequest),
+                TaskCompletionSource = new TaskCompletionSource<string>()
+            };
+
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            await SendOcpp16Message(msgOut, logger, chargePointStatus);
+
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            logger.LogTrace("OCPPMiddleware.OCPP16 => GetConfiguration16: Response='{0}'", apiResult);
+
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
         private async Task SendOcpp16Message(OCPPMessage msg, ILogger logger, ChargePointStatus chargePointStatus)
         {
             // Send raw outgoing messages to extensions
