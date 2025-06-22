@@ -139,13 +139,13 @@
     <value>Export all transactions as XLSX file</value>
   </data>
   <data name="ExpSummaryCSVTooltipp" xml:space="preserve">
-    <value>Export summery as CSV file</value>
+    <value>Export summary as CSV file</value>
   </data>
   <data name="ExpSummaryXLSXTooltipp" xml:space="preserve">
-    <value>Export summery as XLSX file</value>
+    <value>Export summary as XLSX file</value>
   </data>
-  <data name="ExpSummery" xml:space="preserve">
-    <value>Summery</value>
+  <data name="ExpSummary" xml:space="preserve">
+    <value>Summary</value>
   </data>
   <data name="NoData" xml:space="preserve">
     <value>- No data -</value>
