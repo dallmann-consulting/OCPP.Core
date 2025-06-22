@@ -52,7 +52,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class StatusNotificationRequest
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>The time for which the status is reported. If absent time of receipt of the message will be assumed.
         /// </summary>

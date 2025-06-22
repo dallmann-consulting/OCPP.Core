@@ -61,7 +61,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class LogStatusNotificationRequest
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("status", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -72,8 +72,6 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// unless the message was triggered by a TriggerMessageRequest AND there is no log upload ongoing.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("requestId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int RequestId { get; set; }
-
-
+        public int? RequestId { get; set; }
     }
 }

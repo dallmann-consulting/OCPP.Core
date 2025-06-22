@@ -36,9 +36,6 @@ namespace OCPP.Core.Server
 
             Logger.LogTrace("Processing heartbeat...");
             HeartbeatResponse heartbeatResponse = new HeartbeatResponse();
-            heartbeatResponse.CustomData = new CustomDataType();
-            heartbeatResponse.CustomData.VendorId = VendorId;
-
             heartbeatResponse.CurrentTime = DateTimeOffset.UtcNow;
 
             msgOut.JsonPayload = JsonConvert.SerializeObject(heartbeatResponse);

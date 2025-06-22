@@ -77,7 +77,7 @@ namespace OCPP.Core.Server
                             }
                         }
                     }
-                    connectorId = notifyChargingLimitRequest.EvseId;
+                    if (notifyChargingLimitRequest.EvseId.HasValue) connectorId = notifyChargingLimitRequest.EvseId.Value;
                     Logger.LogInformation("NotifyChargingLimit => {0}", periods);
                 }
                 else

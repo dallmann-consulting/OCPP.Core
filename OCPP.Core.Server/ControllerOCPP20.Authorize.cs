@@ -48,12 +48,6 @@ namespace OCPP.Core.Server
                 authorizeResponse.CustomData.VendorId = VendorId;
 
                 authorizeResponse.IdTokenInfo = new IdTokenInfoType();
-                authorizeResponse.IdTokenInfo.CustomData = new CustomDataType();
-                authorizeResponse.IdTokenInfo.CustomData.VendorId = VendorId;
-                authorizeResponse.IdTokenInfo.GroupIdToken = new IdTokenType();
-                authorizeResponse.IdTokenInfo.GroupIdToken.CustomData = new CustomDataType();
-                authorizeResponse.IdTokenInfo.GroupIdToken.CustomData.VendorId = VendorId;
-                authorizeResponse.IdTokenInfo.GroupIdToken.IdToken = string.Empty;
 
                 bool? externalAuthResult = null;
                 try
@@ -86,6 +80,7 @@ namespace OCPP.Core.Server
                         {
                             if (!string.IsNullOrEmpty(ct.ParentTagId))
                             {
+                                authorizeResponse.IdTokenInfo.GroupIdToken = new IdTokenType();
                                 authorizeResponse.IdTokenInfo.GroupIdToken.IdToken = ct.ParentTagId;
                             }
 

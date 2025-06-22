@@ -193,12 +193,12 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// Date and Time after which the token must be considered invalid.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("cacheExpiryDateTime", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.DateTimeOffset CacheExpiryDateTime { get; set; }
+        public System.DateTimeOffset? CacheExpiryDateTime { get; set; }
 
         /// <summary>Priority from a business point of view. Default priority is 0, The range is from -9 to 9. Higher values indicate a higher priority. The chargingPriority in &amp;lt;&amp;lt;transactioneventresponse,TransactionEventResponse&amp;gt;&amp;gt; overrules this one. 
         /// </summary>
         [Newtonsoft.Json.JsonProperty("chargingPriority", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int ChargingPriority { get; set; }
+        public int? ChargingPriority { get; set; }
 
         /// <summary>ID_ Token. Language1. Language_ Code
         /// urn:x-oca:ocpp:uid:1:569374
@@ -207,7 +207,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// </summary>
         [Newtonsoft.Json.JsonProperty("language1", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.StringLength(8)]
-        public string Language1 { get; set; }
+        public string? Language1 { get; set; }
 
         /// <summary>Only used when the IdToken is only valid for one or more specific EVSEs, not for the entire Charging Station.
         /// 
@@ -225,7 +225,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// </summary>
         [Newtonsoft.Json.JsonProperty("language2", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.StringLength(8)]
-        public string Language2 { get; set; }
+        public string? Language2 { get; set; }
 
         [Newtonsoft.Json.JsonProperty("personalMessage", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public MessageContentType PersonalMessage { get; set; }
@@ -239,7 +239,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class IdTokenType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("additionalInfo", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.MinLength(1)]
@@ -269,7 +269,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class MessageContentType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("format", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -282,7 +282,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// </summary>
         [Newtonsoft.Json.JsonProperty("language", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.StringLength(8)]
-        public string Language { get; set; }
+        public string? Language { get; set; }
 
         /// <summary>Message_ Content. Content. Message
         /// urn:x-enexis:ecdm:uid:1:570852
@@ -301,7 +301,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class AuthorizeResponse
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("idTokenInfo", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
@@ -309,8 +309,6 @@ namespace OCPP.Core.Server.Messages_OCPP20
 
         [Newtonsoft.Json.JsonProperty("certificateStatus", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
-        public AuthorizeCertificateStatusEnumType CertificateStatus { get; set; }
-
-
+        public AuthorizeCertificateStatusEnumType? CertificateStatus { get; set; }
     }
 }

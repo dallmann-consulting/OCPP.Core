@@ -37,7 +37,6 @@ namespace OCPP.Core.Server
             TransactionEventResponse transactionEventResponse = new TransactionEventResponse();
             transactionEventResponse.CustomData = new CustomDataType();
             transactionEventResponse.CustomData.VendorId = VendorId;
-            transactionEventResponse.IdTokenInfo = new IdTokenInfoType();
 
             int connectorId = 0;
 
@@ -48,7 +47,9 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("TransactionEvent => Message deserialized");
 
                 string idTag = CleanChargeTagId(transactionEventRequest.IdToken?.IdToken, Logger);
-                connectorId = (transactionEventRequest.Evse != null) ? transactionEventRequest.Evse.ConnectorId : 0;
+                connectorId = (transactionEventRequest.Evse != null &&
+                                transactionEventRequest.Evse.ConnectorId.HasValue) ? 
+                                        transactionEventRequest.Evse.ConnectorId.Value : 0;
 
 
                 //  Extract meter values with correct scale
@@ -69,6 +70,7 @@ namespace OCPP.Core.Server
                     {
                         #region Start Transaction
                         bool denyConcurrentTx = Configuration.GetValue<bool>("DenyConcurrentTx", false);
+                        transactionEventResponse.IdTokenInfo = new IdTokenInfoType();
 
                         bool? externalAuthResult = null;
                         try
@@ -200,7 +202,6 @@ namespace OCPP.Core.Server
                     catch (Exception exp)
                     {
                         Logger.LogError(exp, "UpdateTransaction => Exception: {0}", exp.Message);
-                        transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
                     }
                 }
                 else if (transactionEventRequest.EventType == TransactionEventEnumType.Ended)
@@ -208,6 +209,7 @@ namespace OCPP.Core.Server
                     try
                     {
                         #region End Transaction
+                        transactionEventResponse.IdTokenInfo = new IdTokenInfoType();
 
                         Transaction transaction = DbContext.Transactions
                             .Where(t => t.Uid == transactionEventRequest.TransactionInfo.TransactionId)
@@ -377,10 +379,6 @@ namespace OCPP.Core.Server
                                 transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
                             }
                         }
-
-                        msgOut.JsonPayload = JsonConvert.SerializeObject(transactionEventResponse);
-                        Logger.LogTrace("TransactionEvent => Response serialized");
-
                         #endregion
                     }
                     catch (Exception exp)
@@ -389,6 +387,9 @@ namespace OCPP.Core.Server
                         errorCode = ErrorCodes.InternalError;
                     }
                 }
+
+                msgOut.JsonPayload = JsonConvert.SerializeObject(transactionEventResponse);
+                Logger.LogTrace("TransactionEvent => Response serialized");
             }
             catch (Exception exp)
             {
@@ -396,7 +397,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, transactionEventResponse.IdTokenInfo.Status.ToString(), errorCode);
+            WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, transactionEventResponse.IdTokenInfo?.Status.ToString(), errorCode);
             return errorCode;
         }
 
