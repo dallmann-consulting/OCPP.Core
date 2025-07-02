@@ -131,7 +131,10 @@
             </div>
             <div class="row">
                 <div class="col-sm-2">
-                    <button type="submit" class="btn btn-primary">@Localizer[(Model.CurrentId == "@") ? "SaveNew" : "Save"].Value</button>
+                    <button type="submit" class="btn btn-primary"><i class=" fas fa-save"></i>&nbsp;@Localizer[(Model.CurrentId == "@") ? "SaveNew" : "Save"].Value</button>
+                </div>
+                <div class="col-sm-2">
+                    <button type="button" class="btn btn-secondary" id="btnBack" onclick="history.back()">@Localizer["Back"].Value</button>
                 </div>
             </div>
             @if (!string.IsNullOrWhiteSpace(Model.ChargePointId))

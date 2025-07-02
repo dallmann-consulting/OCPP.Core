@@ -46,7 +46,7 @@ namespace OCPP.Core.Management.Controllers
                 cpvm.CurrentId = Id;
 
                 Logger.LogTrace("ChargePoint: Loading charge points...");
-                List<ChargePoint> dbChargePoints = DbContext.ChargePoints.ToList<ChargePoint>();
+                List<ChargePoint> dbChargePoints = DbContext.ChargePoints.OrderBy(x => x.Name).ToList<ChargePoint>();
                 Logger.LogInformation("ChargePoint: Found {0} charge points", dbChargePoints.Count);
 
                 ChargePoint currentChargePoint = null;
