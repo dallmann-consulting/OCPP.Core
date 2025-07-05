@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2025 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,8 +21,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
@@ -47,7 +47,7 @@ namespace OCPP.Core.Management.Controllers
 
                 Logger.LogTrace("ChargePoint: Loading charge points...");
                 List<ChargePoint> dbChargePoints = DbContext.ChargePoints.OrderBy(x => x.Name).ToList<ChargePoint>();
-                Logger.LogInformation("ChargePoint: Found {0} charge points", dbChargePoints.Count);
+                Logger.LogInformation("ChargePoint: Found {0} chargepoints", dbChargePoints.Count);
 
                 ChargePoint currentChargePoint = null;
                 if (!string.IsNullOrEmpty(Id))
@@ -57,7 +57,7 @@ namespace OCPP.Core.Management.Controllers
                         if (cp.ChargePointId.Equals(Id, StringComparison.InvariantCultureIgnoreCase))
                         {
                             currentChargePoint = cp;
-                            Logger.LogTrace("ChargePoint: Current charge point: {0} / {1}", cp.ChargePointId, cp.Name);
+                            Logger.LogTrace("ChargePoint: Current chargepoint: {0} / {1}", cp.ChargePointId, cp.Name);
                             break;
                         }
                     }
@@ -69,13 +69,13 @@ namespace OCPP.Core.Management.Controllers
 
                     if (Id == "@")
                     {
-                        Logger.LogTrace("ChargePoint: Creating new charge point...");
+                        Logger.LogTrace("ChargePoint: Creating new chargepoint...");
 
                         // Create new tag
                         if (string.IsNullOrWhiteSpace(cpvm.ChargePointId))
                         {
                             errorMsg = _localizer["ChargePointIdRequired"].Value;
-                            Logger.LogInformation("ChargePoint: New => no charge point ID entered");
+                            Logger.LogInformation("ChargePoint: New => no chargepoint ID entered");
                         }
 
                         if (string.IsNullOrEmpty(errorMsg))
@@ -87,7 +87,7 @@ namespace OCPP.Core.Management.Controllers
                                 {
                                     // id already exists
                                     errorMsg = _localizer["ChargePointIdExists"].Value;
-                                    Logger.LogInformation("ChargePoint: New => charge point ID already exists: {0}", cpvm.ChargePointId);
+                                    Logger.LogInformation("ChargePoint: New => chargepoint ID already exists: {0}", cpvm.ChargePointId);
                                     break;
                                 }
                             }
@@ -115,16 +115,57 @@ namespace OCPP.Core.Management.Controllers
                     }
                     else if (currentChargePoint.ChargePointId == Id)
                     {
-                        // Save existing charge point
-                        Logger.LogTrace("ChargePoint: Saving charge point '{0}'", Id);
-                        currentChargePoint.Name = cpvm.Name;
-                        currentChargePoint.Comment = cpvm.Comment;
-                        currentChargePoint.Username = cpvm.Username;
-                        currentChargePoint.Password = cpvm.Password;
-                        currentChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
+                        if (Request.Form["action"] == "Delete")
+                        {
+                            // Delete existing tag
+                            Logger.LogDebug("ChargeTag: Edit => Deleting tag {0} ...", currentChargePoint.ChargePointId);
 
-                        DbContext.SaveChanges();
-                        Logger.LogInformation("ChargePoint: Edit => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
+                            using (var transaction = DbContext.Database.BeginTransaction())
+                            {
+                                try
+                                {
+                                    // Delete corresponding transactions
+                                    var delTransactions = DbContext.Transactions.Where(t => t.ChargePointId == currentChargePoint.ChargePointId).ExecuteDelete();
+                                    Logger.LogDebug("ChargeTag: Edit => Deleted {0} transactions", delTransactions);
+                                    // Delete corresponding connectors
+                                    var delConnectorStatuses = DbContext.ConnectorStatuses.Where(s => s.ChargePointId == currentChargePoint.ChargePointId).ExecuteDelete();
+                                    Logger.LogDebug("ChargeTag: Edit => Deleted {0} connectors statuses", delConnectorStatuses);
+                                    // And finally delete the chargeoint itself
+                                    var delChargePoints = DbContext.ChargePoints.Where(c => c.ChargePointId == currentChargePoint.ChargePointId).ExecuteDelete();
+                                    Logger.LogDebug("ChargeTag: Edit => Deleted {0} chargepoints", delChargePoints);
+
+                                    if (delChargePoints == 1)
+                                    {
+                                        Logger.LogInformation("ChargeTag: Edit => Committing deletion of chargepoint '{0}'", currentChargePoint.ChargePointId);
+                                        transaction.Commit();
+                                    }
+                                    else
+                                    {
+                                        Logger.LogWarning("ChargePoint: Deleting chargepoint '{0}' => no chargepoint with that ID deleted!?", currentChargePoint.ChargePointId);
+                                        transaction.Rollback();
+                                    }
+                                }
+                                catch (Exception exp)
+                                {
+                                    Logger.LogError(exp, "ChargePoint: Error deleting chargepoint '{0}' from database", currentChargePoint.ChargePointId);
+                                    transaction.Rollback();
+                                    throw;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Save existing charge point
+                            Logger.LogTrace("ChargePoint: Saving charge point '{0}'", Id);
+                            currentChargePoint.Name = cpvm.Name;
+                            currentChargePoint.Comment = cpvm.Comment;
+                            currentChargePoint.Username = cpvm.Username;
+                            currentChargePoint.Password = cpvm.Password;
+                            currentChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
+
+                            DbContext.SaveChanges();
+                            Logger.LogInformation("ChargePoint: Edit => chargepoint saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
+                        }
                     }
 
                     return RedirectToAction("ChargePoint", new { Id = "" });
@@ -153,7 +194,7 @@ namespace OCPP.Core.Management.Controllers
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "ChargePoint: Error loading charge points from database");
+                Logger.LogError(exp, "ChargePoint: Error loading/editing chargepoint(s)");
                 TempData["ErrMessage"] = exp.Message;
                 return RedirectToAction("Error", new { Id = "" });
             }

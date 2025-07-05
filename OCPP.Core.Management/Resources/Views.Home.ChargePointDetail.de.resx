@@ -201,4 +201,10 @@
   <data name="Back" xml:space="preserve">
     <value>Zurück</value>
   </data>
+  <data name="TitleDelete" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="DialogDelete" xml:space="preserve">
+    <value>Soll diese Ladestation gelöscht werden? Alle zugehörigen Transaktionen werden damit gelöscht!</value>
+  </data>
 </root>
