@@ -57,7 +57,10 @@ namespace OCPP.Core.Server
                 double meterKWH = -1;
                 DateTimeOffset? meterTime = null;
                 double stateOfCharge = -1;
-                GetMeterValues(transactionEventRequest.MeterValue, out meterKWH, out currentChargeKW, out stateOfCharge, out meterTime);
+                if (transactionEventRequest.MeterValue != null)
+                {
+                    GetMeterValues(transactionEventRequest.MeterValue, out meterKWH, out currentChargeKW, out stateOfCharge, out meterTime);
+                }
 
                 if (connectorId > 0 && meterKWH >= 0)
                 {
@@ -460,7 +463,8 @@ namespace OCPP.Core.Server
                         }
                     }
                     else if (sampleValue.Measurand == MeasurandEnumType.Energy_Active_Import_Register ||
-                             sampleValue.Measurand == MeasurandEnumType.Missing)  // Spec: Default=Energy_Active_Import_Register
+                             sampleValue.Measurand == MeasurandEnumType.Missing ||
+                             sampleValue.Measurand == null)  // Spec: Default=Energy_Active_Import_Register
                     {
                         // charged amount of energy
                         meterKWH = sampleValue.Value;
