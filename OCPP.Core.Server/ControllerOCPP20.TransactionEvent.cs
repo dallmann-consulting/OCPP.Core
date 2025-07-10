@@ -47,10 +47,8 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("TransactionEvent => Message deserialized");
 
                 string idTag = CleanChargeTagId(transactionEventRequest.IdToken?.IdToken, Logger);
-                connectorId = (transactionEventRequest.Evse != null &&
-                                transactionEventRequest.Evse.ConnectorId.HasValue) ? 
-                                        transactionEventRequest.Evse.ConnectorId.Value : 0;
-
+                connectorId = (transactionEventRequest.Evse != null) ? 
+                                        transactionEventRequest.Evse.Id : 0;
 
                 //  Extract meter values with correct scale
                 double currentChargeKW = -1;
@@ -62,9 +60,13 @@ namespace OCPP.Core.Server
                     GetMeterValues(transactionEventRequest.MeterValue, out meterKWH, out currentChargeKW, out stateOfCharge, out meterTime);
                 }
 
+                // If msg contains no time stamp => use current time
+                if (!meterTime.HasValue) meterTime = DateTime.UtcNow;
+
                 if (connectorId > 0 && meterKWH >= 0)
                 {
                     UpdateConnectorStatus(connectorId, null, null, meterKWH, meterTime);
+                    UpdateMemoryConnectorStatus(connectorId, meterKWH, meterTime.Value, currentChargeKW, stateOfCharge);
                 }
 
                 if (transactionEventRequest.EventType == TransactionEventEnumType.Started)

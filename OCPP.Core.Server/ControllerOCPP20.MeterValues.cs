@@ -58,6 +58,9 @@ namespace OCPP.Core.Server
                     double stateOfCharge = -1;
                     GetMeterValues(meterValueRequest.MeterValue, out meterKWH, out currentChargeKW, out stateOfCharge, out meterTime);
 
+                    // If msg contains no time stamp => use current time
+                    if (!meterTime.HasValue) meterTime = DateTime.UtcNow;
+
                     // write charging/meter data in chargepoint status
                     if (connectorId > 0)
                     {
@@ -66,32 +69,7 @@ namespace OCPP.Core.Server
                         if (meterKWH >= 0)
                         {
                             UpdateConnectorStatus(connectorId, null, null, meterKWH, meterTime);
-                        }
-
-                        if (currentChargeKW >= 0 || meterKWH >= 0 || stateOfCharge >= 0)
-                        {
-                            if (ChargePointStatus.OnlineConnectors.ContainsKey(connectorId))
-                            {
-                                OnlineConnectorStatus ocs = ChargePointStatus.OnlineConnectors[connectorId];
-                                if (currentChargeKW >= 0) ocs.ChargeRateKW = currentChargeKW;
-                                if (meterKWH >= 0) ocs.MeterKWH = meterKWH;
-                                if (stateOfCharge >= 0) ocs.SoC = stateOfCharge;
-                            }
-                            else
-                            {
-                                OnlineConnectorStatus ocs = new OnlineConnectorStatus();
-                                if (currentChargeKW >= 0) ocs.ChargeRateKW = currentChargeKW;
-                                if (meterKWH >= 0) ocs.MeterKWH = meterKWH;
-                                if (stateOfCharge >= 0) ocs.SoC = stateOfCharge;
-                                if (ChargePointStatus.OnlineConnectors.TryAdd(connectorId, ocs))
-                                {
-                                    Logger.LogTrace("MeterValues => Set OnlineConnectorStatus for ChargePoint={0} / Connector={1} / Values: {2}", ChargePointStatus?.Id, connectorId, msgMeterValue);
-                                }
-                                else
-                                {
-                                    Logger.LogError("MeterValues => Error adding new OnlineConnectorStatus for ChargePoint={0} / Connector={1} / Values: {2}", ChargePointStatus?.Id, connectorId, msgMeterValue);
-                                }
-                            }
+                            UpdateMemoryConnectorStatus(connectorId, meterKWH, meterTime.Value, currentChargeKW, stateOfCharge);
                         }
                     }
                 }

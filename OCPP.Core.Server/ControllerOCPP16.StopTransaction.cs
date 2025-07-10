@@ -166,6 +166,7 @@ namespace OCPP.Core.Server
                             {
                                 // Update meter value in db connector status 
                                 UpdateConnectorStatus(transaction.ConnectorId, null, null, (double)stopTransactionRequest.MeterStop / 1000, stopTransactionRequest.Timestamp);
+                                UpdateMemoryConnectorStatus(transaction.ConnectorId, (double)stopTransactionRequest.MeterStop / 1000, stopTransactionRequest.Timestamp, null, null);
                             }
 
                             // check current tag against start tag

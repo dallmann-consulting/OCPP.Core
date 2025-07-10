@@ -170,6 +170,57 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// Set/Update in memory connector status with meter (and more) values
+        /// </summary>
+        protected void UpdateMemoryConnectorStatus(int connectorId, double meterKWH, DateTimeOffset meterTime, double? currentChargeKW, double? stateOfCharge)
+        {
+            OnlineConnectorStatus ocs = null;
+            bool isNew = false;
+            if (ChargePointStatus.OnlineConnectors.ContainsKey(connectorId))
+            {
+                ocs = ChargePointStatus.OnlineConnectors[connectorId];
+            }
+            else
+            {
+                ocs = new OnlineConnectorStatus();
+                isNew = true; // append later when all values are correct
+            }
+
+            ocs.ChargeRateKW = currentChargeKW;
+            if (meterKWH >= 0 && !currentChargeKW.HasValue &&
+                ocs.MeterKWH.HasValue && ocs.MeterKWH <= meterKWH &&
+                ocs.MeterValueDate < meterTime)
+            {
+                try
+                {
+                    // Chargepoint sends no power (kW) => calculate from meter and time (from last sample)
+                    double diffMeter = meterKWH - ocs.MeterKWH.Value;
+                    ocs.ChargeRateKW = diffMeter / ((meterTime.Subtract(ocs.MeterValueDate).TotalSeconds) / (60 * 60));
+                    Logger.LogDebug("MeterValues => Calculated power for ChargePoint={0} / Connector={1} / Power: {2}kW", ChargePointStatus?.Id, connectorId, ocs.ChargeRateKW);
+                }
+                catch (Exception exp)
+                {
+                    Logger.LogWarning("MeterValues => Error calculating power for ChargePoint={0} / Connector={1}: {2}", ChargePointStatus?.Id, connectorId, exp.ToString());
+                }
+            }
+            ocs.MeterKWH = meterKWH;
+            ocs.MeterValueDate = meterTime;
+            ocs.SoC = stateOfCharge;
+
+            if (isNew)
+            {
+                if (ChargePointStatus.OnlineConnectors.TryAdd(connectorId, ocs))
+                {
+                    Logger.LogTrace("MeterValues => Set OnlineConnectorStatus for ChargePoint={0} / Connector={1} / meterKWH: {2}", ChargePointStatus?.Id, connectorId, meterKWH);
+                }
+                else
+                {
+                    Logger.LogError("MeterValues => Error adding new OnlineConnectorStatus for ChargePoint={0} / Connector={1} / meterKWH: {2}", ChargePointStatus?.Id, connectorId, meterKWH);
+                }
+            }
+        }
+
+        /// <summary>
         /// Clean charge tag Id from possible suffix ("..._abc")
         /// </summary>
         protected static string CleanChargeTagId(string rawChargeTagId, ILogger logger)

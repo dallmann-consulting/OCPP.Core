@@ -127,6 +127,7 @@ namespace OCPP.Core.Server
                 {
                     // Update meter value in db connector status 
                     UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), startTransactionRequest.Timestamp, (double)startTransactionRequest.MeterStart / 1000, startTransactionRequest.Timestamp);
+                    UpdateMemoryConnectorStatus(connectorId, (double)startTransactionRequest.MeterStart / 1000, startTransactionRequest.Timestamp, null, null);
                 }
 
                 if (startTransactionResponse.IdTagInfo.Status == IdTagInfoStatus.Accepted)
