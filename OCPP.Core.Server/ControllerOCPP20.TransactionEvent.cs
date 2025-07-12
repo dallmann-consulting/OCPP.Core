@@ -39,6 +39,7 @@ namespace OCPP.Core.Server
             transactionEventResponse.CustomData.VendorId = VendorId;
 
             int connectorId = 0;
+            string msgLogText = string.Empty;
 
             try
             {
@@ -58,6 +59,9 @@ namespace OCPP.Core.Server
                 if (transactionEventRequest.MeterValue != null)
                 {
                     GetMeterValues(transactionEventRequest.MeterValue, out meterKWH, out currentChargeKW, out stateOfCharge, out meterTime);
+                    msgLogText = $"Meter (kWh): {meterKWH}";
+                    if (currentChargeKW >= 0) msgLogText += $" | Charge (kW): {currentChargeKW}";
+                    if (stateOfCharge >= 0) msgLogText += $" | SoC (%): {stateOfCharge}";
                 }
 
                 // If msg contains no time stamp => use current time
@@ -173,6 +177,8 @@ namespace OCPP.Core.Server
                         Logger.LogError(exp, "StartTransaction => Exception: {0}", exp.Message);
                         transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
                     }
+
+                    msgLogText = $"StartTx => {transactionEventResponse.IdTokenInfo?.Status} | {msgLogText}";
                 }
                 else if (transactionEventRequest.EventType == TransactionEventEnumType.Updated)
                 {
@@ -208,6 +214,8 @@ namespace OCPP.Core.Server
                     {
                         Logger.LogError(exp, "UpdateTransaction => Exception: {0}", exp.Message);
                     }
+
+                    msgLogText = $"UpdateTx => {msgLogText}";
                 }
                 else if (transactionEventRequest.EventType == TransactionEventEnumType.Ended)
                 {
@@ -391,6 +399,8 @@ namespace OCPP.Core.Server
                         Logger.LogError(exp, "EndTransaction => Exception: {0}", exp.Message);
                         errorCode = ErrorCodes.InternalError;
                     }
+
+                    msgLogText = $"EndTx => {transactionEventResponse.IdTokenInfo?.Status} | {msgLogText}";
                 }
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(transactionEventResponse);
@@ -402,7 +412,7 @@ namespace OCPP.Core.Server
                 errorCode = ErrorCodes.FormationViolation;
             }
 
-            WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, transactionEventResponse.IdTokenInfo?.Status.ToString(), errorCode);
+            WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, msgLogText, errorCode);
             return errorCode;
         }
 
