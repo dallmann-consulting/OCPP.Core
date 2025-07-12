@@ -38,7 +38,7 @@ namespace OCPP.Core.Management.Controllers
         private readonly IStringLocalizer<HomeController> _localizer;
 
         public HomeController(
-            UserManager userManager,
+            IUserManager userManager,
             IStringLocalizer<HomeController> localizer,
             ILoggerFactory loggerFactory,
             IConfiguration config,

@@ -36,7 +36,7 @@ namespace OCPP.Core.Management.Controllers
         private readonly IStringLocalizer<ApiController> _localizer;
 
         public ApiController(
-            UserManager userManager,
+            IUserManager userManager,
             IStringLocalizer<ApiController> localizer,
             ILoggerFactory loggerFactory,
             IConfiguration config,
