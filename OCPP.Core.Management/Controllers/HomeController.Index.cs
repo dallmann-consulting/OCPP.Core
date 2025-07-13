@@ -278,11 +278,13 @@ namespace OCPP.Core.Management.Controllers
                                         onlineConnectorStatus != null)
                                     {
                                         string currentCharge = string.Empty;
-                                        if (onlineConnectorStatus.ChargeRateKW != null)
+                                        if (onlineConnectorStatus.ChargeRateKW != null &&
+                                            onlineConnectorStatus.ChargeRateKW >= 0)
                                         {
                                             currentCharge = string.Format("{0:0.0}kW", onlineConnectorStatus.ChargeRateKW.Value);
                                         }
-                                        if (onlineConnectorStatus.SoC != null)
+                                        if (onlineConnectorStatus.SoC != null &&
+                                            onlineConnectorStatus.SoC >= 0)
                                         {
                                             if (!string.IsNullOrWhiteSpace(currentCharge)) currentCharge += " | ";
                                             currentCharge += string.Format("{0:0}%", onlineConnectorStatus.SoC.Value);

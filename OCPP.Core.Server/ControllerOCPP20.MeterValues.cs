@@ -64,12 +64,12 @@ namespace OCPP.Core.Server
                     // write charging/meter data in chargepoint status
                     if (connectorId > 0)
                     {
-                        msgMeterValue = $"Meter (kWh): {meterKWH} | Charge (kW): {currentChargeKW} | SoC (%): {stateOfCharge}";
+                        msgMeterValue = $"Meter (kWh): {meterKWH}";
 
                         if (meterKWH >= 0)
                         {
                             UpdateConnectorStatus(connectorId, null, null, meterKWH, meterTime);
-                            UpdateMemoryConnectorStatus(connectorId, meterKWH, meterTime.Value, currentChargeKW, stateOfCharge);
+                            UpdateMemoryConnectorStatus(connectorId, meterKWH, meterTime.Value, null, null);
                         }
                     }
                 }

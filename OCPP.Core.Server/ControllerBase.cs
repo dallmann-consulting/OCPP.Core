@@ -174,6 +174,10 @@ namespace OCPP.Core.Server
         /// </summary>
         protected void UpdateMemoryConnectorStatus(int connectorId, double meterKWH, DateTimeOffset meterTime, double? currentChargeKW, double? stateOfCharge)
         {
+            // Values <1 have no meaning => null
+            if (currentChargeKW.HasValue && currentChargeKW < 0) currentChargeKW = null;
+            if (stateOfCharge.HasValue && stateOfCharge < 0) stateOfCharge = null;
+
             OnlineConnectorStatus ocs = null;
             bool isNew = false;
             if (ChargePointStatus.OnlineConnectors.ContainsKey(connectorId))
