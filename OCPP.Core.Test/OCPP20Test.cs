@@ -22,7 +22,7 @@ namespace OCPP.Core.Test
         private static TaskCompletionSource<JArray>? _responseTcs;
         private static int _seqNo = 1;
 
-        internal async static void Execute()
+        internal static void Execute()
         {
             Console.WriteLine("Press enter to start test with OCPP 2.0.1");
             Console.ReadLine();
@@ -34,13 +34,13 @@ namespace OCPP.Core.Test
                 try
                 {
                     _webSocket = new ClientWebSocket();
-                    _webSocket.Options.AddSubProtocol("ocpp2.0.1"); // OCPP 2.0.1J
+                    _webSocket.Options.AddSubProtocol("ocpp2.0.1"); // OCPP 2.0.1
 
                     Console.WriteLine($"Connecting with unknown chargepoint: {_serverUrl + "/OCPP/unknown" + _chargePointId}");
                     _webSocket.ConnectAsync(new Uri(_serverUrl + "/OCPP/unknown" + _chargePointId), CancellationToken.None).Wait();
                     Console.WriteLine("BAD: Connected successful with unknown chargepoint");
                 }
-                catch(Exception ex)
+                catch
                 {
                     Console.WriteLine("Good: Connection failed with unknown chargepoint");
                 }
@@ -55,7 +55,7 @@ namespace OCPP.Core.Test
 
                 /* 2.  Try to connect with a known chargepoint id => it should succeed  */
                 _webSocket = new ClientWebSocket();
-                _webSocket.Options.AddSubProtocol("ocpp2.0.1"); // OCPP 2.0.1J
+                _webSocket.Options.AddSubProtocol("ocpp2.0.1"); // OCPP 2.0.1
 
                 Console.WriteLine($"Connecting with known chargepoint: {_serverUrl + "/OCPP/" + _chargePointId}");
                 _webSocket.ConnectAsync(new Uri(_serverUrl + "/OCPP/" + _chargePointId), CancellationToken.None).Wait();
@@ -134,8 +134,17 @@ namespace OCPP.Core.Test
 
                 ReadServerStatus();
 
+
+                /* 10.  Server API calls  */
+                SendReset(_chargePointId);
+                SendUnlock(_chargePointId, 1);
+                SetChargingLimit(_chargePointId, 1, "1000W");
+                ClearChargingLimit(_chargePointId, 1);
+
+
                 Console.WriteLine("Simulation ended. Press enter to exit.");
                 Console.ReadLine();
+
 
                 /* 10.  Close connection  */
                 _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Simulation end", CancellationToken.None).Wait();
@@ -167,9 +176,9 @@ namespace OCPP.Core.Test
             };
             var response = await SendMessage("BootNotification", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            if (responsePayload["status"]?.ToString() != "Accepted")
+            if (responsePayload?["status"]?.ToString() != "Accepted")
             {
-                Console.WriteLine($"BootNotification failed: Status {responsePayload["status"]}");
+                Console.WriteLine($"BootNotification failed: Status {responsePayload?["status"]}");
                 return false;
             }
             Console.WriteLine("BootNotification successful: Status accepted");
@@ -182,7 +191,7 @@ namespace OCPP.Core.Test
             var payload = new { };
             var response = await SendMessage("Heartbeat", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            if (responsePayload["currentTime"] == null)
+            if (responsePayload?["currentTime"] == null)
             {
                 Console.WriteLine("Heartbeat failed: Answer contains no 'currentTime' field");
                 return false;
@@ -204,10 +213,10 @@ namespace OCPP.Core.Test
             };
             var response = await SendMessage("Authorize", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            var idTagInfo = responsePayload["idTokenInfo"];
-            if (idTagInfo["status"]?.ToString() != "Accepted")
+            var idTagInfo = responsePayload?["idTokenInfo"];
+            if (idTagInfo?["status"]?.ToString() != "Accepted")
             {
-                Console.WriteLine($"Authorize failed: Status {idTagInfo["status"]}");
+                Console.WriteLine($"Authorize failed: Status {idTagInfo?["status"]}");
                 return false;
             }
             Console.WriteLine("Authorize successful: Status accepted");
@@ -257,10 +266,10 @@ namespace OCPP.Core.Test
             };
             var response = await SendMessage("TransactionEvent", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            var idTagInfo = responsePayload["idTokenInfo"];
-            if (idTagInfo["status"]?.ToString() != "Accepted")
+            var idTagInfo = responsePayload?["idTokenInfo"];
+            if (idTagInfo?["status"]?.ToString() != "Accepted")
             {
-                Console.WriteLine($"StartTransaction failed: Status {idTagInfo["status"]}");
+                Console.WriteLine($"StartTransaction failed: Status {idTagInfo?["status"]}");
                 return false;
             }
             Console.WriteLine($"StartTransaction successful: transactionId {transactionId}");
@@ -375,7 +384,7 @@ namespace OCPP.Core.Test
 
             var response = await SendMessage("TransactionEvent", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            var idTagInfo = responsePayload["idTokenInfo"];
+            var idTagInfo = responsePayload?["idTokenInfo"];
             if (idTagInfo != null && idTagInfo["status"]?.ToString() != "Accepted")
             {
                 Console.WriteLine($"StopTransaction failed: Status {idTagInfo["status"]}");
@@ -447,9 +456,9 @@ namespace OCPP.Core.Test
             };
             var response = await SendMessage("DataTransfer", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            if (responsePayload["status"]?.ToString() != "Accepted")
+            if (responsePayload?["status"]?.ToString() != "Accepted")
             {
-                Console.WriteLine($"DataTransfer failed: Status {responsePayload["status"]}");
+                Console.WriteLine($"DataTransfer failed: Status {responsePayload?["status"]}");
                 return false;
             }
             Console.WriteLine("DataTransfer successful: Status accepted");
@@ -468,6 +477,130 @@ namespace OCPP.Core.Test
             Console.WriteLine("LogStatusNotification successful");
             Console.WriteLine();
             return true;
+        }
+
+        private static void SendReset(string chargePointId)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+                HttpResponseMessage response = httpClient.GetAsync(new Uri(_serverUrl + "/API/Reset/" + chargePointId)).Result;
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string result = response.Content.ReadAsStringAsync().Result;
+                    if (result.Contains("\"Accepted\""))
+                    {
+                        Console.WriteLine($"Success: API Reset result JSON: {result}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: API Reset result JSON: {result}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Reset API request failed: httpStatus={response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Reset API request failed: {ex.ToString()}");
+            }
+            Console.WriteLine();
+        }
+
+        private static void SendUnlock(string chargePointId, int connectorId)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/UnlockConnector/{chargePointId}/{connectorId}")).Result;
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string result = response.Content.ReadAsStringAsync().Result;
+                    if (result.Contains("\"Unlocked"))
+                    {
+                        Console.WriteLine($"Success: API Unlock result JSON: {result}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: API Unlock result JSON: {result}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Unlock API request failed: httpStatus={response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unlock API request failed: {ex.ToString()}");
+            }
+            Console.WriteLine();
+        }
+
+        private static void SetChargingLimit(string chargePointId, int connectorId, string pwLimit)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/SetChargingLimit/{chargePointId}/{connectorId}/{pwLimit}")).Result;
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string result = response.Content.ReadAsStringAsync().Result;
+                    if (result.Contains("\"Accepted\""))
+                    {
+                        Console.WriteLine($"Success: API SetChargingLimit result JSON: {result}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: API SetChargingLimit result JSON: {result}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"SetChargingLimit API request failed: httpStatus={response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SetChargingLimit API request failed: {ex.ToString()}");
+            }
+            Console.WriteLine();
+        }
+
+        private static void ClearChargingLimit(string chargePointId, int connectorId)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/ClearChargingLimit/{chargePointId}/{connectorId}")).Result;
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string result = response.Content.ReadAsStringAsync().Result;
+                    if (result.Contains("\"Accepted\""))
+                    {
+                        Console.WriteLine($"Success: API ClearChargingLimit result JSON: {result}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: API ClearChargingLimit result JSON: {result}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"ClearChargingLimit API request failed: httpStatus={response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ClearChargingLimit API request failed: {ex.ToString()}");
+            }
+            Console.WriteLine();
         }
 
         private static void ReadServerStatus()
@@ -555,26 +688,38 @@ namespace OCPP.Core.Test
                     try
                     {
                         var message = JsonConvert.DeserializeObject<JArray>(received);
-                        if (message[0].Value<int>() == 3) // CallResult
+                        if (message?[0].Value<int>() == 3) // CallResult
                         {
                             // Result/Anwer => Send response via TCS to waiting code
                             _responseTcs?.TrySetResult(message);
                         }
-                        else if (message[0].Value<int>() == 4) // CallError
+                        else if (message?[0].Value<int>() == 4) // CallError
                         {
                             _responseTcs?.TrySetException(new Exception($"Error response: {message[3]}"));
                         }
                         // Server-to-Client Calls (e.g. Reset, UnlockConnector) can be handled here
-                        else if (message[0].Value<int>() == 2)
+                        else if (message?[0].Value<int>() == 2)
                         {
                             string action = message[2].ToString();
                             string uniqueId = message[1].ToString();
-                            // Example: Process Reset
-                            if (action == "Reset")
+                            switch (action)
                             {
-                                await SendCallResult(uniqueId, new { status = "Accepted" });
+                                case "Reset":
+                                    await SendCallResult(uniqueId, new { status = "Accepted" });
+                                    break;
+                                case "UnlockConnector":
+                                    await SendCallResult(uniqueId, new { status = "Unlocked" });
+                                    break;
+                                case "SetChargingProfile":
+                                    await SendCallResult(uniqueId, new { status = "Accepted" });
+                                    break;
+                                case "ClearChargingProfile":
+                                    await SendCallResult(uniqueId, new { status = "Accepted" });
+                                    break;
+                                default:
+                                    Console.WriteLine($"Error: Unknown incoming message: {action}");
+                                    break;
                             }
-                            // further msg types...
                         }
                     }
                     catch (Exception ex)

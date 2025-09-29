@@ -11,9 +11,13 @@
 
   <ItemGroup>
     <Compile Remove="logs\**" />
+    <Compile Remove="Messages_OCPP21\offen\**" />
     <Content Remove="logs\**" />
+    <Content Remove="Messages_OCPP21\offen\**" />
     <EmbeddedResource Remove="logs\**" />
+    <EmbeddedResource Remove="Messages_OCPP21\offen\**" />
     <None Remove="logs\**" />
+    <None Remove="Messages_OCPP21\offen\**" />
   </ItemGroup>
 
   <ItemGroup>

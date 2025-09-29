@@ -18,6 +18,7 @@
  */
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -43,7 +44,8 @@ namespace OCPP.Core.Server
         // Supported OCPP protocols (in order)
         private const string Protocol_OCPP16 = "ocpp1.6";
         private const string Protocol_OCPP201 = "ocpp2.0.1";
-        private static readonly string[] SupportedProtocols = { Protocol_OCPP201, Protocol_OCPP16};
+        private const string Protocol_OCPP21 = "ocpp2.1";
+        private static readonly string[] SupportedProtocols = {Protocol_OCPP16, Protocol_OCPP201, Protocol_OCPP21};
 
         // RegExp for splitting ocpp message parts
         // ^\[\s*(\d)\s*,\s*\"([^"]*)\"\s*,(?:\s*\"(\w*)\"\s*,)?\s*(.*)\s*\]$
@@ -242,7 +244,12 @@ namespace OCPP.Core.Server
                                         _logger.LogTrace("OCPPMiddleware => WebSocket connection with charge point '{0}'", chargepointIdentifier);
                                         chargePointStatus.WebSocket = webSocket;
 
-                                        if (subProtocol == Protocol_OCPP201)
+                                        if (subProtocol == Protocol_OCPP21)
+                                        {
+                                            // OCPP V2.1
+                                            await Receive21(chargePointStatus, context, dbContext);
+                                        }
+                                        else if (subProtocol == Protocol_OCPP201)
                                         {
                                             // OCPP V2.0
                                             await Receive20(chargePointStatus, context, dbContext);
@@ -366,7 +373,12 @@ namespace OCPP.Core.Server
                                 if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                                 {
                                     // Send message to chargepoint
-                                    if (status.Protocol == Protocol_OCPP201)
+                                    if (status.Protocol == Protocol_OCPP21)
+                                    {
+                                        // OCPP V2.1
+                                        await Reset21(status, context, dbContext);
+                                    }
+                                    else if (status.Protocol == Protocol_OCPP201)
                                     {
                                         // OCPP V2.0
                                         await Reset20(status, context, dbContext);
@@ -406,7 +418,12 @@ namespace OCPP.Core.Server
                                 if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                                 {
                                     // Send message to chargepoint
-                                    if (status.Protocol == Protocol_OCPP201)
+                                    if (status.Protocol == Protocol_OCPP21)
+                                    {
+                                        // OCPP V2.1
+                                        await UnlockConnector21(status, context, dbContext, urlConnectorId);
+                                    }
+                                    else if (status.Protocol == Protocol_OCPP201)
                                     {
                                         // OCPP V2.0
                                         await UnlockConnector20(status, context, dbContext, urlConnectorId);
@@ -456,7 +473,12 @@ namespace OCPP.Core.Server
                                         if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                                         {
                                             // Send message to chargepoint
-                                            if (status.Protocol == Protocol_OCPP201)
+                                            if (status.Protocol == Protocol_OCPP21)
+                                            {
+                                                // OCPP V2.1
+                                                await SetChargingProfile21(status, context, dbContext, urlConnectorId, power, unit);
+                                            }
+                                            else if (status.Protocol == Protocol_OCPP201)
                                             {
                                                 // OCPP V2.0
                                                 await SetChargingProfile20(status, context, dbContext, urlConnectorId, power, unit);
@@ -508,7 +530,12 @@ namespace OCPP.Core.Server
                                 if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                                 {
                                     // Send message to chargepoint
-                                    if (status.Protocol == Protocol_OCPP201)
+                                    if (status.Protocol == Protocol_OCPP21)
+                                    {
+                                        // OCPP V2.1
+                                        await ClearChargingProfile21(status, context, dbContext, urlConnectorId);
+                                    }
+                                    else if (status.Protocol == Protocol_OCPP201)
                                     {
                                         // OCPP V2.0
                                         await ClearChargingProfile20(status, context, dbContext, urlConnectorId);

@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 
 namespace OCPP.Core.Test
 {
-    class OCPP16Test
+    class OCPP21Test
     {
         /*
          * Configure valid data for database and installation here
@@ -20,10 +20,11 @@ namespace OCPP.Core.Test
 
         private static ClientWebSocket _webSocket = new ClientWebSocket();
         private static TaskCompletionSource<JArray>? _responseTcs;
+        private static int _seqNo = 1;
 
         internal static void Execute()
         {
-            Console.WriteLine("Press enter to start test with OCPP 1.6");
+            Console.WriteLine("Press enter to start test with OCPP 2.1");
             Console.ReadLine();
 
             try
@@ -33,7 +34,7 @@ namespace OCPP.Core.Test
                 try
                 {
                     _webSocket = new ClientWebSocket();
-                    _webSocket.Options.AddSubProtocol("ocpp1.6"); // OCPP 1.6J
+                    _webSocket.Options.AddSubProtocol("ocpp2.1"); // OCPP 2.1
 
                     Console.WriteLine($"Connecting with unknown chargepoint: {_serverUrl + "/OCPP/unknown" + _chargePointId}");
                     _webSocket.ConnectAsync(new Uri(_serverUrl + "/OCPP/unknown" + _chargePointId), CancellationToken.None).Wait();
@@ -54,7 +55,7 @@ namespace OCPP.Core.Test
 
                 /* 2.  Try to connect with a known chargepoint id => it should succeed  */
                 _webSocket = new ClientWebSocket();
-                _webSocket.Options.AddSubProtocol("ocpp1.6"); // OCPP 1.6J
+                _webSocket.Options.AddSubProtocol("ocpp2.1"); // OCPP 2.1
 
                 Console.WriteLine($"Connecting with known chargepoint: {_serverUrl + "/OCPP/" + _chargePointId}");
                 _webSocket.ConnectAsync(new Uri(_serverUrl + "/OCPP/" + _chargePointId), CancellationToken.None).Wait();
@@ -62,6 +63,7 @@ namespace OCPP.Core.Test
 
                 // Start background task for receiving messages
                 var receiveTask = Task.Run(() => ReceiveMessages());
+
 
 
                 /* 3.  Test general messages  */
@@ -72,6 +74,10 @@ namespace OCPP.Core.Test
                 SendAndVerifyHeartbeat().Wait();
 
                 SendAndVerifyDataTransfer().Wait();
+
+                SendAndVerifyLogStatusNotification().Wait();
+
+                SendAndVerifyMeterValues(1).Wait();
 
 
                 /* 4.  Test authorization with unknown tag => it should fail */
@@ -94,12 +100,12 @@ namespace OCPP.Core.Test
                 if (SendAndVerifyAuthorize(_chargeTagId).Result)
                 {
                     /* 7.  Now test complete transaction  */
-                    int transactionId = SendAndVerifyStartTransaction(1, _chargeTagId).Result;
-                    if (transactionId >= 0)
+                    string transactionId = Guid.NewGuid().ToString();
+                    if (SendAndVerifyStartTransaction(1, _chargeTagId, transactionId).Result)
                     {
-                        SendAndVerifyMeterValues(1, transactionId).Wait();
+                        SendAndVerifyUpdateTransaction(1, _chargeTagId, transactionId).Wait();
 
-                        SendAndVerifyStatusNotification(1, "Charging").Wait();
+                        SendAndVerifyStatusNotification(1, "Occupied").Wait();
 
                         /* 8.  Check chargepoint status in/from server  */
                         ReadServerStatus();
@@ -107,10 +113,21 @@ namespace OCPP.Core.Test
                         Console.WriteLine("Press enter to stop transaction");
                         Console.ReadLine();
 
-                        SendAndVerifyStopTransaction(1, transactionId).Wait();
+                        /*
+                        // KEBA sends status availabe before ending the transaction
+                        SendAndVerifyStatusNotification(1, "Available").Wait();
+                        ReadServerStatus();
+                        Console.WriteLine("Status availabe with running transaction - Press enter to continue");
+                        Console.ReadLine();
+                        */
+
+                        SendAndVerifyStopTransaction(1, _chargeTagId, transactionId).Wait();
                     }
                 }
 
+                ReadServerStatus();
+                Console.WriteLine("Transaction ended - Press enter send StatusUpdate");
+                Console.ReadLine();
 
                 /* 9.  Update connector status  */
                 SendAndVerifyStatusNotification(1, "Available").Wait();
@@ -142,15 +159,19 @@ namespace OCPP.Core.Test
         {
             var payload = new
             {
-                chargePointVendor = "SimulatorVendor",
-                chargePointModel = "SimulatorModel",
-                chargePointSerialNumber = "CPSN12345",
-                chargeBoxSerialNumber = "CBSN12345",
-                firmwareVersion = "1.0.0",
-                iccid = "",
-                imsi = "",
-                meterType = "SimulatorMeter",
-                meterSerialNumber = "Serial12345"
+                chargingStation = new
+                {
+                    serialNumber = "CPSN12345",
+                    model = "SimulatorModel",
+                    modem = new
+                    {
+                        iccid = "",
+                        imsi = ""
+                    },
+                    vendorName = "SimulatorVendor",
+                    firmwareVersion = "1.0.0",
+                },
+                reason = "PowerUp"
             };
             var response = await SendMessage("BootNotification", payload);
             var responsePayload = response[2].ToObject<JObject>();
@@ -183,11 +204,15 @@ namespace OCPP.Core.Test
         {
             var payload = new
             {
-                idTag = chargeTagId
+                idToken = new
+                {
+                    idToken = chargeTagId,
+                    type = "ISO14443"
+                }                
             };
             var response = await SendMessage("Authorize", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            var idTagInfo = responsePayload?["idTagInfo"];
+            var idTagInfo = responsePayload?["idTokenInfo"];
             if (idTagInfo?["status"]?.ToString() != "Accepted")
             {
                 Console.WriteLine($"Authorize failed: Status {idTagInfo?["status"]}");
@@ -198,42 +223,167 @@ namespace OCPP.Core.Test
             return true;
         }
 
-        private static async Task<int> SendAndVerifyStartTransaction(int connectorId, string chargeTagId)
+        private static async Task<bool> SendAndVerifyStartTransaction(int connectorId, string chargeTagId, string transactionId)
         {
             var payload = new
             {
-                connectorId = connectorId,
-                idTag = chargeTagId,
-                meterStart = 0,
-                timestamp = DateTime.UtcNow.ToString("o")
+                eventType = "Started",
+                meterValue = new[]
+                {
+                    new
+                    {
+                        sampledValue = new[]
+                        {
+                            new
+                            {
+                                value = 5000,
+                                context = "Transaction.Begin"
+                            }
+                        },
+                        timestamp = DateTime.UtcNow.ToString("o")
+                    }
+                },
+                timestamp = DateTime.UtcNow.ToString("o"),
+                triggerReason = "Authorized",
+                seqNo = _seqNo++,
+                offline = false,
+                transactionInfo = new
+                {
+                    transactionId = transactionId,
+                    chargingState = "SuspendedEV"
+                },
+                evse = new
+                {
+                    id = connectorId,
+                    connectorId = 1
+                },
+                idToken = new
+                {
+                    idToken = chargeTagId,
+                    type = "ISO14443"
+                }
             };
-            var response = await SendMessage("StartTransaction", payload);
+            var response = await SendMessage("TransactionEvent", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            var idTagInfo = responsePayload?["idTagInfo"];
+            var idTagInfo = responsePayload?["idTokenInfo"];
             if (idTagInfo?["status"]?.ToString() != "Accepted")
             {
                 Console.WriteLine($"StartTransaction failed: Status {idTagInfo?["status"]}");
-                return -1;
+                return false;
             }
-            int transactionId = responsePayload?["transactionId"]?.Value<int>() ?? throw new Exception("No transactionId in StartTransaction answer");
             Console.WriteLine($"StartTransaction successful: transactionId {transactionId}");
             Console.WriteLine();
-            return transactionId;
+            return true;
         }
 
-        private static async Task<bool> SendAndVerifyStopTransaction(int connectorId, int transactionId)
+        private static async Task<bool> SendAndVerifyUpdateTransaction(int connectorId, string chargeTagId, string transactionId)
         {
             var payload = new
             {
-                idTag = _chargeTagId,
-                meterStop = 10000,
+                eventType = "Updated",
+                meterValue = new[]
+                {
+                    new
+                    {
+                        sampledValue = new[]
+                        {
+                            new
+                            {
+                                value = 5000,
+                                context = "Sample.Periodic",
+                                measurand = "Energy.Active.Import.Register",
+                                location = "Outlet",
+                                unitOfMeasure = new
+                                {
+                                    unit = "Wh",
+                                    multiplier = 0
+                                }
+                            }
+                        },
+                        timestamp = DateTime.UtcNow.ToString("o")
+                    }
+                },
                 timestamp = DateTime.UtcNow.ToString("o"),
-                transactionId = transactionId,
-                reason = "Local",
+                triggerReason = "MeterValuePeriodic",
+                seqNo = _seqNo++,
+                offline = false,
+                transactionInfo = new
+                {
+                    transactionId = transactionId,
+                    chargingState = "Idle",
+                    stoppedReason = "EVDisconnected"
+                },
+                evse = new
+                {
+                    id = connectorId,
+                    connectorId = 1
+                },
+                idToken = new
+                {
+                    idToken = chargeTagId,
+                    type = "ISO14443"
+                }
             };
-            var response = await SendMessage("StopTransaction", payload);
+
+            var response = await SendMessage("TransactionEvent", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            var idTagInfo = responsePayload?["idTagInfo"];
+            Console.WriteLine("UpdateTransaction successful");
+            Console.WriteLine();
+            return true;
+        }
+
+        private static async Task<bool> SendAndVerifyStopTransaction(int connectorId, string chargeTagId, string transactionId)
+        {
+            var payload = new
+            {
+                eventType = "Ended",
+                meterValue = new[]
+                {
+                    new
+                    {
+                        sampledValue = new[]
+                        {
+                            new
+                            {
+                                value = 5000,
+                                context = "Transaction.End",
+                                measurand = "Energy.Active.Import.Register",
+                                location = "Outlet",
+                                unitOfMeasure = new
+                                {
+                                    unit = "Wh",
+                                    multiplier = 0
+                                }
+                            }
+                        },
+                        timestamp = DateTime.UtcNow.ToString("o")
+                    }
+                },
+                timestamp = DateTime.UtcNow.ToString("o"),
+                triggerReason = "Authorized",
+                seqNo = _seqNo++,
+                offline = false,
+                transactionInfo = new
+                {
+                    transactionId = transactionId,
+                    chargingState = "Idle",
+                    stoppedReason = "EVDisconnected"
+                },
+                evse = new
+                {
+                    id = connectorId,
+                    connectorId = 1
+                },
+                idToken = new
+                {
+                    idToken = chargeTagId,
+                    type = "ISO14443"
+                }
+            };
+
+            var response = await SendMessage("TransactionEvent", payload);
+            var responsePayload = response[2].ToObject<JObject>();
+            var idTagInfo = responsePayload?["idTokenInfo"];
             if (idTagInfo != null && idTagInfo["status"]?.ToString() != "Accepted")
             {
                 Console.WriteLine($"StopTransaction failed: Status {idTagInfo["status"]}");
@@ -244,40 +394,36 @@ namespace OCPP.Core.Test
             return true;
         }
 
-        private static async Task<bool> SendAndVerifyMeterValues(int connectorId, int transactionId)
+        private static async Task<bool> SendAndVerifyMeterValues(int connectorId)
         {
             var payload = new
             {
-                connectorId = connectorId,
-                transactionId = transactionId,
+                evseId = connectorId,
                 meterValue = new[]
                 {
                     new
                     {
-                        timestamp = DateTime.UtcNow.ToString("o"),
                         sampledValue = new[]
                         {
                             new
                             {
-                                value = "5000",
-                                context = "Sample.Periodic",
-                                format = "Raw",
+                                value = 5000,
+                                context = "Sample.Clock",
                                 measurand = "Energy.Active.Import.Register",
                                 location = "Outlet",
-                                unit = "Wh"
+                                unitOfMeasure = new
+                                {
+                                    unit = "Wh",
+                                    multiplier = 0
+                                }
                             }
-                        }
+                        },
+                        timestamp = DateTime.UtcNow.ToString("o"),
                     }
                 }
             };
             var response = await SendMessage("MeterValues", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            // answer should be empty {}
-            if (responsePayload?.Count > 0)
-            {
-                Console.WriteLine("MeterValues answer contains unexpected data");
-                return false;
-            }
             Console.WriteLine("SendMeterValues successful");
             Console.WriteLine();
             return true;
@@ -287,22 +433,13 @@ namespace OCPP.Core.Test
         {
             var payload = new
             {
-                connectorId = connectorId,
-                errorCode = "NoError",
-                status = status,
                 timestamp = DateTime.UtcNow.ToString("o"),
-                info = "",
-                vendorId = "",
-                vendorErrorCode = ""
+                connectorStatus = status,
+                evseId = connectorId,
+                connectorId = 1
             };
             var response = await SendMessage("StatusNotification", payload);
             var responsePayload = response[2].ToObject<JObject>();
-            // answer should be empty {}
-            if (responsePayload?.Count > 0)
-            {
-                Console.WriteLine("StatusNotification answer contains unexpected data");
-                return false;
-            }
             Console.WriteLine($"StatusNotification ({status}) successful");
             Console.WriteLine();
             return true;
@@ -324,6 +461,19 @@ namespace OCPP.Core.Test
                 return false;
             }
             Console.WriteLine("DataTransfer successful: Status accepted");
+            Console.WriteLine();
+            return true;
+        }
+        
+        private static async Task<bool> SendAndVerifyLogStatusNotification()
+        {
+            var payload = new
+            {
+                status = "Idle"
+            };
+            var response = await SendMessage("LogStatusNotification", payload);
+            var responsePayload = response[2].ToObject<JObject>();
+            Console.WriteLine("LogStatusNotification successful");
             Console.WriteLine();
             return true;
         }
@@ -486,7 +636,7 @@ namespace OCPP.Core.Test
                 JObject.FromObject(payload)
             };
             string json = JsonConvert.SerializeObject(message);
-            Console.WriteLine($"Sending answer: {json}");
+            Console.WriteLine($"Sende Result: {json}");
             var buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(json));
             await _webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }

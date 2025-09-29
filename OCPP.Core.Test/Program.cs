@@ -8,6 +8,7 @@ namespace OCPP.Core.Test
         {
             OCPP16Test.Execute();
             OCPP20Test.Execute();
+            OCPP21Test.Execute();
         }
     }
 }
