@@ -36,7 +36,7 @@ using System.Threading.Tasks;
 namespace OCPP.Core.Management
 {
     /// <summary>
-    /// User Manager für Login/Logout
+    /// User Manager for Login/Logout
     /// </summary>
     public class UserManager : IUserManager
     {

@@ -2,12 +2,11 @@
 OCPP.Core is an OCPP ([Open ChargePoint Protocol](https://en.wikipedia.org/wiki/Open_Charge_Point_Protocol)) server written in .NET 8. It includes a management Web-UI for administration of charge points and charge tokens (RFID-Token)
 
 ## Status
-It currently supports OCPP1.6J and 2.0(JSON/REST).
+It currently supports OCPP1.6J, 2.0 and 2.1.
 
 OCPP.Core is currently used with 6 [KEBA P30c/x](https://www.keba.com/de/emobility/products/c-series/c-serie) charge points operating in a load management and OCPP1.6J.
-Here's a report of my [first real live experiences](Real_life_Experiences_KEBA.md).
+Here's a report of the [first real live experiences](Real_life_Experiences_KEBA.md) from 2021.
 
-**Please send feedback if it works with your charge station or has issues**
 <br/>
 The OCPP-Server currently handles the following messages:
 
@@ -25,7 +24,7 @@ OCPP V1.6:
 * SetChargingProfile
 * ClearChargingProfile
 
-OCPP V2.0:
+OCPP V2.0 and V2.1:
 * BootNotification
 * Heartbeat
 * Authorize
@@ -75,7 +74,7 @@ If a connector has a name specified this name overrides the charge point name or
 
 ## System Requirements
 OCPP.Core is written in .NET 8 and therefore runs on different plattforms. I also installed it in Azure for testing purposes.
-The storage is based on the EntityFramework-Core and supports different databases. The project contains script für SQL-Server (SQL-Express) and SQLite.
+The storage is based on the EntityFramework-Core and supports different databases. The project contains script for SQL-Server (SQL-Express) and SQLite.
 
 Referenced Packages:
 * Microsoft.EntityFrameworkCore
@@ -126,7 +125,7 @@ An easy way to test the OCPP-Server are simulators:
 
 Attention: Both simulators have minor and major bugs in certain actions. That's why I modified them both and included copies in this project.
 There also is an extended version of the 1.6 simulator with two connectors:
-* [OCPP1.6 Multi-Connector Simulator](Simulators/simple simulator1.6_multi_connector.html)
+* [OCPP1.6 Multi-Connector Simulator](Simulators/simple%20simulator1.6_multi_connector.html)
 
 Open one of the simulators in the browser and enter "ws://localhost:8081/OCPP/station42" as the central station URL.
 "station42" is the ID of the chargepoint you created in the previous step.
