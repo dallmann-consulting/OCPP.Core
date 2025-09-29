@@ -17,15 +17,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Schema;
 using OCPP.Core.Database;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace OCPP.Core.Server
 {
@@ -144,20 +146,28 @@ namespace OCPP.Core.Server
                     connectorStatus.ConnectorId = connectorId;
                     Logger.LogTrace("UpdateConnectorStatus => Creating new DB-ConnectorStatus: ID={0} / Connector={1}", connectorStatus.ChargePointId, connectorStatus.ConnectorId);
                     DbContext.Add<ConnectorStatus>(connectorStatus);
+                    DbContext.SaveChanges();
                 }
 
                 if (!string.IsNullOrEmpty(status))
                 {
-                    connectorStatus.LastStatus = status;
-                    connectorStatus.LastStatusTime = ((statusTime.HasValue) ? statusTime.Value : DateTimeOffset.UtcNow).DateTime;
+                    DateTime dbTime = ((statusTime.HasValue) ? statusTime.Value : DateTimeOffset.UtcNow).DateTime;
+                    DbContext.ConnectorStatuses.Where(cs => cs.ChargePointId == ChargePointStatus.Id && cs.ConnectorId == connectorId)
+                        .ExecuteUpdate(s => s
+                            .SetProperty(cs => cs.LastStatus, status)
+                            .SetProperty(cs => cs.LastStatusTime, dbTime)
+                            );
                 }
 
                 if (meter.HasValue)
                 {
-                    connectorStatus.LastMeter = meter.Value;
-                    connectorStatus.LastMeterTime = ((meterTime.HasValue) ? meterTime.Value : DateTimeOffset.UtcNow).DateTime;
+                    DateTime dbTime = ((meterTime.HasValue) ? meterTime.Value : DateTimeOffset.UtcNow).DateTime;
+                    DbContext.ConnectorStatuses.Where(cs => cs.ChargePointId == ChargePointStatus.Id && cs.ConnectorId == connectorId)
+                        .ExecuteUpdate(s => s
+                            .SetProperty(cs => cs.LastMeter, meter.Value)
+                            .SetProperty(cs => cs.LastMeterTime, dbTime)
+                            );
                 }
-                DbContext.SaveChanges();
                 Logger.LogInformation("UpdateConnectorStatus => Save ConnectorStatus: ID={0} / Connector={1} / Status={2} / Meter={3}", connectorStatus.ChargePointId, connectorId, status, meter);
                 return true;
             }
