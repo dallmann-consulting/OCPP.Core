@@ -38,7 +38,7 @@ namespace OCPP.Core.Extensions.AzureServiceBus
                 {
                     ConfigurationBuilder builder = new ConfigurationBuilder();
                     builder.SetBasePath(extensionPath);
-                    builder.AddJsonFile("appsettings.json");
+                    builder.AddJsonFile("appsettingsAzureServiceBus.json");
                     _extensionConfiguration = builder.Build();
 
                     _logger.LogTrace("InitializeExtension => Configuration loaded");

@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2025 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,10 +17,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using OCPP.Core.Database;
+using OCPP.Core.Management.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -28,25 +33,29 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-using OCPP.Core.Management.Models;
-
 namespace OCPP.Core.Management
 {
-    public class UserManager
+    /// <summary>
+    /// User Manager for Login/Logout
+    /// </summary>
+    public class UserManager : IUserManager
     {
-        private IConfiguration Configuration;
+        private IConfiguration _configuration;
+        private OCPPCoreContext _dbContext;
 
-        public UserManager(IConfiguration configuration)
+        public UserManager(IConfiguration configuration, OCPPCoreContext dbContext)
         {
-            Configuration = configuration;
+            _configuration = configuration;
+            _dbContext = dbContext;
         }
 
         public async Task SignIn(HttpContext httpContext, UserModel user, bool isPersistent = false)
         {
             try
             {
-                IEnumerable cfgUsers = Configuration.GetSection("Users").GetChildren();
+                IEnumerable cfgUsers = _configuration.GetSection("Users").GetChildren();
 
+                bool success = false;
                 foreach (ConfigurationSection cfgUser in cfgUsers)
                 {
                     if (cfgUser.GetValue<string>("Username") == user.Username &&
@@ -56,11 +65,24 @@ namespace OCPP.Core.Management
                         ClaimsIdentity identity = new ClaimsIdentity(this.GetUserClaims(user), CookieAuthenticationDefaults.AuthenticationScheme);
                         ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
-                        await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+                        AuthenticationProperties authProperties = new AuthenticationProperties
+                        {
+                            IsPersistent = true, // Persist the cookie after the browser is closed
+                            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(72)
+                        };
+
+                        success = true;
+                        WriteMessageLog("Login", $"Success - User '{user.Username}'");
+
+                        await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
                         break;
                     }
                 }
 
+                if (!success)
+                {
+                    WriteMessageLog("Login", $"Failure - User '{user.Username}'");
+                }
             }
             catch //(Exception exp)
             {
@@ -69,6 +91,7 @@ namespace OCPP.Core.Management
 
         public async Task SignOut(HttpContext httpContext)
         {
+            WriteMessageLog("Logout", $"User '{httpContext.User?.Identity?.Name}'");
             await httpContext.SignOutAsync();
         }
 
@@ -77,7 +100,7 @@ namespace OCPP.Core.Management
             List<Claim> claims = new List<Claim>();
 
             claims.Add(new Claim(ClaimTypes.NameIdentifier, user.Username));
-            claims.Add(new Claim(ClaimTypes.Name , user.Username));
+            claims.Add(new Claim(ClaimTypes.Name, user.Username));
             claims.AddRange(this.GetUserRoleClaims(user));
             return claims;
         }
@@ -93,5 +116,32 @@ namespace OCPP.Core.Management
             }
             return claims;
         }
+
+        private void WriteMessageLog(string message, string result)
+        {
+            try
+            {
+                MessageLog msgLog = new MessageLog();
+                msgLog.ChargePointId = "UserManager";
+                msgLog.LogTime = DateTime.UtcNow;
+                msgLog.Message = message;
+                msgLog.Result = result;
+                _dbContext.MessageLogs.Add(msgLog);
+                _dbContext.SaveChanges();
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// Interface for User Manager
+    /// </summary>
+    public interface IUserManager
+    {
+        Task SignIn(HttpContext httpContext, UserModel user, bool isPersistent);
+
+        Task SignOut(HttpContext httpContext);
     }
 }

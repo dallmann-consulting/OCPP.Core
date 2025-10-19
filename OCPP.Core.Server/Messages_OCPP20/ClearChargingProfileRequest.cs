@@ -54,7 +54,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class ClearChargingProfileType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>Identified_ Object. MRID. Numeric_ Identifier
         /// urn:x-enexis:ecdm:uid:1:569198
@@ -62,7 +62,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// 
         /// </summary>
         [Newtonsoft.Json.JsonProperty("evseId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int EvseId { get; set; }
+        public int? EvseId { get; set; }
 
         [Newtonsoft.Json.JsonProperty("chargingProfilePurpose", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
@@ -73,21 +73,21 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// Specifies the stackLevel for which charging profiles will be cleared, if they meet the other criteria in the request.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("stackLevel", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int StackLevel { get; set; }
+        public int? StackLevel { get; set; }
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.3.1.0 (Newtonsoft.Json v9.0.0.0)")]
     public partial class ClearChargingProfileRequest
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>The Id of the charging profile to clear.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("chargingProfileId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int ChargingProfileId { get; set; }
+        public int? ChargingProfileId { get; set; }
 
         [Newtonsoft.Json.JsonProperty("chargingProfileCriteria", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public ClearChargingProfileType ChargingProfileCriteria { get; set; }
+        public ClearChargingProfileType? ChargingProfileCriteria { get; set; }
     }
 }

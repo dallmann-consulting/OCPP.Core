@@ -67,7 +67,7 @@ namespace OCPP.Core.Server
                             {
                                 // read complete message into byte array
                                 byte[] bMessage = memStream.ToArray();
-                                // reset memory stream für next message
+                                // reset memory stream for next message
                                 memStream = new MemoryStream(buffer.Length);
 
                                 string ocppMessage = UTF8Encoding.UTF8.GetString(bMessage);
@@ -75,7 +75,7 @@ namespace OCPP.Core.Server
                                 // write message (async) to dump directory
                                 _ = Task.Run(() =>
                                 {
-                                    DumpMessage("ocpp20-in", ocppMessage);
+                                    DumpMessage("ocpp201-in", ocppMessage);
                                 });
 
                                 Match match = Regex.Match(ocppMessage, MessageRegExp);
@@ -98,7 +98,7 @@ namespace OCPP.Core.Server
                                     if (msgIn.MessageType == "2")
                                     {
                                         // Request from chargepoint to OCPP server
-                                        OCPPMessage msgOut = controller20.ProcessRequest(msgIn);
+                                        OCPPMessage msgOut = controller20.ProcessRequest(msgIn, this);
 
                                         // Send OCPP message with optional logging/dump
                                         await SendOcpp20Message(msgOut, logger, chargePointStatus);
@@ -389,7 +389,7 @@ namespace OCPP.Core.Server
             // write message (async) to dump directory
             _ = Task.Run(() =>
             {
-                DumpMessage("ocpp16-out", ocppTextMessage);
+                DumpMessage("ocpp201-out", ocppTextMessage);
             });
 
 

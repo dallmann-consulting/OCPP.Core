@@ -67,7 +67,7 @@ namespace OCPP.Core.Server
                             {
                                 // read complete message into byte array
                                 byte[] bMessage = memStream.ToArray();
-                                // reset memory stream für next message
+                                // reset memory stream for next message
                                 memStream = new MemoryStream(buffer.Length);
 
                                 string ocppMessage = UTF8Encoding.UTF8.GetString(bMessage);
@@ -98,7 +98,7 @@ namespace OCPP.Core.Server
                                     if (msgIn.MessageType == "2")
                                     {
                                         // Request from chargepoint to OCPP server
-                                        OCPPMessage msgOut = controller16.ProcessRequest(msgIn);
+                                        OCPPMessage msgOut = controller16.ProcessRequest(msgIn, this);
 
                                         // Send OCPP message with optional logging/dump
                                         await SendOcpp16Message(msgOut, logger, chargePointStatus);

@@ -18,20 +18,19 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
+using OCPP.Core.Server.Extensions.Interfaces;
 using OCPP.Core.Server.Messages_OCPP16;
 
 namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        public string HandleStartTransaction(OCPPMessage msgIn, OCPPMessage msgOut)
+        public string HandleStartTransaction(OCPPMessage msgIn, OCPPMessage msgOut, OCPPMiddleware ocppMiddleware)
         {
             string errorCode = null;
             StartTransactionResponse startTransactionResponse = new StartTransactionResponse();
@@ -52,17 +51,33 @@ namespace OCPP.Core.Server
                 startTransactionResponse.IdTagInfo.ParentIdTag = string.Empty;
                 startTransactionResponse.IdTagInfo.ExpiryDate = MaxExpiryDate;
 
-                if (string.IsNullOrWhiteSpace(idTag))
+                bool? externalAuthResult = null;
+                try
                 {
-                    // no RFID-Tag => accept request
-                    startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-                    Logger.LogInformation("StartTransaction => no charge tag => Status: {0}", startTransactionResponse.IdTagInfo.Status);
+                    externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.StartStransaction, idTag, ChargePointStatus.Id, connectorId, string.Empty, string.Empty);
+                }
+                catch (Exception exp)
+                {
+                    Logger.LogError(exp, "StartTransaction => Exception from external authorization: {0}", exp.Message);
+                }
+
+                if (externalAuthResult.HasValue)
+                {
+                    if (externalAuthResult.Value)
+                    {
+                        startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
+                    }
+                    else
+                    {
+                        startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
+                    }
+                    Logger.LogInformation("StartTransaction => Extension auth. : Charge tag='{0}' => Status: {1}", idTag, startTransactionResponse.IdTagInfo.Status);
                 }
                 else
                 {
                     try
                     {
-                        
+
                         if (ct != null)
                         {
                             if (ct.ExpiryDate.HasValue) startTransactionResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
@@ -99,7 +114,7 @@ namespace OCPP.Core.Server
                             startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
                         }
 
-                        Logger.LogInformation("StartTransaction => Charge tag='{0}' => Status: {1}", idTag, startTransactionResponse.IdTagInfo.Status);
+                        Logger.LogInformation("StartTransaction => Internal auth. : Charge tag='{0}' => Status: {1}", idTag, startTransactionResponse.IdTagInfo.Status);
                     }
                     catch (Exception exp)
                     {
@@ -112,6 +127,7 @@ namespace OCPP.Core.Server
                 {
                     // Update meter value in db connector status 
                     UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), startTransactionRequest.Timestamp, (double)startTransactionRequest.MeterStart / 1000, startTransactionRequest.Timestamp);
+                    UpdateMemoryConnectorStatus(connectorId, (double)startTransactionRequest.MeterStart / 1000, startTransactionRequest.Timestamp, null, null);
                 }
 
                 if (startTransactionResponse.IdTagInfo.Status == IdTagInfoStatus.Accepted)
@@ -121,7 +137,7 @@ namespace OCPP.Core.Server
                         Transaction transaction = new Transaction();
                         transaction.ChargePointId = ChargePointStatus?.Id;
                         transaction.ConnectorId = startTransactionRequest.ConnectorId;
-                        transaction.StartTagId = ct.TagId;
+                        transaction.StartTagId = idTag;
                         transaction.StartTime = startTransactionRequest.Timestamp.UtcDateTime;
                         transaction.MeterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh
                         transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();

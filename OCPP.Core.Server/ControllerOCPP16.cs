@@ -52,7 +52,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Processes the charge point message and returns the answer message
         /// </summary>
-        public OCPPMessage ProcessRequest(OCPPMessage msgIn)
+        public OCPPMessage ProcessRequest(OCPPMessage msgIn, OCPPMiddleware ocppMiddleware)
         {
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "3";
@@ -71,15 +71,15 @@ namespace OCPP.Core.Server
                     break;
 
                 case "Authorize":
-                    errorCode = HandleAuthorize(msgIn, msgOut);
+                    errorCode = HandleAuthorize(msgIn, msgOut, ocppMiddleware);
                     break;
 
                 case "StartTransaction":
-                    errorCode = HandleStartTransaction(msgIn, msgOut);
+                    errorCode = HandleStartTransaction(msgIn, msgOut, ocppMiddleware);
                     break;
 
                 case "StopTransaction":
-                    errorCode = HandleStopTransaction(msgIn, msgOut);
+                    errorCode = HandleStopTransaction(msgIn, msgOut, ocppMiddleware);
                     break;
 
                 case "MeterValues":

@@ -201,4 +201,13 @@
   <data name="UsernamePlaceholder" xml:space="preserve">
     <value>Charge point username</value>
   </data>
+  <data name="Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="TitleDelete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="DialogDelete" xml:space="preserve">
+    <value>Do you want to delete this charging station? ALL its Transactions will be deleted!</value>
+  </data>
 </root>

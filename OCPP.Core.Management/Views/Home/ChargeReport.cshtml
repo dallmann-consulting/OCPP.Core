@@ -53,7 +53,7 @@ else
                 <b>@String.Format(Localizer["ReportTitle"].Value, @Model.StartDate.ToShortDateString(), @Model.StopDate.ToShortDateString())</b>
             </div>
             <div class="col-sm-1 align-self-end">
-                @Localizer["ExpSummery"]&nbsp;
+                @Localizer["ExpSummary"]&nbsp;
             </div>
             <div class="col-sm-1 align-self-end">
                 <a href="@Url.Action("ChargeReportCsv", new { startDate = Model.StartDate.ToString("yyyy-MM-dd"), stopDate = Model.StopDate.ToString("yyyy-MM-dd") })" title="@Localizer["ExpSummaryCSVTooltipp"]">

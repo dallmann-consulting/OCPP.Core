@@ -49,7 +49,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         public partial class ClearedChargingLimitRequest
     {
             [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public CustomDataType CustomData { get; set; }
+            public CustomDataType? CustomData { get; set; }
 
             [Newtonsoft.Json.JsonProperty("chargingLimitSource", Required = Newtonsoft.Json.Required.Always)]
             [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -59,6 +59,6 @@ namespace OCPP.Core.Server.Messages_OCPP20
             /// <summary>EVSE Identifier.
             /// </summary>
             [Newtonsoft.Json.JsonProperty("evseId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public int EvseId { get; set; }
+            public int? EvseId { get; set; }
         }
     }

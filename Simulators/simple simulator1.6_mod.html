@@ -356,7 +356,8 @@
 			if (ssid == null)
 				MV = JSON.stringify([2, id, "MeterValues", {"connectorId": 2, "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": val, "measurand": "Energy.Active.Import.Register"},{"value": "800", "measurand": "Power.Active.Import"},{"value": "47", "measurand": "SoC"}]}]}]);
 			else
-				MV = JSON.stringify([2, id, "MeterValues", {"connectorId": 2, "transactionId": ssid, "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": val, "measurand": "Energy.Active.Import.Register"},{"value": "800", "measurand": "Power.Active.Import"},{"value": "47", "measurand": "SoC"}]}]}]);
+				//MV = JSON.stringify([2, id, "MeterValues", {"connectorId": 2, "transactionId": parseInt(ssid), "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": val, "measurand": "Energy.Active.Import.Register"},{"value": "800", "measurand": "Power.Active.Import"},{"value": "47", "measurand": "SoC"}]}]}]);
+				MV = JSON.stringify([2, id, "MeterValues", {"connectorId": 2, "transactionId": parseInt(ssid), "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": val, "measurand": "Energy.Active.Import.Register"}]}]}]);
             _websocket.send(MV);
 
         });

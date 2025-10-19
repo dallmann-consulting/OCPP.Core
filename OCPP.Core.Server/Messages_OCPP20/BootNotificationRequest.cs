@@ -84,7 +84,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class ChargingStationType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>Device. Serial_ Number. Serial_ Number
         /// urn:x-oca:ocpp:uid:1:569324
@@ -92,7 +92,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// </summary>
         [Newtonsoft.Json.JsonProperty("serialNumber", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.StringLength(25)]
-        public string SerialNumber { get; set; }
+        public string? SerialNumber { get; set; }
 
         /// <summary>Device. Model. CI20_ Text
         /// urn:x-oca:ocpp:uid:1:569325
@@ -104,7 +104,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         public string Model { get; set; }
 
         [Newtonsoft.Json.JsonProperty("modem", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public ModemType Modem { get; set; }
+        public ModemType? Modem { get; set; }
 
         /// <summary>Identifies the vendor (not necessarily in a unique manner).
         /// </summary>
@@ -118,7 +118,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// </summary>
         [Newtonsoft.Json.JsonProperty("firmwareVersion", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.StringLength(50)]
-        public string FirmwareVersion { get; set; }
+        public string? FirmwareVersion { get; set; }
 
 
     }
@@ -131,7 +131,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class ModemType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>Wireless_ Communication_ Module. ICCID. CI20_ Text
         /// urn:x-oca:ocpp:uid:1:569327
@@ -139,7 +139,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// </summary>
         [Newtonsoft.Json.JsonProperty("iccid", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.StringLength(20)]
-        public string Iccid { get; set; }
+        public string? Iccid { get; set; }
 
         /// <summary>Wireless_ Communication_ Module. IMSI. CI20_ Text
         /// urn:x-oca:ocpp:uid:1:569328
@@ -147,7 +147,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// </summary>
         [Newtonsoft.Json.JsonProperty("imsi", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.StringLength(20)]
-        public string Imsi { get; set; }
+        public string? Imsi { get; set; }
 
 
     }
@@ -156,7 +156,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class BootNotificationRequest
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("chargingStation", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]

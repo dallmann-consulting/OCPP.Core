@@ -17,19 +17,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Schema;
 using OCPP.Core.Database;
-using OCPP.Core.Server.Messages_OCPP16;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace OCPP.Core.Server
 {
@@ -148,20 +146,28 @@ namespace OCPP.Core.Server
                     connectorStatus.ConnectorId = connectorId;
                     Logger.LogTrace("UpdateConnectorStatus => Creating new DB-ConnectorStatus: ID={0} / Connector={1}", connectorStatus.ChargePointId, connectorStatus.ConnectorId);
                     DbContext.Add<ConnectorStatus>(connectorStatus);
+                    DbContext.SaveChanges();
                 }
 
                 if (!string.IsNullOrEmpty(status))
                 {
-                    connectorStatus.LastStatus = status;
-                    connectorStatus.LastStatusTime = ((statusTime.HasValue) ? statusTime.Value : DateTimeOffset.UtcNow).DateTime;
+                    DateTime dbTime = ((statusTime.HasValue) ? statusTime.Value : DateTimeOffset.UtcNow).DateTime;
+                    DbContext.ConnectorStatuses.Where(cs => cs.ChargePointId == ChargePointStatus.Id && cs.ConnectorId == connectorId)
+                        .ExecuteUpdate(s => s
+                            .SetProperty(cs => cs.LastStatus, status)
+                            .SetProperty(cs => cs.LastStatusTime, dbTime)
+                            );
                 }
 
                 if (meter.HasValue)
                 {
-                    connectorStatus.LastMeter = meter.Value;
-                    connectorStatus.LastMeterTime = ((meterTime.HasValue) ? meterTime.Value : DateTimeOffset.UtcNow).DateTime;
+                    DateTime dbTime = ((meterTime.HasValue) ? meterTime.Value : DateTimeOffset.UtcNow).DateTime;
+                    DbContext.ConnectorStatuses.Where(cs => cs.ChargePointId == ChargePointStatus.Id && cs.ConnectorId == connectorId)
+                        .ExecuteUpdate(s => s
+                            .SetProperty(cs => cs.LastMeter, meter.Value)
+                            .SetProperty(cs => cs.LastMeterTime, dbTime)
+                            );
                 }
-                DbContext.SaveChanges();
                 Logger.LogInformation("UpdateConnectorStatus => Save ConnectorStatus: ID={0} / Connector={1} / Status={2} / Meter={3}", connectorStatus.ChargePointId, connectorId, status, meter);
                 return true;
             }
@@ -171,6 +177,61 @@ namespace OCPP.Core.Server
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Set/Update in memory connector status with meter (and more) values
+        /// </summary>
+        protected void UpdateMemoryConnectorStatus(int connectorId, double meterKWH, DateTimeOffset meterTime, double? currentChargeKW, double? stateOfCharge)
+        {
+            // Values <1 have no meaning => null
+            if (currentChargeKW.HasValue && currentChargeKW < 0) currentChargeKW = null;
+            if (stateOfCharge.HasValue && stateOfCharge < 0) stateOfCharge = null;
+
+            OnlineConnectorStatus ocs = null;
+            bool isNew = false;
+            if (ChargePointStatus.OnlineConnectors.ContainsKey(connectorId))
+            {
+                ocs = ChargePointStatus.OnlineConnectors[connectorId];
+            }
+            else
+            {
+                ocs = new OnlineConnectorStatus();
+                isNew = true; // append later when all values are correct
+            }
+
+            ocs.ChargeRateKW = currentChargeKW;
+            if (meterKWH >= 0 && !currentChargeKW.HasValue &&
+                ocs.MeterKWH.HasValue && ocs.MeterKWH <= meterKWH &&
+                ocs.MeterValueDate < meterTime)
+            {
+                try
+                {
+                    // Chargepoint sends no power (kW) => calculate from meter and time (from last sample)
+                    double diffMeter = meterKWH - ocs.MeterKWH.Value;
+                    ocs.ChargeRateKW = diffMeter / ((meterTime.Subtract(ocs.MeterValueDate).TotalSeconds) / (60 * 60));
+                    Logger.LogDebug("MeterValues => Calculated power for ChargePoint={0} / Connector={1} / Power: {2}kW", ChargePointStatus?.Id, connectorId, ocs.ChargeRateKW);
+                }
+                catch (Exception exp)
+                {
+                    Logger.LogWarning("MeterValues => Error calculating power for ChargePoint={0} / Connector={1}: {2}", ChargePointStatus?.Id, connectorId, exp.ToString());
+                }
+            }
+            ocs.MeterKWH = meterKWH;
+            ocs.MeterValueDate = meterTime;
+            ocs.SoC = stateOfCharge;
+
+            if (isNew)
+            {
+                if (ChargePointStatus.OnlineConnectors.TryAdd(connectorId, ocs))
+                {
+                    Logger.LogTrace("MeterValues => Set OnlineConnectorStatus for ChargePoint={0} / Connector={1} / meterKWH: {2}", ChargePointStatus?.Id, connectorId, meterKWH);
+                }
+                else
+                {
+                    Logger.LogError("MeterValues => Error adding new OnlineConnectorStatus for ChargePoint={0} / Connector={1} / meterKWH: {2}", ChargePointStatus?.Id, connectorId, meterKWH);
+                }
+            }
         }
 
         /// <summary>

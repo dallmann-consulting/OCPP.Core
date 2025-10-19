@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-06/schema#",
-  "$id": "urn:OCPP:Cp:2:2020:3:ResetRequest",
+  "$id": "urn:OCPP:Cp:2:2020:3:ResetResponse",
   "comment": "OCPP 2.0.1 FINAL",
   "definitions": {
     "CustomDataType": {
@@ -17,14 +17,39 @@
         "vendorId"
       ]
     },
-    "ResetEnumType": {
-      "description": "This contains the type of reset that the Charging Station or EVSE should perform.\r\n",
-      "javaType": "ResetEnum",
+    "ResetStatusEnumType": {
+      "description": "This indicates whether the Charging Station is able to perform the reset.\r\n",
+      "javaType": "ResetStatusEnum",
       "type": "string",
       "additionalProperties": false,
       "enum": [
-        "Immediate",
-        "OnIdle"
+        "Accepted",
+        "Rejected",
+        "Scheduled"
+      ]
+    },
+    "StatusInfoType": {
+      "description": "Element providing more information about the status.\r\n",
+      "javaType": "StatusInfo",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "customData": {
+          "$ref": "#/definitions/CustomDataType"
+        },
+        "reasonCode": {
+          "description": "A predefined code for the reason why the status is returned in this response. The string is case-insensitive.\r\n",
+          "type": "string",
+          "maxLength": 20
+        },
+        "additionalInfo": {
+          "description": "Additional text to provide detailed information.\r\n",
+          "type": "string",
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "reasonCode"
       ]
     }
   },
@@ -34,15 +59,14 @@
     "customData": {
       "$ref": "#/definitions/CustomDataType"
     },
-    "type": {
-      "$ref": "#/definitions/ResetEnumType"
+    "status": {
+      "$ref": "#/definitions/ResetStatusEnumType"
     },
-    "evseId": {
-      "description": "This contains the ID of a specific EVSE that needs to be reset, instead of the entire Charging Station.\r\n",
-      "type": "integer"
+    "statusInfo": {
+      "$ref": "#/definitions/StatusInfoType"
     }
   },
   "required": [
-    "type"
+    "status"
   ]
 }

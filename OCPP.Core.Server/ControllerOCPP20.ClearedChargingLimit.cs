@@ -51,7 +51,7 @@ namespace OCPP.Core.Server
                 {
                     // Known charge station
                     source = clearedChargingLimitRequest.ChargingLimitSource.ToString();
-                    connectorId = clearedChargingLimitRequest.EvseId;
+                    if (clearedChargingLimitRequest.EvseId.HasValue) connectorId = clearedChargingLimitRequest.EvseId.Value;
                     Logger.LogInformation("ClearedChargingLimit => Source={0}", source);
                 }
                 else

@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2025 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@ namespace OCPP.Core.Management.Controllers
         private readonly IStringLocalizer<HomeController> _localizer;
 
         public HomeController(
-            UserManager userManager,
+            IUserManager userManager,
             IStringLocalizer<HomeController> localizer,
             ILoggerFactory loggerFactory,
             IConfiguration config,
@@ -278,11 +278,13 @@ namespace OCPP.Core.Management.Controllers
                                         onlineConnectorStatus != null)
                                     {
                                         string currentCharge = string.Empty;
-                                        if (onlineConnectorStatus.ChargeRateKW != null)
+                                        if (onlineConnectorStatus.ChargeRateKW != null &&
+                                            onlineConnectorStatus.ChargeRateKW >= 0)
                                         {
                                             currentCharge = string.Format("{0:0.0}kW", onlineConnectorStatus.ChargeRateKW.Value);
                                         }
-                                        if (onlineConnectorStatus.SoC != null)
+                                        if (onlineConnectorStatus.SoC != null &&
+                                            onlineConnectorStatus.SoC >= 0)
                                         {
                                             if (!string.IsNullOrWhiteSpace(currentCharge)) currentCharge += " | ";
                                             currentCharge += string.Format("{0:0}%", onlineConnectorStatus.SoC.Value);

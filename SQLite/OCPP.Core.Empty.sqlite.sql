@@ -40,18 +40,20 @@ CREATE TABLE IF NOT EXISTS "Transactions" (
 	"MeterStop"	REAL,
 	"StopReason"	TEXT,
 	PRIMARY KEY("TransactionId" AUTOINCREMENT)
+	FOREIGN KEY(ChargePointId) REFERENCES ChargePoint(ChargePointId)
 );
 
 /**** New with V1.1.0 ****/
 CREATE TABLE IF NOT EXISTS "ConnectorStatus" (
 	"ChargePointId"	TEXT NOT NULL,
-	"ConnectorId" INTEGER,
+	"ConnectorId"	INTEGER,
 	"ConnectorName"	TEXT,
 	"LastStatus"	TEXT,
 	"LastStatusTime"	TEXT,
 	"LastMeter"	TEXT,
 	"LastMeterTime"	TEXT,
-	PRIMARY KEY("ChargePointId", "ConnectorId")
+	PRIMARY KEY("ChargePointId","ConnectorId")
+	FOREIGN KEY(ChargePointId) REFERENCES ChargePoint(ChargePointId)
 );
 CREATE VIEW IF NOT EXISTS "ConnectorStatusView"
 AS
@@ -63,6 +65,18 @@ WHERE  (t.TransactionId IS NULL) OR
                       (SELECT MAX(TransactionId) AS Expr1
                        FROM     Transactions
                        GROUP BY ChargePointId, ConnectorId));
-/**** End ****/
+/**** New with V1.5.0 ****/
+CREATE UNIQUE INDEX IF NOT EXISTS "PK_ChargePointId" ON "ChargePoint" (
+	"ChargePointId"	ASC
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "PK_ChargeTagId" ON "ChargeTags" (
+	"TagId"	ASC
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "PK_TransactionId" ON "Transactions" (
+	"TransactionId"
+);
+CREATE INDEX IF NOT EXISTS "IX_Transaction_UID" ON "Transactions" (
+	"Uid"	ASC
+);
 
 COMMIT;

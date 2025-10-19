@@ -131,8 +131,17 @@
             </div>
             <div class="row">
                 <div class="col-sm-2">
-                    <button type="submit" class="btn btn-primary">@Localizer[(Model.CurrentId == "@") ? "SaveNew" : "Save"].Value</button>
+                    <button type="submit" class="btn btn-primary"><i class=" fas fa-save"></i>&nbsp;@Localizer[(Model.CurrentId == "@") ? "SaveNew" : "Save"].Value</button>
                 </div>
+                <div class="col-sm-2">
+                    <button type="button" class="btn btn-secondary" id="btnBack" onclick="history.back()">@Localizer["Back"].Value</button>
+                </div>
+                @if (Model.CurrentId != "@")
+                {
+                    <div class="col-sm-2">
+                        <button type="button" class="btn btn-warning" id="btnDelete" onclick="DeleteChargepoint()"><i class="fas fa-trash"></i>&nbsp;@Localizer["Delete"].Value</button>
+                    </div>
+                }
             </div>
             @if (!string.IsNullOrWhiteSpace(Model.ChargePointId))
             {
@@ -156,6 +165,7 @@
                 </div>
             }
         </div>
+        <input type="hidden" name="action" id="hidAction" value="" />
     }
     <br />
 
@@ -268,6 +278,31 @@
                             };
                                 xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/UnlockConnector/" + Uri.EscapeDataString(Model.ChargePointId)))", true);
                             xmlhttp.send();
+                        }
+                    }, {
+                        id: 'btnDialogCancel',
+                        label: '@Localizer["Cancel"]',
+                        action: function (dialogRef) {
+                            dialogRef.close();
+                        }
+                    }]
+                });
+                dialog.open();
+            }
+            
+            function DeleteChargepoint() {
+                var dialog = new BootstrapDialog({
+                    title: '@Localizer["TitleDelete"]',
+                    message: '@Localizer["DialogDelete"]',
+                    //spinicon: 'fa fa-spinner fa-fw',
+                    buttons: [{
+                        id: 'btnDialogReset',
+                        label: '@Localizer["TitleDelete"]',
+                        icon: 'fas fa-trash',
+                        //autospin: true,
+                        action: function (dialogRef) {
+                            $("#hidAction").val('Delete');
+                            $("form").submit();
                         }
                     }, {
                         id: 'btnDialogCancel',
