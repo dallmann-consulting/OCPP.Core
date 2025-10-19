@@ -50,5 +50,7 @@ namespace OCPP.Core.Management.Models
 
         [StringLength(100)]
         public string ClientCertThumb { get; set; }
+
+        public Dictionary<string, (string, bool)> DeviceConfiguration { get; set; } = new Dictionary<string, (string, bool)>();
     }
 }

@@ -136,6 +136,10 @@ namespace OCPP.Core.Server
                     HandleClearChargingProfile(msgIn, msgOut);
                     break;
 
+                case "GetConfiguration":
+                    HandleGetConfiguration(msgIn, msgOut);
+                    break;
+
                 default:
                     WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");
                     break;
