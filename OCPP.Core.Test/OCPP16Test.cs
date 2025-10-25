@@ -37,11 +37,15 @@ namespace OCPP.Core.Test
 
                     Console.WriteLine($"Connecting with unknown chargepoint: {_serverUrl + "/OCPP/unknown" + _chargePointId}");
                     _webSocket.ConnectAsync(new Uri(_serverUrl + "/OCPP/unknown" + _chargePointId), CancellationToken.None).Wait();
+                    Console.BackgroundColor = ConsoleColor.Red;
                     Console.WriteLine("BAD: Connected successful with unknown chargepoint");
+                    Console.BackgroundColor = ConsoleColor.Black;
                 }
                 catch
                 {
+                    Console.BackgroundColor = ConsoleColor.Green;
                     Console.WriteLine("Good: Connection failed with unknown chargepoint");
+                    Console.BackgroundColor = ConsoleColor.Black;
                 }
                 finally
                 {
@@ -77,11 +81,15 @@ namespace OCPP.Core.Test
                 /* 4.  Test authorization with unknown tag => it should fail */
                 if (SendAndVerifyAuthorize("fail_" + _chargeTagId).Result)
                 {
+                    Console.BackgroundColor = ConsoleColor.Red;
                     Console.WriteLine("BAD: Authorize with unknown charge tag succeded");
+                    Console.BackgroundColor = ConsoleColor.Black;
                 }
                 else
                 {
+                    Console.BackgroundColor = ConsoleColor.Green;
                     Console.WriteLine("GOOD: Authorize with unknown charge tag rejected");
+                    Console.BackgroundColor = ConsoleColor.Black;
                 }
 
 
@@ -124,16 +132,55 @@ namespace OCPP.Core.Test
                 SetChargingLimit(_chargePointId, 1, "1000W");
                 ClearChargingLimit(_chargePointId, 1);
 
+                /* 11.  Remote Start/Stop Transaction  */
+                if (RemoteStartTransaction(_chargePointId, 1, "fail_" + _chargeTagId))
+                {
+                    Console.BackgroundColor = ConsoleColor.Red;
+                    Console.WriteLine("BAD: RemoteStartTransaction with unknown charge tag succeded");
+                    Console.BackgroundColor = ConsoleColor.Black;
+                }
+                else
+                {
+                    Console.BackgroundColor = ConsoleColor.Green;
+                    Console.WriteLine("GOOD: RemoteStartTransaction with unknown charge tag rejected");
+                    Console.BackgroundColor = ConsoleColor.Black;
+                }
+                if (RemoteStopTransaction(_chargePointId, 1))
+                {
+                    Console.BackgroundColor = ConsoleColor.Red;
+                    Console.WriteLine("BAD: RemoteStopTransaction with no open transaction succeded");
+                    Console.BackgroundColor = ConsoleColor.Black;
+                }
+                else
+                {
+                    Console.BackgroundColor = ConsoleColor.Green;
+                    Console.WriteLine("GOOD: RemoteStopTransaction with no open transaction rejected");
+                    Console.BackgroundColor = ConsoleColor.Black;
+                }
+
+                if (RemoteStartTransaction(_chargePointId, 1, _chargeTagId))
+                {
+                    int transactionId = SendAndVerifyStartTransaction(1, _chargeTagId).Result;
+                    if (transactionId >= 0)
+                    {
+                        if (RemoteStopTransaction(_chargePointId, 1))
+                        {
+                            SendAndVerifyStopTransaction(1, transactionId).Wait();
+                        }
+                    }
+                }
 
                 Console.WriteLine("Simulation ended. Press enter to exit.");
                 Console.ReadLine();
 
-                /* 10.  Close connection  */
+                /* 12.  Close connection  */
                 _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Simulation end", CancellationToken.None).Wait();
             }
             catch (Exception ex)
             {
+                Console.BackgroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Error in Test: {ex.ToString()}");
+                Console.BackgroundColor = ConsoleColor.Black;
                 Console.ReadLine();
             }
         }
@@ -159,7 +206,9 @@ namespace OCPP.Core.Test
                 Console.WriteLine($"BootNotification failed: Status {responsePayload?["status"]}");
                 return false;
             }
+            Console.BackgroundColor = ConsoleColor.Green;
             Console.WriteLine("BootNotification successful: Status accepted");
+            Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine();
             return true;
         }
@@ -174,7 +223,9 @@ namespace OCPP.Core.Test
                 Console.WriteLine("Heartbeat failed: Answer contains no 'currentTime' field");
                 return false;
             }
+            Console.BackgroundColor = ConsoleColor.Green;
             Console.WriteLine("Heartbeat successful: CurrentTime received");
+            Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine();
             return true;
         }
@@ -193,7 +244,9 @@ namespace OCPP.Core.Test
                 Console.WriteLine($"Authorize failed: Status {idTagInfo?["status"]}");
                 return false;
             }
+            Console.BackgroundColor = ConsoleColor.Green;
             Console.WriteLine("Authorize successful: Status accepted");
+            Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine();
             return true;
         }
@@ -216,7 +269,10 @@ namespace OCPP.Core.Test
                 return -1;
             }
             int transactionId = responsePayload?["transactionId"]?.Value<int>() ?? throw new Exception("No transactionId in StartTransaction answer");
+            Console.BackgroundColor = ConsoleColor.Green;
             Console.WriteLine($"StartTransaction successful: transactionId {transactionId}");
+            Console.BackgroundColor = ConsoleColor.Black;
+
             Console.WriteLine();
             return transactionId;
         }
@@ -239,7 +295,9 @@ namespace OCPP.Core.Test
                 Console.WriteLine($"StopTransaction failed: Status {idTagInfo["status"]}");
                 return false;
             }
+            Console.BackgroundColor = ConsoleColor.Green;
             Console.WriteLine("StopTransaction successful");
+            Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine();
             return true;
         }
@@ -278,7 +336,9 @@ namespace OCPP.Core.Test
                 Console.WriteLine("MeterValues answer contains unexpected data");
                 return false;
             }
+            Console.BackgroundColor = ConsoleColor.Green;
             Console.WriteLine("SendMeterValues successful");
+            Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine();
             return true;
         }
@@ -303,7 +363,9 @@ namespace OCPP.Core.Test
                 Console.WriteLine("StatusNotification answer contains unexpected data");
                 return false;
             }
+            Console.BackgroundColor = ConsoleColor.Green;
             Console.WriteLine($"StatusNotification ({status}) successful");
+            Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine();
             return true;
         }
@@ -323,7 +385,9 @@ namespace OCPP.Core.Test
                 Console.WriteLine($"DataTransfer failed: Status {responsePayload?["status"]}");
                 return false;
             }
+            Console.BackgroundColor = ConsoleColor.Green;
             Console.WriteLine("DataTransfer successful: Status accepted");
+            Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine();
             return true;
         }
@@ -340,7 +404,9 @@ namespace OCPP.Core.Test
                     string result = response.Content.ReadAsStringAsync().Result;
                     if (result.Contains("\"Accepted\""))
                     {
+                        Console.BackgroundColor = ConsoleColor.Green;
                         Console.WriteLine($"Success: API Reset result JSON: {result}");
+                        Console.BackgroundColor = ConsoleColor.Black;
                     }
                     else
                     {
@@ -371,7 +437,9 @@ namespace OCPP.Core.Test
                     string result = response.Content.ReadAsStringAsync().Result;
                     if (result.Contains("\"Unlocked"))
                     {
+                        Console.BackgroundColor = ConsoleColor.Green;
                         Console.WriteLine($"Success: API Unlock result JSON: {result}");
+                        Console.BackgroundColor = ConsoleColor.Black;
                     }
                     else
                     {
@@ -402,7 +470,9 @@ namespace OCPP.Core.Test
                     string result = response.Content.ReadAsStringAsync().Result;
                     if (result.Contains("\"Accepted\""))
                     {
+                        Console.BackgroundColor = ConsoleColor.Green;
                         Console.WriteLine($"Success: API SetChargingLimit result JSON: {result}");
+                        Console.BackgroundColor = ConsoleColor.Black;
                     }
                     else
                     {
@@ -433,7 +503,9 @@ namespace OCPP.Core.Test
                     string result = response.Content.ReadAsStringAsync().Result;
                     if (result.Contains("\"Accepted\""))
                     {
+                        Console.BackgroundColor = ConsoleColor.Green;
                         Console.WriteLine($"Success: API ClearChargingLimit result JSON: {result}");
+                        Console.BackgroundColor = ConsoleColor.Black;
                     }
                     else
                     {
@@ -450,6 +522,76 @@ namespace OCPP.Core.Test
                 Console.WriteLine($"ClearChargingLimit API request failed: {ex.ToString()}");
             }
             Console.WriteLine();
+        }
+
+        private static bool RemoteStartTransaction(string chargePointId, int connectorId, string tagId)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/RemoteStartTransaction/{chargePointId}/{connectorId}/{tagId}")).Result;
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string result = response.Content.ReadAsStringAsync().Result;
+                    if (result.Contains("\"Accepted\""))
+                    {
+                        Console.BackgroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"Success: API RemoteStartTransaction result JSON: {result}");
+                        Console.BackgroundColor = ConsoleColor.Black;
+                        return true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: API RemoteStartTransaction result JSON: {result}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"RemoteStartTransaction API request failed: httpStatus={response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"RemoteStartTransaction API request failed: {ex.ToString()}");
+            }
+            Console.WriteLine();
+            return false;
+        }
+
+        private static bool RemoteStopTransaction(string chargePointId, int connectorId)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/RemoteStopTransaction/{chargePointId}/{connectorId}")).Result;
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string result = response.Content.ReadAsStringAsync().Result;
+                    if (result.Contains("\"Accepted\""))
+                    {
+                        Console.BackgroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"Success: API RemoteStopTransaction result JSON: {result}");
+                        Console.BackgroundColor = ConsoleColor.Black;
+                        return true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: API RemoteStopTransaction result JSON: {result}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"RemoteStopTransaction API request failed: httpStatus={response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"RemoteStopTransaction API request failed: {ex.ToString()}");
+            }
+            Console.WriteLine();
+            return false;
         }
 
         private static void ReadServerStatus()
@@ -522,6 +664,9 @@ namespace OCPP.Core.Test
             return await _responseTcs.Task;
         }
 
+
+
+
         private static async Task ReceiveMessages()
         {
             var buffer = new byte[4096];
@@ -565,6 +710,12 @@ namespace OCPP.Core.Test
                                 case "ClearChargingProfile":
                                     await SendCallResult(uniqueId, new { status = "Accepted" });
                                     break;
+                                case "RemoteStartTransaction":
+                                    await SendCallResult(uniqueId, new { status = "Accepted" });
+                                    break;
+                                case "RemoteStopTransaction":
+                                    await SendCallResult(uniqueId, new { status = "Accepted" });
+                                    break;
                                 default:
                                     Console.WriteLine($"Error: Unknown incoming message: {action}");
                                     break;
@@ -573,7 +724,9 @@ namespace OCPP.Core.Test
                     }
                     catch (Exception ex)
                     {
+                        Console.BackgroundColor = ConsoleColor.Red;
                         Console.WriteLine($"Error processing incoming message: {ex.Message}");
+                        Console.BackgroundColor = ConsoleColor.Black;
                     }
                 }
                 else if (result.MessageType == WebSocketMessageType.Close)

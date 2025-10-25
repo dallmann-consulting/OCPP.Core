@@ -52,7 +52,7 @@ namespace OCPP.Core.Server.Extensions.Interfaces
         /// <summary>
         /// The authorization request is initiated by an OCPP StartTransaction message
         /// </summary>
-        StartStransaction,
+        StartTransaction,
 
         /// <summary>
         /// The authorization request is initiated by an OCPP StopTransaction message

@@ -45,83 +45,8 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("StartTransaction => Message deserialized");
 
                 string idTag = CleanChargeTagId(startTransactionRequest.IdTag, Logger);
-                ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
-                connectorId = startTransactionRequest.ConnectorId;
 
-                startTransactionResponse.IdTagInfo.ParentIdTag = string.Empty;
-                startTransactionResponse.IdTagInfo.ExpiryDate = MaxExpiryDate;
-
-                bool? externalAuthResult = null;
-                try
-                {
-                    externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.StartStransaction, idTag, ChargePointStatus.Id, connectorId, string.Empty, string.Empty);
-                }
-                catch (Exception exp)
-                {
-                    Logger.LogError(exp, "StartTransaction => Exception from external authorization: {0}", exp.Message);
-                }
-
-                if (externalAuthResult.HasValue)
-                {
-                    if (externalAuthResult.Value)
-                    {
-                        startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-                    }
-                    else
-                    {
-                        startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                    }
-                    Logger.LogInformation("StartTransaction => Extension auth. : Charge tag='{0}' => Status: {1}", idTag, startTransactionResponse.IdTagInfo.Status);
-                }
-                else
-                {
-                    try
-                    {
-
-                        if (ct != null)
-                        {
-                            if (ct.ExpiryDate.HasValue) startTransactionResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
-                            startTransactionResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
-                            if (ct.Blocked.HasValue && ct.Blocked.Value)
-                            {
-                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
-                            }
-                            else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                            {
-                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
-                            }
-                            else
-                            {
-                                startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-
-                                if (denyConcurrentTx)
-                                {
-                                    // Check that no open transaction with this idTag exists
-                                    Transaction tx = DbContext.Transactions
-                                        .Where(t => !t.StopTime.HasValue && t.StartTagId == ct.TagId)
-                                        .OrderByDescending(t => t.TransactionId)
-                                        .FirstOrDefault();
-
-                                    if (tx != null)
-                                    {
-                                        startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.ConcurrentTx;
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                        }
-
-                        Logger.LogInformation("StartTransaction => Internal auth. : Charge tag='{0}' => Status: {1}", idTag, startTransactionResponse.IdTagInfo.Status);
-                    }
-                    catch (Exception exp)
-                    {
-                        Logger.LogError(exp, "StartTransaction => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
-                        startTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                    }
-                }
+                startTransactionResponse.IdTagInfo = InternalAuthorize(idTag, ocppMiddleware, startTransactionRequest.ConnectorId, AuthAction.StartTransaction, string.Empty, string.Empty, denyConcurrentTx);
 
                 if (connectorId > 0)
                 {

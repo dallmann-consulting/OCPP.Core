@@ -84,7 +84,7 @@ namespace OCPP.Core.Server
                         bool? externalAuthResult = null;
                         try
                         {
-                            externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.StartStransaction, idTag, ChargePointStatus.Id, connectorId, string.Empty, string.Empty);
+                            externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.StartTransaction, idTag, ChargePointStatus.Id, connectorId, string.Empty, string.Empty);
                         }
                         catch (Exception exp)
                         {

@@ -17,15 +17,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Server.Extensions.Interfaces;
 using OCPP.Core.Server.Messages_OCPP20;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace OCPP.Core.Server
 {
@@ -35,6 +35,7 @@ namespace OCPP.Core.Server
         {
             string errorCode = null;
             TransactionEventResponse transactionEventResponse = new TransactionEventResponse();
+            transactionEventResponse.IdTokenInfo = new IdTokenInfoType();
             transactionEventResponse.CustomData = new CustomDataType();
             transactionEventResponse.CustomData.VendorId = VendorId;
 
@@ -79,68 +80,8 @@ namespace OCPP.Core.Server
                     {
                         #region Start Transaction
                         bool denyConcurrentTx = Configuration.GetValue<bool>("DenyConcurrentTx", false);
-                        transactionEventResponse.IdTokenInfo = new IdTokenInfoType();
 
-                        bool? externalAuthResult = null;
-                        try
-                        {
-                            externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.StartStransaction, idTag, ChargePointStatus.Id, connectorId, string.Empty, string.Empty);
-                        }
-                        catch (Exception exp)
-                        {
-                            Logger.LogError(exp, "StartTransaction => Exception from external authorization: {0}", exp.Message);
-                        }
-
-                        if (externalAuthResult.HasValue)
-                        {
-                            if (externalAuthResult.Value)
-                            {
-                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
-                            }
-                            else
-                            {
-                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
-                            }
-                            Logger.LogInformation("StartTransaction => Extension auth. : Charge tag='{0}' => Status: {1}", idTag, transactionEventResponse.IdTokenInfo.Status);
-                        }
-                        else
-                        {
-                            ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
-                            if (ct != null)
-                            {
-                                if (ct.Blocked.HasValue && ct.Blocked.Value)
-                                {
-                                    transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Blocked;
-                                }
-                                else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                                {
-                                    transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Expired;
-                                }
-                                else
-                                {
-                                    transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
-                                }
-                            }
-                            else
-                            {
-                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Unknown;
-                            }
-                        }
-
-                        if (transactionEventResponse.IdTokenInfo.Status == AuthorizationStatusEnumType.Accepted &&
-                            denyConcurrentTx)
-                        {
-                            // Check that no open transaction with this idTag exists
-                            Transaction tx = DbContext.Transactions
-                                .Where(t => !t.StopTime.HasValue && t.StartTagId == idTag)
-                                .OrderByDescending(t => t.TransactionId)
-                                .FirstOrDefault();
-
-                            if (tx != null)
-                            {
-                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.ConcurrentTx;
-                            }
-                        }
+                        transactionEventResponse.IdTokenInfo = InternalAuthorize(idTag, ocppMiddleware, connectorId, AuthAction.StartTransaction, transactionEventRequest.TransactionInfo.TransactionId, string.Empty, denyConcurrentTx);
 
                         Logger.LogInformation("StartTransaction => Charge tag='{0}' => Status: {1}", idTag, transactionEventResponse.IdTokenInfo.Status);
 
@@ -222,7 +163,6 @@ namespace OCPP.Core.Server
                     try
                     {
                         #region End Transaction
-                        transactionEventResponse.IdTokenInfo = new IdTokenInfoType();
 
                         Transaction transaction = DbContext.Transactions
                             .Where(t => t.Uid == transactionEventRequest.TransactionInfo.TransactionId)
@@ -236,76 +176,13 @@ namespace OCPP.Core.Server
                             if (string.IsNullOrWhiteSpace(idTag))
                             {
                                 // no RFID-Tag => accept stop request (can happen when the car stops the charging process)
+
                                 transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
                                 Logger.LogInformation("EndTransaction => no charge tag => accepted");
                             }
                             else
                             {
-                                bool? externalAuthResult = null;
-                                try
-                                {
-                                    // First step: call external authorizations
-                                    externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.StopTransaction, idTag, ChargePointStatus.Id, transaction?.ConnectorId, transaction?.Uid, transaction?.StartTagId);
-                                }
-                                catch (Exception exp)
-                                {
-                                    Logger.LogError(exp, "EndTransaction => Exception from external authorization: {0}", exp.Message);
-                                }
-
-                                // Do we have a result from external authorizations?
-                                if (externalAuthResult.HasValue)
-                                {
-                                    // Yes => use this as accepted or invalid
-                                    if (externalAuthResult.Value)
-                                    {
-                                        transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
-                                    }
-                                    else
-                                    {
-                                        transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
-                                    }
-                                    Logger.LogInformation("EndTransaction => Extension auth. : Charge tag='{0}' => Status: {1}", idTag, transactionEventResponse.IdTokenInfo.Status);
-                                }
-                                else
-                                {
-                                    // No result from external authorization => check local RFID tokens
-                                    try
-                                    {
-                                        ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
-                                        if (ct != null)
-                                        {
-                                            if (!string.IsNullOrWhiteSpace(ct.ParentTagId))
-                                            {
-                                                transactionEventResponse.IdTokenInfo.GroupIdToken = new IdTokenType();
-                                                transactionEventResponse.IdTokenInfo.GroupIdToken.IdToken = ct.ParentTagId;
-                                            }
-
-                                            if (ct.Blocked.HasValue && ct.Blocked.Value)
-                                            {
-                                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Blocked;
-                                            }
-                                            else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                                            {
-                                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Expired;
-                                            }
-                                            else
-                                            {
-                                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Unknown;
-                                        }
-
-                                        Logger.LogInformation("EndTransaction => RFID-tag='{0}' => Status: {1}", idTag, transactionEventResponse.IdTokenInfo.Status);
-                                    }
-                                    catch (Exception exp)
-                                    {
-                                        Logger.LogError(exp, "EndTransaction => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
-                                        transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
-                                    }
-                                }
+                                transactionEventResponse.IdTokenInfo = InternalAuthorize(idTag, ocppMiddleware, connectorId, AuthAction.StopTransaction, transactionEventRequest.TransactionInfo.TransactionId, transaction.StartTagId, false);
                             }
                         }
                         else
@@ -510,6 +387,90 @@ namespace OCPP.Core.Server
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Authorization logic for reuseability
+        /// </summary>
+        internal IdTokenInfoType InternalAuthorize(string idTag, OCPPMiddleware ocppMiddleware, int connectorId, AuthAction authAction, string transactionUid, string transactionStartId, bool denyConcurrentTx)
+        {
+            IdTokenInfoType idTokenInfo = new IdTokenInfoType();
+
+            bool? externalAuthResult = null;
+            try
+            {
+                externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(authAction, idTag, ChargePointStatus.Id, connectorId, transactionUid, transactionStartId);
+            }
+            catch (Exception exp)
+            {
+                Logger.LogError(exp, "InternalAuthorize => Exception from external authorization (Action={0}, Tag={1}): {2}", authAction, idTag, exp.Message);
+            }
+
+            if (externalAuthResult.HasValue)
+            {
+                if (externalAuthResult.Value)
+                {
+                    idTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
+                }
+                else
+                {
+                    idTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                }
+                Logger.LogInformation("InternalAuthorize => Extension auth. : Action={0}, Tag='{1}' => Status: {2}", authAction, idTag, idTokenInfo.Status);
+            }
+            else
+            {
+                try
+                {
+                    ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
+                    if (ct != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(ct.ParentTagId))
+                        {
+                            idTokenInfo.GroupIdToken = new IdTokenType();
+                            idTokenInfo.GroupIdToken.IdToken = ct.ParentTagId;
+                        }
+                        if (ct.Blocked.HasValue && ct.Blocked.Value)
+                        {
+                            idTokenInfo.Status = AuthorizationStatusEnumType.Blocked;
+                        }
+                        else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                        {
+                            idTokenInfo.Status = AuthorizationStatusEnumType.Expired;
+                        }
+                        else
+                        {
+                            idTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
+
+                            if (denyConcurrentTx)
+                            {
+                                // Check that no open transaction with this idTag exists
+                                Transaction tx = DbContext.Transactions
+                                    .Where(t => !t.StopTime.HasValue && t.StartTagId == ct.TagId)
+                                    .OrderByDescending(t => t.TransactionId)
+                                    .FirstOrDefault();
+
+                                if (tx != null)
+                                {
+                                    idTokenInfo.Status = AuthorizationStatusEnumType.ConcurrentTx;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        idTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                    }
+                    Logger.LogInformation("InternalAuthorize => DB-Auth : Action={0}, Tag='{1}' => Status: {2}", authAction, idTag, idTokenInfo.Status);
+                }
+                catch (Exception exp)
+                {
+                    Logger.LogError(exp, "InternalAuthorize => Exception reading charge tag (action={0}, tag={1}): {2}", authAction, idTag, exp.Message);
+                    idTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                }
+            }
+
+            return idTokenInfo;
         }
     }
 }

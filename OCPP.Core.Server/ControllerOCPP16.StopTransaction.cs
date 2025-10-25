@@ -43,7 +43,6 @@ namespace OCPP.Core.Server
                 string idTag = CleanChargeTagId(stopTransactionRequest.IdTag, Logger);
 
                 Transaction transaction = null;
-                ChargeTag chargeTag = null;
                 try
                 {
                     transaction = DbContext.Find<Transaction>(stopTransactionRequest.TransactionId);
@@ -66,69 +65,7 @@ namespace OCPP.Core.Server
                     }
                     else
                     {
-                        bool? externalAuthResult = null;
-                        try
-                        {
-                            // First step: call external authorizations
-                            externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.StopTransaction, idTag, ChargePointStatus.Id, transaction?.ConnectorId, transaction?.Uid, transaction?.StartTagId);
-                        }
-                        catch (Exception exp)
-                        {
-                            Logger.LogError(exp, "StopTransaction => Exception from external authorization: {0}", exp.Message);
-                        }
-
-                        // Do we have a result from external authorizations?
-                        if (externalAuthResult.HasValue)
-                        {
-                            // Yes => use this as accepted or invalid
-                            if (externalAuthResult.Value)
-                            {
-                                stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-                            }
-                            else
-                            {
-                                stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                            }
-                            Logger.LogInformation("StopTransaction => Extension auth. : Charge tag='{0}' => Status: {1}", idTag, stopTransactionResponse.IdTagInfo.Status);
-                        }
-                        else
-                        {
-                            // No result from external authorization => check local RFID tokens
-                            try
-                            {
-                                stopTransactionResponse.IdTagInfo.ExpiryDate = MaxExpiryDate;
-                                chargeTag = DbContext.Find<ChargeTag>(idTag);
-                                if (chargeTag != null)
-                                {
-                                    if (chargeTag.ExpiryDate.HasValue) stopTransactionResponse.IdTagInfo.ExpiryDate = chargeTag.ExpiryDate.Value;
-                                    stopTransactionResponse.IdTagInfo.ParentIdTag = chargeTag.ParentTagId;
-                                    if (chargeTag.Blocked.HasValue && chargeTag.Blocked.Value)
-                                    {
-                                        stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
-                                    }
-                                    else if (chargeTag.ExpiryDate.HasValue && chargeTag.ExpiryDate.Value < DateTime.Now)
-                                    {
-                                        stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
-                                    }
-                                    else
-                                    {
-                                        stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-                                    }
-                                }
-                                else
-                                {
-                                    stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                                }
-
-                                Logger.LogInformation("StopTransaction => RFID-tag='{0}' => Status: {1}", idTag, stopTransactionResponse.IdTagInfo.Status);
-
-                            }
-                            catch (Exception exp)
-                            {
-                                Logger.LogError(exp, "StopTransaction => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
-                                stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                            }
-                        }
+                        stopTransactionResponse.IdTagInfo = InternalAuthorize(idTag, ocppMiddleware, transaction.ConnectorId, AuthAction.StopTransaction, transaction?.Uid, transaction?.StartTagId, false);
                     }
                 }
                 else
@@ -153,6 +90,7 @@ namespace OCPP.Core.Server
                     stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
                 }
                 
+
                 // General authorization done. Now check the result and update the transaction
                 if (stopTransactionResponse.IdTagInfo.Status == IdTagInfoStatus.Accepted)
                 {
@@ -169,11 +107,11 @@ namespace OCPP.Core.Server
                                 UpdateMemoryConnectorStatus(transaction.ConnectorId, (double)stopTransactionRequest.MeterStop / 1000, stopTransactionRequest.Timestamp, null, null);
                             }
 
-                            // check current tag against start tag
+                            // check current tag against start tag => same tag or identical group?
                             bool valid = true;
                             if (!transaction.StartTagId.Equals(idTag, StringComparison.InvariantCultureIgnoreCase))
                             {
-                                // tags are different => same group?
+                                // tags are different => identical group?
                                 ChargeTag startTag = DbContext.Find<ChargeTag>(transaction.StartTagId);
                                 if (startTag != null)
                                 {

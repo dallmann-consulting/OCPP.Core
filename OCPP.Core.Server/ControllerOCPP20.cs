@@ -66,51 +66,39 @@ namespace OCPP.Core.Server
                     case "BootNotification":
                         errorCode = HandleBootNotification(msgIn, msgOut);
                         break;
-
                     case "Heartbeat":
                         errorCode = HandleHeartBeat(msgIn, msgOut);
                         break;
-
                     case "Authorize":
                         errorCode = HandleAuthorize(msgIn, msgOut, ocppMiddleware);
                         break;
-
                     case "TransactionEvent":
                         errorCode = HandleTransactionEvent(msgIn, msgOut, ocppMiddleware);
                         break;
-
                     case "MeterValues":
                         errorCode = HandleMeterValues(msgIn, msgOut);
                         break;
-
                     case "StatusNotification":
                         errorCode = HandleStatusNotification(msgIn, msgOut);
                         break;
-
                     case "DataTransfer":
                         errorCode = HandleDataTransfer(msgIn, msgOut);
                         break;
-
                     case "LogStatusNotification":
                         errorCode = HandleLogStatusNotification(msgIn, msgOut);
                         break;
-
                     case "FirmwareStatusNotification":
                         errorCode = HandleFirmwareStatusNotification(msgIn, msgOut);
                         break;
-
                     case "ClearedChargingLimit":
                         errorCode = HandleClearedChargingLimit(msgIn, msgOut);
                         break;
-
                     case "NotifyChargingLimit":
                         errorCode = HandleNotifyChargingLimit(msgIn, msgOut);
                         break;
-
                     case "NotifyEVChargingSchedule":
                         errorCode = HandleNotifyEVChargingSchedule(msgIn, msgOut);
                         break;
-
                     default:
                         errorCode = ErrorCodes.NotSupported;
                         WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
@@ -145,17 +133,20 @@ namespace OCPP.Core.Server
                 case "Reset":
                     HandleReset(msgIn, msgOut);
                     break;
-
                 case "UnlockConnector":
                     HandleUnlockConnector(msgIn, msgOut);
                     break;
-
                 case "SetChargingProfile":
                     HandleSetChargingProfile(msgIn, msgOut);
                     break;
-
                 case "ClearChargingProfile":
                     HandleClearChargingProfile(msgIn, msgOut);
+                    break;
+                case "RequestStartTransaction":
+                    HandleRequestStartTransaction(msgIn, msgOut);
+                    break;
+                case "RequestStopTransaction":
+                    HandleRequestStopTransaction(msgIn, msgOut);
                     break;
 
                 default:

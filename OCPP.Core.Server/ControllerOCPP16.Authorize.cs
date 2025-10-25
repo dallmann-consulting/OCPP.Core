@@ -17,12 +17,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Server.Extensions.Interfaces;
 using OCPP.Core.Server.Messages_OCPP16;
+using System;
+using System.Linq;
 
 namespace OCPP.Core.Server
 {
@@ -41,68 +42,7 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("Authorize => Message deserialized");
                 idTag = CleanChargeTagId(authorizeRequest.IdTag, Logger);
 
-                authorizeResponse.IdTagInfo.ParentIdTag = string.Empty;
-                authorizeResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow.AddMinutes(5);   // default: 5 minutes
-
-                bool? externalAuthResult = null;
-                try
-                {
-                    externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.Authorize, idTag, ChargePointStatus.Id, 0, string.Empty, string.Empty);
-                }
-                catch (Exception exp)
-                {
-                    Logger.LogError(exp, "Authorize => Exception from external authorization: {0}", exp.Message);
-                }
-
-                if (externalAuthResult.HasValue)
-                {
-                    if (externalAuthResult.Value)
-                    {
-                        authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-                    }
-                    else
-                    {
-                        authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                    }
-                    Logger.LogInformation("Authorize => Extension auth. : Charge tag='{0}' => Status: {1}", idTag, authorizeResponse.IdTagInfo.Status);
-                }
-                else
-                {
-                    try
-                    {
-                        ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
-                        if (ct != null)
-                        {
-                            if (ct.ExpiryDate.HasValue)
-                            {
-                                authorizeResponse.IdTagInfo.ExpiryDate = ct.ExpiryDate.Value;
-                            }
-                            authorizeResponse.IdTagInfo.ParentIdTag = ct.ParentTagId;
-                            if (ct.Blocked.HasValue && ct.Blocked.Value)
-                            {
-                                authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Blocked;
-                            }
-                            else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                            {
-                                authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Expired;
-                            }
-                            else
-                            {
-                                authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-                            }
-                        }
-                        else
-                        {
-                            authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                        }
-                        Logger.LogInformation("Authorize => Inernal auth. : Charge tag='{0}' => Status: {1}", idTag, authorizeResponse.IdTagInfo.Status);
-                    }
-                    catch (Exception exp)
-                    {
-                        Logger.LogError(exp, "Authorize => Exception reading charge tag ({0}): {1}", idTag, exp.Message);
-                        authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-                    }
-                }
+                authorizeResponse.IdTagInfo = InternalAuthorize(idTag, ocppMiddleware, 0, AuthAction.Authorize, string.Empty, string.Empty, false);
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(authorizeResponse);
                 Logger.LogTrace("Authorize => Response serialized");
@@ -115,6 +55,92 @@ namespace OCPP.Core.Server
 
             WriteMessageLog(ChargePointStatus?.Id, null,msgIn.Action, $"'{idTag}'=>{authorizeResponse.IdTagInfo?.Status}", errorCode);
             return errorCode;
+        }
+
+        /// <summary>
+        /// Authorization logic for reuseability
+        /// </summary>
+        internal IdTagInfo InternalAuthorize(string idTag, OCPPMiddleware ocppMiddleware, int connectorId, AuthAction authAction, string transactionUid, string transactionStartId, bool denyConcurrentTx)
+        {
+            IdTagInfo idTagInfo = new IdTagInfo();
+            idTagInfo.ParentIdTag = string.Empty;
+            idTagInfo.ExpiryDate = MaxExpiryDate;
+
+            bool? externalAuthResult = null;
+            try
+            {
+                externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(authAction, idTag, ChargePointStatus.Id, connectorId, transactionUid, transactionStartId);
+            }
+            catch (Exception exp)
+            {
+                Logger.LogError(exp, "InternalAuthorize => Exception from external authorization (Action={0}, Tag={1}): {2}", authAction, idTag, exp.Message);
+            }
+
+            if (externalAuthResult.HasValue)
+            {
+                if (externalAuthResult.Value)
+                {
+                    idTagInfo.Status = IdTagInfoStatus.Accepted;
+                }
+                else
+                {
+                    idTagInfo.Status = IdTagInfoStatus.Invalid;
+                }
+                Logger.LogInformation("InternalAuthorize => Extension auth. : Action={0}, Tag='{1}' => Status: {2}", authAction, idTag, idTagInfo.Status);
+            }
+            else
+            {
+                try
+                {
+                    ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
+                    if (ct != null)
+                    {
+                        if (ct.ExpiryDate.HasValue)
+                        {
+                            idTagInfo.ExpiryDate = ct.ExpiryDate.Value;
+                        }
+                        idTagInfo.ParentIdTag = ct.ParentTagId;
+                        if (ct.Blocked.HasValue && ct.Blocked.Value)
+                        {
+                            idTagInfo.Status = IdTagInfoStatus.Blocked;
+                        }
+                        else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                        {
+                            idTagInfo.Status = IdTagInfoStatus.Expired;
+                        }
+                        else
+                        {
+                            idTagInfo.Status = IdTagInfoStatus.Accepted;
+
+                            if (denyConcurrentTx)
+                            {
+                                // Check that no open transaction with this idTag exists
+                                Transaction tx = DbContext.Transactions
+                                    .Where(t => !t.StopTime.HasValue && t.StartTagId == ct.TagId)
+                                    .OrderByDescending(t => t.TransactionId)
+                                    .FirstOrDefault();
+
+                                if (tx != null)
+                                {
+                                    idTagInfo.Status = IdTagInfoStatus.ConcurrentTx;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        idTagInfo.Status = IdTagInfoStatus.Invalid;
+                    }
+                    Logger.LogInformation("InternalAuthorize => DB-Auth : Action={0}, Tag='{1}' => Status: {2}", authAction, idTag, idTagInfo.Status);
+                }
+                catch (Exception exp)
+                {
+                    Logger.LogError(exp, "InternalAuthorize => Exception reading charge tag (action={0}, tag={1}): {2}", authAction, idTag, exp.Message);
+                    idTagInfo.Status = IdTagInfoStatus.Invalid;
+                }
+            }
+
+            return idTagInfo;
         }
     }
 }

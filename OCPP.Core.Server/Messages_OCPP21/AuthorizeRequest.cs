@@ -18,6 +18,10 @@
  */
 
 
+using System.Net;
+using System.Net.Mail;
+using static System.Runtime.CompilerServices.RuntimeHelpers;
+
 namespace OCPP.Core.Server.Messages_OCPP21
 {
 #pragma warning disable // Disable all warnings
@@ -166,5 +170,20 @@ namespace OCPP.Core.Server.Messages_OCPP21
 
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public CustomDataType? CustomData { get; set; }
+    }
+
+    public class IdTokenEnumStringType
+    {
+        public const string Central = "Central";
+        public const string DirectPayment = "DirectPayment";
+        public const string eMAID = "eMAID";
+        public const string EVCCID = "EVCCID";
+        public const string ISO14443 = "ISO14443";
+        public const string ISO15693 = "ISO15693";
+        public const string KeyCode = "KeyCode";
+        public const string Local = "Local";
+        public const string MacAddress = "MacAddress";
+        public const string NoAuthorization = "NoAuthorization";
+        public const string VIN = "VIN";
     }
 }

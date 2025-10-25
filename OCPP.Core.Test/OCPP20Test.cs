@@ -141,12 +141,40 @@ namespace OCPP.Core.Test
                 SetChargingLimit(_chargePointId, 1, "1000W");
                 ClearChargingLimit(_chargePointId, 1);
 
+                /* 11.  Remote Start/Stop Transaction  */
+                if (RemoteStartTransaction(_chargePointId, 1, "fail_" + _chargeTagId))
+                {
+                    Console.WriteLine("BAD: RemoteStartTransaction with unknown charge tag succeded");
+                }
+                else
+                {
+                    Console.WriteLine("GOOD: RemoteStartTransaction with unknown charge tag rejected");
+                }
+                if (RemoteStopTransaction(_chargePointId, 1))
+                {
+                    Console.WriteLine("BAD: RemoteStopTransaction with no open transaction succeded");
+                }
+                else
+                {
+                    Console.WriteLine("GOOD: RemoteStopTransaction with no open transaction rejected");
+                }
+
+                if (RemoteStartTransaction(_chargePointId, 1, _chargeTagId))
+                {
+                    string transactionId = Guid.NewGuid().ToString();
+                    if (SendAndVerifyStartTransaction(1, _chargeTagId, transactionId).Result)
+                    {
+                        if (RemoteStopTransaction(_chargePointId, 1))
+                        {
+                            SendAndVerifyStopTransaction(1, _chargeTagId, transactionId).Wait();
+                        }
+                    }
+                }
 
                 Console.WriteLine("Simulation ended. Press enter to exit.");
                 Console.ReadLine();
 
-
-                /* 10.  Close connection  */
+                /* 12.  Close connection  */
                 _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Simulation end", CancellationToken.None).Wait();
             }
             catch (Exception ex)
@@ -603,6 +631,72 @@ namespace OCPP.Core.Test
             Console.WriteLine();
         }
 
+        private static bool RemoteStartTransaction(string chargePointId, int connectorId, string tagId)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/RemoteStartTransaction/{chargePointId}/{connectorId}/{tagId}")).Result;
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string result = response.Content.ReadAsStringAsync().Result;
+                    if (result.Contains("\"Accepted\""))
+                    {
+                        Console.WriteLine($"Success: API RemoteStartTransaction result JSON: {result}");
+                        return true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: API RemoteStartTransaction result JSON: {result}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"RemoteStartTransaction API request failed: httpStatus={response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"RemoteStartTransaction API request failed: {ex.ToString()}");
+            }
+            Console.WriteLine();
+            return false;
+        }
+
+        private static bool RemoteStopTransaction(string chargePointId, int connectorId)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/RemoteStopTransaction/{chargePointId}/{connectorId}")).Result;
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string result = response.Content.ReadAsStringAsync().Result;
+                    if (result.Contains("\"Accepted\""))
+                    {
+                        Console.WriteLine($"Success: API RemoteStopTransaction result JSON: {result}");
+                        return true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: API RemoteStopTransaction result JSON: {result}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"RemoteStopTransaction API request failed: httpStatus={response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"RemoteStopTransaction API request failed: {ex.ToString()}");
+            }
+            Console.WriteLine();
+            return false;
+        }
+
         private static void ReadServerStatus()
         {
             try
@@ -714,6 +808,12 @@ namespace OCPP.Core.Test
                                     await SendCallResult(uniqueId, new { status = "Accepted" });
                                     break;
                                 case "ClearChargingProfile":
+                                    await SendCallResult(uniqueId, new { status = "Accepted" });
+                                    break;
+                                case "RequestStartTransaction":
+                                    await SendCallResult(uniqueId, new { status = "Accepted" });
+                                    break;
+                                case "RequestStopTransaction":
                                     await SendCallResult(uniqueId, new { status = "Accepted" });
                                     break;
                                 default:

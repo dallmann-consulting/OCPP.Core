@@ -88,3 +88,29 @@ Clears the charging limit (power) for a certain connector.
 
 The answer should be:
  {"status"="Accepted"} or {"status"="Unknown"}
+
+
+
+### RemoteStartTransaction
+Request the charger to (remotely) start a transaction (simply explained: virtually presenting a specific charge tag to the charger)
+
+	/API/RemoteStartTransaction/station42/1/tag1234
+
+The answer should be:
+{"status"="Accepted"} or {"status"="Rejected"}
+
+
+### RemoteStopTransaction
+Request the charger to end a specific transaction.
+
+	/API/RemoteStopTransaction/station42/1
+
+The answer should be:
+{"status"="Accepted"} or {"status"="Rejected"}
+The server checks the last transaction for the specified connector and return the http code 424 (FailedDependency) when no open transaction was found.
+
+
+### In general
+These commands means that the server send a request to the charger and the charger needs to answer in a reasonable period
+of time. The server can not wait indefinitely and the OCPP server waits for 60 seconds.
+After that the API caller will geht the response {"status"="Timeout"}.
