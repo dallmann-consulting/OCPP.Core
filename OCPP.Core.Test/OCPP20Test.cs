@@ -637,7 +637,7 @@ namespace OCPP.Core.Test
             {
                 HttpClient httpClient = new HttpClient();
                 httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
-                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/RemoteStartTransaction/{chargePointId}/{connectorId}/{tagId}")).Result;
+                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/StartTransaction/{chargePointId}/{connectorId}/{tagId}")).Result;
                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     string result = response.Content.ReadAsStringAsync().Result;
@@ -670,7 +670,7 @@ namespace OCPP.Core.Test
             {
                 HttpClient httpClient = new HttpClient();
                 httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
-                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/RemoteStopTransaction/{chargePointId}/{connectorId}")).Result;
+                HttpResponseMessage response = httpClient.GetAsync(new Uri($"{_serverUrl}/API/StopTransaction/{chargePointId}/{connectorId}")).Result;
                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     string result = response.Content.ReadAsStringAsync().Result;

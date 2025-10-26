@@ -117,14 +117,41 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
   <data name="ChargePointId" xml:space="preserve">
     <value>Charge point</value>
+  </data>
+  <data name="ChargePointOffline" xml:space="preserve">
+    <value>Charge station is offline</value>
+  </data>
+  <data name="ChargePointOnline" xml:space="preserve">
+    <value>Charge station is online</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
   </data>
   <data name="ConnectorId" xml:space="preserve">
     <value>Connector</value>
   </data>
   <data name="ConnectorName" xml:space="preserve">
     <value>Name</value>
+  </data>
+  <data name="DialogUnlockConnector" xml:space="preserve">
+    <value>Should the connector % really be unlocked?</value>
+  </data>
+  <data name="ErrorUnlock" xml:space="preserve">
+    <value>An error occured.</value>
+  </data>
+  <data name="ExecuteUnlock" xml:space="preserve">
+    <value>Unlock of the connector is triggered...</value>
   </data>
   <data name="LastMeter" xml:space="preserve">
     <value>Last meter value</value>
@@ -140,5 +167,32 @@
   </data>
   <data name="Title" xml:space="preserve">
     <value>Management</value>
+  </data>
+  <data name="TitleStartTransaction" xml:space="preserve">
+    <value>Start transaction</value>
+  </data>
+  <data name="TitleStopTransaction" xml:space="preserve">
+    <value>Stop transaction</value>
+  </data>
+  <data name="TitleUnlockConnector" xml:space="preserve">
+    <value>Unlock connector</value>
+  </data>
+  <data name="DialogStartTransaction" xml:space="preserve">
+    <value>Start a charging transaction on connector %connector%?&lt;p//&gt;&lt;label for="selectChargeTag"&gt;Charge tag: &lt;//label&gt;&lt;select id="selectChargeTag" class="form-select"&gt;%options%&lt;//select&gt;</value>
+  </data>
+  <data name="ErrorStartTransaction" xml:space="preserve">
+    <value>An error occured.</value>
+  </data>
+  <data name="DialogStopTransaction" xml:space="preserve">
+    <value>Stop charging transaction on connector %?</value>
+  </data>
+  <data name="ExecuteStopTransaction" xml:space="preserve">
+    <value>Stop of transaction is triggered...</value>
+  </data>
+  <data name="ExecuteStartTransaction" xml:space="preserve">
+    <value>Start of transaction is triggered...</value>
+  </data>
+  <data name="ErrorStopTransaction" xml:space="preserve">
+    <value>An error occured.</value>
   </data>
 </root>

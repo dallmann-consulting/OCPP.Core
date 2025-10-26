@@ -24,6 +24,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
@@ -99,7 +100,7 @@ namespace OCPP.Core.Management.Controllers
 
                                     if (onlineStatusList != null)
                                     {
-                                        foreach(ChargePointStatus cps in onlineStatusList)
+                                        foreach (ChargePointStatus cps in onlineStatusList)
                                         {
                                             if (!dictOnlineStatus.TryAdd(cps.Id, cps))
                                             {
@@ -136,63 +137,64 @@ namespace OCPP.Core.Management.Controllers
                 }
                 #endregion
 
-                    // List of charge point status (OCPP messages) with latest transaction (if one exist)
-                    var connectorStatusViewList = DbContext.ConnectorStatuses
-                        .GroupJoin(
-                            DbContext.Transactions,
-                            cs => new { cs.ChargePointId, cs.ConnectorId },
-                            t => new { t.ChargePointId, t.ConnectorId },
-                            (cs, transactions) => new { cs, transactions }
-                        )
-                        .SelectMany(
-                            x => x.transactions.DefaultIfEmpty(),
-                            (x, transaction) => new ConnectorStatusView
-                            {
-                                ChargePointId = x.cs.ChargePointId,
-                                ConnectorId = x.cs.ConnectorId,
-                                ConnectorName = x.cs.ConnectorName,
-                                LastStatus = x.cs.LastStatus,
-                                LastStatusTime = x.cs.LastStatusTime,
-                                LastMeter = x.cs.LastMeter,
-                                LastMeterTime = x.cs.LastMeterTime,
-                                TransactionId = (int?)transaction.TransactionId,
-                                StartTagId = transaction.StartTagId,
-                                StartTime = transaction.StartTime,
-                                MeterStart = transaction.MeterStart,
-                                StartResult = transaction.StartResult,
-                                StopTagId = transaction.StopTagId,
-                                StopTime = transaction.StopTime,
-                                MeterStop = transaction.MeterStop,
-                                StopReason = transaction.StopReason
-                            }
-                        )
-                        .Where(x => x.TransactionId == null ||
-                                    x.TransactionId == DbContext.Transactions
-                                        .Where(t => t.ChargePointId == x.ChargePointId && t.ConnectorId == x.ConnectorId)
-                                        .Select(t => t.TransactionId)
-                                        .Max())
-                        .ToList();
+                // List of charge point status (OCPP messages) with latest transaction (if one exist)
+                var connectorStatusViewList = DbContext.ConnectorStatuses
+                    .GroupJoin(
+                        DbContext.Transactions,
+                        cs => new { cs.ChargePointId, cs.ConnectorId },
+                        t => new { t.ChargePointId, t.ConnectorId },
+                        (cs, transactions) => new { cs, transactions }
+                    )
+                    .SelectMany(
+                        x => x.transactions.DefaultIfEmpty(),
+                        (x, transaction) => new ConnectorStatusView
+                        {
+                            ChargePointId = x.cs.ChargePointId,
+                            ConnectorId = x.cs.ConnectorId,
+                            ConnectorName = x.cs.ConnectorName,
+                            LastStatus = x.cs.LastStatus,
+                            LastStatusTime = x.cs.LastStatusTime,
+                            LastMeter = x.cs.LastMeter,
+                            LastMeterTime = x.cs.LastMeterTime,
+                            TransactionId = (int?)transaction.TransactionId,
+                            StartTagId = transaction.StartTagId,
+                            StartTime = transaction.StartTime,
+                            MeterStart = transaction.MeterStart,
+                            StartResult = transaction.StartResult,
+                            StopTagId = transaction.StopTagId,
+                            StopTime = transaction.StopTime,
+                            MeterStop = transaction.MeterStop,
+                            StopReason = transaction.StopReason
+                        }
+                    )
+                    .Where(x => x.TransactionId == null ||
+                                x.TransactionId == DbContext.Transactions
+                                    .Where(t => t.ChargePointId == x.ChargePointId && t.ConnectorId == x.ConnectorId)
+                                    .Select(t => t.TransactionId)
+                                    .Max())
+                    .AsNoTracking()
+                    .ToList();
 
 
-                    // Count connectors for every charge point (=> naming scheme)
-                    Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
-                    foreach (ConnectorStatusView csv in connectorStatusViewList)
+                // Count connectors for every charge point (=> naming scheme)
+                Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
+                foreach (ConnectorStatusView csv in connectorStatusViewList)
+                {
+                    if (dictConnectorCount.ContainsKey(csv.ChargePointId))
                     {
-                        if (dictConnectorCount.ContainsKey(csv.ChargePointId))
-                        {
-                            // > 1 connector
-                            dictConnectorCount[csv.ChargePointId] = dictConnectorCount[csv.ChargePointId] + 1;
-                        }
-                        else
-                        {
-                            // first connector
-                            dictConnectorCount.Add(csv.ChargePointId, 1);
-                        }
+                        // > 1 connector
+                        dictConnectorCount[csv.ChargePointId] = dictConnectorCount[csv.ChargePointId] + 1;
                     }
+                    else
+                    {
+                        // first connector
+                        dictConnectorCount.Add(csv.ChargePointId, 1);
+                    }
+                }
 
 
-                    // List of configured charge points
-                    List<ChargePoint> dbChargePoints = DbContext.ChargePoints.ToList<ChargePoint>();
+                // List of configured charge points
+                List<ChargePoint> dbChargePoints = DbContext.ChargePoints.AsNoTracking().ToList<ChargePoint>();
                 if (dbChargePoints != null)
                 {
                     // Iterate through all charge points in database
@@ -313,7 +315,7 @@ namespace OCPP.Core.Management.Controllers
                             overviewModel.ChargePoints.Add(cpovm);
                         }
                     }
-                }                
+                }
 
                 Logger.LogInformation("Index: Found {0} charge points / connectors", overviewModel.ChargePoints?.Count);
             }

@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2025 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,19 +17,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Localization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Net.Http;
 
 namespace OCPP.Core.Management.Controllers
 {
@@ -83,7 +83,7 @@ namespace OCPP.Core.Management.Controllers
                 }
                 else
                 {
-                    // List all charge tags
+                    // List all connectors
                     csvm = new ConnectorStatusViewModel();
                     csvm.ConnectorStatuses = dbConnectorStatuses;
 
@@ -96,6 +96,89 @@ namespace OCPP.Core.Management.Controllers
                         csvm.LastStatusTime = currentConnectorStatus.LastStatusTime;
                         csvm.LastMeter = currentConnectorStatus.LastMeter;
                         csvm.LastMeterTime = currentConnectorStatus.LastMeterTime;
+                    }
+
+                    Dictionary<string, ChargePointStatus> dictOnlineStatus = new Dictionary<string, ChargePointStatus>();
+                    #region Load online status from OCPP server
+                    string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
+                    string apiKeyConfig = base.Config.GetValue<string>("ApiKey");
+                    if (!string.IsNullOrEmpty(serverApiUrl))
+                    {
+                        try
+                        {
+                            ChargePointStatus[] onlineStatusList = null;
+
+                            using (var httpClient = new HttpClient())
+                            {
+                                if (!serverApiUrl.EndsWith('/'))
+                                {
+                                    serverApiUrl += "/";
+                                }
+                                Uri uri = new Uri(serverApiUrl);
+                                uri = new Uri(uri, "Status");
+                                httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
+
+                                // API-Key authentication?
+                                if (!string.IsNullOrWhiteSpace(apiKeyConfig))
+                                {
+                                    httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKeyConfig);
+                                }
+                                else
+                                {
+                                    Logger.LogWarning("Connector: No API-Key configured!");
+                                }
+
+                                HttpResponseMessage response = httpClient.GetAsync(uri).Result;
+                                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                                {
+                                    string jsonData = response.Content.ReadAsStringAsync().Result;
+                                    if (!string.IsNullOrEmpty(jsonData))
+                                    {
+                                        onlineStatusList = JsonConvert.DeserializeObject<ChargePointStatus[]>(jsonData);
+                                        if (onlineStatusList != null)
+                                        {
+                                            foreach (ChargePointStatus cps in onlineStatusList)
+                                            {
+                                                if (!dictOnlineStatus.TryAdd(cps.Id, cps))
+                                                {
+                                                    Logger.LogError("Connector: Online charge point status (ID={0}) could not be added to dictionary", cps.Id);
+                                                }
+                                            }
+
+                                            csvm.OnlineConnectorStatuses = dictOnlineStatus;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Logger.LogError("Connector: Result of status web request is empty");
+                                    }
+                                }
+                                else
+                                {
+                                    Logger.LogError("Connector: Result of status web request => httpStatus={0}", response.StatusCode);
+                                }
+                            }
+
+                            Logger.LogInformation("Connector: Result of status web request => Length={0}", onlineStatusList?.Length);
+                        }
+                        catch (Exception exp)
+                        {
+                            Logger.LogError(exp, "Connector: Error in status web request => {0}", exp.Message);
+                        }
+                    }
+                    #endregion
+
+                    if (currentConnectorStatus == null)
+                    {
+                        // display list of connectors => load charge tags from database for action to start a transaction
+                        try
+                        {
+                            csvm.ChargeTags = DbContext.ChargeTags.AsNoTracking().ToList();
+                        }
+                        catch (Exception exp)
+                        {
+                            Logger.LogError(exp, "Connector: Error loading charge tags from database");
+                        }
                     }
 
                     string viewName = (currentConnectorStatus != null) ? "ConnectorDetail" : "ConnectorList";

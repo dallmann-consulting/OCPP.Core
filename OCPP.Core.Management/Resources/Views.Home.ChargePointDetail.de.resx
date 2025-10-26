@@ -144,23 +144,14 @@
   <data name="DialogReset" xml:space="preserve">
     <value>Soll die Ladestation '{0}' wirklich neu gestartet werden?</value>
   </data>
-  <data name="DialogUnlockConnector" xml:space="preserve">
-    <value>Soll die Ladestation '{0}' wirklich entsperrt werden?</value>
-  </data>
   <data name="EditChargePoint" xml:space="preserve">
     <value>Ladestation bearbeiten</value>
   </data>
   <data name="ErrorReset" xml:space="preserve">
     <value>Es ist ein Fehler aufgetreten.</value>
   </data>
-  <data name="ErrorUnlock" xml:space="preserve">
-    <value>Es ist ein Fehler aufgetreten.</value>
-  </data>
   <data name="ExecuteReset" xml:space="preserve">
     <value>Neustart der Ladestation wird ausgelöst...</value>
-  </data>
-  <data name="ExecuteUnlock" xml:space="preserve">
-    <value>Entsperrung der Ladestation wird ausgelöst...</value>
   </data>
   <data name="NameLabel" xml:space="preserve">
     <value>Bezeichnung</value>
@@ -188,9 +179,6 @@
   </data>
   <data name="TitleReset" xml:space="preserve">
     <value>Neustart</value>
-  </data>
-  <data name="TitleUnlockConnector" xml:space="preserve">
-    <value>Entsperren</value>
   </data>
   <data name="UsernameLabel" xml:space="preserve">
     <value>Benutzername</value>

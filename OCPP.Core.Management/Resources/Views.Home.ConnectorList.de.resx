@@ -117,14 +117,41 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Actions" xml:space="preserve">
+    <value>Aktionen</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Bearbeiten</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
   <data name="ChargePointId" xml:space="preserve">
     <value>Ladestation</value>
+  </data>
+  <data name="ChargePointOffline" xml:space="preserve">
+    <value>Die Ladestation ist Offline</value>
+  </data>
+  <data name="ChargePointOnline" xml:space="preserve">
+    <value>Die Ladestation ist Online</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Schließen</value>
   </data>
   <data name="ConnectorId" xml:space="preserve">
     <value>Anschluss Nr.</value>
   </data>
   <data name="ConnectorName" xml:space="preserve">
     <value>Name</value>
+  </data>
+  <data name="DialogUnlockConnector" xml:space="preserve">
+    <value>Soll der Anschluss % wirklich entsperrt werden?</value>
+  </data>
+  <data name="ErrorUnlock" xml:space="preserve">
+    <value>Es ist ein Fehler aufgetreten.</value>
+  </data>
+  <data name="ExecuteUnlock" xml:space="preserve">
+    <value>Entsperrung des Anschlusses wird ausgelöst...</value>
   </data>
   <data name="LastMeter" xml:space="preserve">
     <value>Zählerstand</value>
@@ -140,5 +167,32 @@
   </data>
   <data name="Title" xml:space="preserve">
     <value>Management</value>
+  </data>
+  <data name="TitleStartTransaction" xml:space="preserve">
+    <value>Ladetransaktion starten</value>
+  </data>
+  <data name="TitleStopTransaction" xml:space="preserve">
+    <value>Laufende Ladetransaktion beenden</value>
+  </data>
+  <data name="TitleUnlockConnector" xml:space="preserve">
+    <value>Anschluss entsperren</value>
+  </data>
+  <data name="DialogStartTransaction" xml:space="preserve">
+    <value>Soll die Ladung am Anschluss %connector% begonnen werden?&lt;p//&gt;&lt;label for="selectChargeTag"&gt;RFID-Karte: &lt;//label&gt;&lt;select id="selectChargeTag" class="form-select"&gt;%options%&lt;//select&gt;</value>
+  </data>
+  <data name="ErrorStartTransaction" xml:space="preserve">
+    <value>Es ist ein Fehler aufgetreten.</value>
+  </data>
+  <data name="DialogStopTransaction" xml:space="preserve">
+    <value>Soll die Ladung am Anschluss % beendet werden?</value>
+  </data>
+  <data name="ExecuteStopTransaction" xml:space="preserve">
+    <value>Ladevorgang wird beendet...</value>
+  </data>
+  <data name="ExecuteStartTransaction" xml:space="preserve">
+    <value>Ladevorgang wird gestartet...</value>
+  </data>
+  <data name="ErrorStopTransaction" xml:space="preserve">
+    <value>Es ist ein Fehler aufgetreten.</value>
   </data>
 </root>

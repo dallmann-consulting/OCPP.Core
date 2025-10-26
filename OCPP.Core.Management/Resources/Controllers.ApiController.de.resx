@@ -123,8 +123,8 @@
   <data name="ResetError" xml:space="preserve">
     <value>Es ist ein Fehler aufgetreten.</value>
   </data>
-  <data name="ResetOffline" xml:space="preserve">
-    <value>Die Ladestation ist Offline und kann nicht neu gestartet werden.</value>
+  <data name="ChargerOffline" xml:space="preserve">
+    <value>Die Ladestation ist Offline und kann nicht erreicht werden.</value>
   </data>
   <data name="ResetRejected" xml:space="preserve">
     <value>Die Ladestation hat die Anfrage abgelehnt.</value>
@@ -134,6 +134,15 @@
   </data>
   <data name="ResetUnknownStatus" xml:space="preserve">
     <value>Die Ladestation lieferte ein unerwartetes Ergebnis: '{0}'</value>
+  </data>
+  <data name="StartTransactionAccepted" xml:space="preserve">
+    <value>Die Ladestation hat die Anfrage akzeptiert.</value>
+  </data>
+  <data name="StartTransactionRejected" xml:space="preserve">
+    <value>Die Ladestation hat die Anfrage abgelehnt.</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>Die max. Wartezeit wurde überschritten (Timeout)</value>
   </data>
   <data name="UnknownChargepoint" xml:space="preserve">
     <value>Die Ladestation wurde nicht gefunden.</value>
@@ -150,10 +159,10 @@
   <data name="UnlockConnectorNotSupported" xml:space="preserve">
     <value>Die Ladestation unterstützt keine Entsperrung.</value>
   </data>
-  <data name="UnlockConnectorOffline" xml:space="preserve">
-    <value>Die Ladestation ist Offline und kann nicht entsperrt werden.</value>
-  </data>
-  <data name="UnlockConnectorUnknownStatus" xml:space="preserve">
+  <data name="UnknownStatus" xml:space="preserve">
     <value>Die Ladestation lieferte ein unerwartetes Ergebnis: '{0}'</value>
+  </data>
+  <data name="StartTransactionError" xml:space="preserve">
+    <value>Es ist ein Fehler aufgetreten.</value>
   </data>
 </root>

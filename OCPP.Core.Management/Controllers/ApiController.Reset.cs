@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2025 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -81,7 +81,7 @@ namespace OCPP.Core.Management.Controllers
                                     }
                                     Uri uri = new Uri(serverApiUrl);
                                     uri = new Uri(uri, $"Reset/{Uri.EscapeDataString(Id)}");
-                                    httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
+                                    httpClient.Timeout = new TimeSpan(0, 0, 15); // use short timeout
 
                                     // API-Key authentication?
                                     if (!string.IsNullOrWhiteSpace(apiKeyConfig))
@@ -115,6 +115,9 @@ namespace OCPP.Core.Management.Controllers
                                                     case "Scheduled":
                                                         resultContent = _localizer["ResetScheduled"];
                                                         break;
+                                                    case "Timeout":
+                                                        resultContent = _localizer["Timeout"];
+                                                        break;
                                                     default:
                                                         resultContent = string.Format(_localizer["ResetUnknownStatus"], status);
                                                         break;
@@ -138,7 +141,7 @@ namespace OCPP.Core.Management.Controllers
                                     {
                                         // Chargepoint offline
                                         httpStatuscode = (int)HttpStatusCode.OK;
-                                        resultContent = _localizer["ResetOffline"];
+                                        resultContent = _localizer["ChargerOffline"];
                                     }
                                     else
                                     {

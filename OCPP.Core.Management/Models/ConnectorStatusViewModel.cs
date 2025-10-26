@@ -28,7 +28,20 @@ namespace OCPP.Core.Management.Models
 {
     public class ConnectorStatusViewModel
     {
+        /// <summary>
+        /// List of ConnectorStatuses from DB
+        /// </summary>
         public List<ConnectorStatus> ConnectorStatuses { get; set; }
+
+        /// <summary>
+        /// Dictionary of online ConnectorStatuses for online/offline status
+        /// </summary>
+        public Dictionary<string, ChargePointStatus> OnlineConnectorStatuses { get; set; }
+
+        /// <summary>
+        /// List of charge tags for starting a remote transaction
+        /// </summary>
+        public List<ChargeTag> ChargeTags { get; set; }
 
         public string ChargePointId { get; set; }
 

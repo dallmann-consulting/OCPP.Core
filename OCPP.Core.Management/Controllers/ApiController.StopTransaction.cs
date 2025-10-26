@@ -34,18 +34,18 @@ namespace OCPP.Core.Management.Controllers
     {
         [Authorize]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public async Task<IActionResult> UnlockConnector(string Id, int connectorId)
+        public async Task<IActionResult> StopTransaction(string Id, int connectorId)
         {
             if (User != null && !User.IsInRole(Constants.AdminRoleName))
             {
-                Logger.LogWarning("UnlockConnector: Request by non-administrator: {0}", User?.Identity?.Name);
+                Logger.LogWarning("StopTransaction: Request by non-administrator: {0}", User?.Identity?.Name);
                 return StatusCode((int)HttpStatusCode.Unauthorized);
             }
 
             int httpStatuscode = (int)HttpStatusCode.OK;
             string resultContent = string.Empty;
 
-            Logger.LogTrace("UnlockConnector: Request to unlock chargepoint '{0}'", Id);
+            Logger.LogTrace("StopTransaction: Request to stop charging transaction '{0}'/{1}", Id, connectorId);
             if (!string.IsNullOrEmpty(Id))
             {
                 try
@@ -66,7 +66,7 @@ namespace OCPP.Core.Management.Controllers
                                         serverApiUrl += "/";
                                     }
                                     Uri uri = new Uri(serverApiUrl);
-                                    uri = new Uri(uri, $"UnlockConnector/{Uri.EscapeDataString(Id)}/{connectorId}");
+                                    uri = new Uri(uri, $"StopTransaction/{Uri.EscapeDataString(Id)}/{connectorId}");
                                     httpClient.Timeout = new TimeSpan(0, 0, 15); // use short timeout
 
                                     // API-Key authentication?
@@ -76,7 +76,7 @@ namespace OCPP.Core.Management.Controllers
                                     }
                                     else
                                     {
-                                        Logger.LogWarning("UnlockConnector: No API-Key configured!");
+                                        Logger.LogWarning("StopTransaction: No API-Key configured!");
                                     }
 
                                     HttpResponseMessage response = await httpClient.GetAsync(uri);
@@ -88,20 +88,15 @@ namespace OCPP.Core.Management.Controllers
                                             try
                                             {
                                                 dynamic jsonObject = JsonConvert.DeserializeObject(jsonResult);
-                                                Logger.LogInformation("UnlockConnector: Result of API request is '{0}'", jsonResult);
+                                                Logger.LogInformation("StopTransaction: Result of API request is '{0}'", jsonResult);
                                                 string status = jsonObject.status;
                                                 switch (status)
                                                 {
-                                                    case "Unlocked":
-                                                        resultContent = _localizer["UnlockConnectorAccepted"];
+                                                    case "Accepted":
+                                                        resultContent = _localizer["StopTransactionAccepted"];
                                                         break;
-                                                    case "UnlockFailed":
-                                                    case "OngoingAuthorizedTransaction":
-                                                    case "UnknownConnector":
-                                                        resultContent = _localizer["UnlockConnectorFailed"];
-                                                        break;
-                                                    case "NotSupported":
-                                                        resultContent = _localizer["UnlockConnectorNotSupported"];
+                                                    case "Rejected":
+                                                        resultContent = _localizer["StopTransactionRejected"];
                                                         break;
                                                     case "Timeout":
                                                         resultContent = _localizer["Timeout"];
@@ -113,16 +108,16 @@ namespace OCPP.Core.Management.Controllers
                                             }
                                             catch (Exception exp)
                                             {
-                                                Logger.LogError(exp, "UnlockConnector: Error in JSON result => {0}", exp.Message);
+                                                Logger.LogError(exp, "StopTransaction: Error in JSON result => {0}", exp.Message);
                                                 httpStatuscode = (int)HttpStatusCode.OK;
-                                                resultContent = _localizer["UnlockConnectorError"];
+                                                resultContent = _localizer["StopTransactionError"];
                                             }
                                         }
                                         else
                                         {
-                                            Logger.LogError("UnlockConnector: Result of API request is empty");
+                                            Logger.LogError("StopTransaction: Result of API request is empty");
                                             httpStatuscode = (int)HttpStatusCode.OK;
-                                            resultContent = _localizer["UnlockConnectorError"];
+                                            resultContent = _localizer["StopTransactionError"];
                                         }
                                     }
                                     else if (response.StatusCode == HttpStatusCode.NotFound)
@@ -133,32 +128,32 @@ namespace OCPP.Core.Management.Controllers
                                     }
                                     else
                                     {
-                                        Logger.LogError("UnlockConnector: Result of API  request => httpStatus={0}", response.StatusCode);
+                                        Logger.LogError("StopTransaction: Result of API  request => httpStatus={0}", response.StatusCode);
                                         httpStatuscode = (int)HttpStatusCode.OK;
-                                        resultContent = _localizer["UnlockConnectorError"];
+                                        resultContent = _localizer["StopTransactionError"];
                                     }
                                 }
                             }
                             catch (Exception exp)
                             {
-                                Logger.LogError(exp, "UnlockConnector: Error in API request => {0}", exp.Message);
+                                Logger.LogError(exp, "StopTransaction: Error in API request => {0}", exp.Message);
                                 httpStatuscode = (int)HttpStatusCode.OK;
-                                resultContent = _localizer["UnlockConnectorError"];
+                                resultContent = _localizer["StopTransactionError"];
                             }
                         }
                     }
                     else
                     {
-                        Logger.LogWarning("UnlockConnector: Error loading charge point '{0}' from database", Id);
+                        Logger.LogWarning("StopTransaction: Error loading charge point '{0}' from database", Id);
                         httpStatuscode = (int)HttpStatusCode.OK;
                         resultContent = _localizer["UnknownChargepoint"];
                     }
                 }
                 catch (Exception exp)
                 {
-                    Logger.LogError(exp, "UnlockConnector: Error loading charge point from database");
+                    Logger.LogError(exp, "StopTransaction: Error loading charge point from database");
                     httpStatuscode = (int)HttpStatusCode.OK;
-                    resultContent = _localizer["UnlockConnectorError"];
+                    resultContent = _localizer["StopTransactionError"];
                 }
             }
 

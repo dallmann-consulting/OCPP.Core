@@ -107,7 +107,7 @@ namespace OCPP.Core.Management
             {
                 endpoints.MapControllerRoute(
                     name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}/{connectorId?}/");
+                    pattern: "{controller=Home}/{action=Index}/{id?}/{connectorId?}/{param?}/");
             });
         }
     }

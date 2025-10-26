@@ -159,9 +159,6 @@
                     <div class="col-sm-2">
                         <button type="button" class="btn btn-info" id="btnReset" title="@Localizer["TitleReset"]" onclick="ResetChargepoint()"><i class="fas fa-redo"></i> @Localizer["TitleReset"]</button>
                     </div>
-                    <div class="col-sm-2">
-                        <button type="button" class="btn btn-info" id="btnUnlock" title="@Localizer["TitleUnlockConnector"]" onclick="UnlockConnector()"><i class="fas fa-lock-open"></i> @Localizer["TitleUnlockConnector"]</button>
-                    </div>
                 </div>
             }
         </div>
@@ -208,54 +205,6 @@
                                 }
                             };
                             xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/Reset/" + Uri.EscapeDataString(Model.ChargePointId)))", true);
-                            xmlhttp.send();
-                        }
-                    }, {
-                        id: 'btnDialogCancel',
-                        label: '@Localizer["Cancel"]',
-                        action: function (dialogRef) {
-                            dialogRef.close();
-                        }
-                    }]
-                });
-                dialog.open();
-            }
-
-            function UnlockConnector() {
-                var dialog = new BootstrapDialog({
-                    title: '@Localizer["TitleUnlockConnector"]',
-                    message: '@string.Format(Localizer["DialogUnlockConnector"].Value, Model.Name)',
-                    spinicon: 'fa fa-spinner fa-fw',
-                    buttons: [{
-                        id: 'btnUnlock',
-                        label: '@Localizer["TitleUnlockConnector"]',
-                        icon: 'fas fa-lock-open',
-                        autospin: true,
-                        action: function (dialogRef) {
-                            dialogRef.enableButtons(false);
-                            dialogRef.setClosable(false);
-                            dialogRef.getModalBody().html('@Localizer["ExecuteUnlock"]');
-
-                            var xmlhttp = new XMLHttpRequest();
-                            xmlhttp.onreadystatechange = function () {
-                                if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-                                    if (xmlhttp.status == 200) {
-                                        dialogRef.getModalBody().html(xmlhttp.responseText);
-                                    }
-                                    else {
-                                        dialogRef.getModalBody().html('@Localizer["ErrorUnlock"]');
-                                    }
-
-                                    dialogRef.setClosable(true);
-                                    dialogRef.enableButtons(true);
-                                    var $resetButton = dialog.getButton('btnUnlock');
-                                    $resetButton.hide();
-                                    var $cancelButton = dialog.getButton('btnDialogCancel');
-                                    $cancelButton.text('@Localizer["Close"]');
-
-                                }
-                            };
-                                xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/UnlockConnector/" + Uri.EscapeDataString(Model.ChargePointId)))", true);
                             xmlhttp.send();
                         }
                     }, {

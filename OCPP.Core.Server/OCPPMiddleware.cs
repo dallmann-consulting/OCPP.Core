@@ -566,7 +566,7 @@ namespace OCPP.Core.Server
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
                     }
-                    else if (cmd == "RemoteStartTransaction")
+                    else if (cmd == "StartTransaction")
                     {
                         if (!string.IsNullOrEmpty(urlChargePointId))
                         {
@@ -600,35 +600,35 @@ namespace OCPP.Core.Server
                                         else
                                         {
                                             // Chargepoint offline
-                                            _logger.LogError("OCPPMiddleware RemoteStartTransaction => Chargepoint offline: {0}", urlChargePointId);
+                                            _logger.LogError("OCPPMiddleware StartTransaction => Chargepoint offline: {0}", urlChargePointId);
                                             context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                                         }
                                     }
                                     catch (Exception exp)
                                     {
-                                        _logger.LogError(exp, "OCPPMiddleware RemoteStartTransaction => Error: {0}", exp.Message);
+                                        _logger.LogError(exp, "OCPPMiddleware StartTransaction => Error: {0}", exp.Message);
                                         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                                     }
                                 }
                                 else
                                 {
-                                    _logger.LogError("OCPPMiddleware RemoteStartTransaction => Missing tokenId");
+                                    _logger.LogError("OCPPMiddleware StartTransaction => Missing tokenId");
                                     context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                                 }
                             }
                             else
                             {
-                                _logger.LogError($"OCPPMiddleware RemoteStartTransaction => Bad connector ID: '{0}'", urlConnectorId);
+                                _logger.LogError($"OCPPMiddleware StartTransaction => Bad connector ID: '{0}'", urlConnectorId);
                                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                             }
                         }
                         else
                         {
-                            _logger.LogError("OCPPMiddleware RemoteStartTransaction => Missing chargepoint ID");
+                            _logger.LogError("OCPPMiddleware StartTransaction => Missing chargepoint ID");
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
                     }
-                    else if (cmd == "RemoteStopTransaction")
+                    else if (cmd == "StopTransaction")
                     {
                         if (!string.IsNullOrEmpty(urlChargePointId))
                         {
@@ -666,32 +666,32 @@ namespace OCPP.Core.Server
                                         }
                                         else
                                         {
-                                            _logger.LogError("OCPPMiddleware RemoteStopTransaction => connector '{0}' has no open transaction", urlConnectorId);
+                                            _logger.LogError("OCPPMiddleware StopTransaction => connector '{0}' has no open transaction", urlConnectorId);
                                             context.Response.StatusCode = (int)HttpStatusCode.FailedDependency;
                                         }
                                     }
                                     else
                                     {
-                                        _logger.LogError("OCPPMiddleware RemoteStopTransaction => invalid connector ID: '{0}'", urlConnectorId);
+                                        _logger.LogError("OCPPMiddleware StopTransaction => invalid connector ID: '{0}'", urlConnectorId);
                                         context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                                     }
                                 }
                                 else
                                 {
                                     // Chargepoint offline
-                                    _logger.LogError("OCPPMiddleware RemoteStopTransaction => Chargepoint offline: {0}", urlChargePointId);
+                                    _logger.LogError("OCPPMiddleware StopTransaction => Chargepoint offline: {0}", urlChargePointId);
                                     context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                                 }
                             }
                             catch (Exception exp)
                             {
-                                _logger.LogError(exp, "OCPPMiddleware RemoteStopTransaction => Error: {0}", exp.Message);
+                                _logger.LogError(exp, "OCPPMiddleware StopTransaction => Error: {0}", exp.Message);
                                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                             }
                         }
                         else
                         {
-                            _logger.LogError("OCPPMiddleware RemoteStopTransaction => Missing chargepoint ID");
+                            _logger.LogError("OCPPMiddleware StopTransaction => Missing chargepoint ID");
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
                     }

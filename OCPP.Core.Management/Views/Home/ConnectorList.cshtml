@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using System.Text
 @model ConnectorStatusViewModel
 @inject IViewLocalizer Localizer
 @{
@@ -8,7 +9,7 @@
 
 @if (Model != null)
 {
-    <table id="dtChargeTags" class="table table-striped table-bordered table-sm table-hover" cellspacing="0" width="100%">
+    <table id="dtChargeTags" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
         <thead>
             <tr>
                 <th class="th-sm">@Localizer["ChargePointId"]</th>
@@ -18,6 +19,7 @@
                 <th class="th-sm">@Localizer["LastStatusTime"]</th>
                 <th class="th-sm">@Localizer["LastMeter"]</th>
                 <th class="th-sm">@Localizer["LastMeterTime"]</th>
+                <th class="th-sm">@Localizer["Actions"]</th>
             </tr>
         </thead>
         <tbody>
@@ -25,18 +27,219 @@
             {
                 foreach (ConnectorStatus cs in Model.ConnectorStatuses)
                 {
-                    <tr class="table-row" data-href='@Url.Action("Connector", Constants.HomeController, new { id = cs.ChargePointId, connectorId = cs.ConnectorId.ToString() })'>
-                        <td>@cs.ChargePointId</td>
+                    ChargePointStatus cpOnlineStatus = null;
+                    OnlineConnectorStatus ocs = null;
+                    if (Model.OnlineConnectorStatuses != null &&
+                        Model.OnlineConnectorStatuses.TryGetValue(cs.ChargePointId, out cpOnlineStatus))
+                    {
+                        cpOnlineStatus.OnlineConnectors.TryGetValue(cs.ConnectorId, out ocs);
+                    }
+                    <tr>
+                        <td>
+                            <div style="display: inline-block;">
+                            @if (cpOnlineStatus != null) { 
+                                <i class="fas fa-link" title="@Localizer["ChargePointOnline"]"></i>
+                            } else {
+                                <i class="fas fa-unlink" title="@Localizer["ChargePointOffline"]"></i>
+                            }
+                            </div> @cs.ChargePointId
+                        </td>
                         <td>@cs.ConnectorId</td>
-                        <td>@cs.ConnectorName</td>
+                        <td><a href="@Url.Action("Connector", Constants.HomeController, new { id = cs.ChargePointId, connectorId = cs.ConnectorId.ToString() })"><i class="fas fa-edit" title="@Localizer["Edit"]"></i></a> @cs.ConnectorName</td>
                         <td>@((!string.IsNullOrEmpty(cs.LastStatus)) ? cs.LastStatus : "-")</td>
                         <td>@((cs.LastStatusTime.HasValue) ? string.Format("{0:G}", cs.LastStatusTime.Value.ToLocalTime()) : "-")</td>
                         <td>@((cs.LastMeter.HasValue) ? string.Format("{0:0.0##}", cs.LastMeter.Value) : "-" )</td>
                         <td>@((cs.LastMeterTime.HasValue) ? string.Format("{0:G}", cs.LastMeterTime.Value.ToLocalTime()): "-")</td>
+                        <td>
+                            <div style="display: inline-block;">
+                                @if (cpOnlineStatus != null)
+                                {
+                                    <button class="btn btn-info" id="btnUnlock" onclick="UnlockConnector('@cs.ChargePointId', @cs.ConnectorId, '@cs.ConnectorName')"><i class="fas fa-lock-open" title="@Localizer["TitleUnlockConnector"]"></i></button>
+                                }
+                                @if (cpOnlineStatus != null)
+                                {
+                                    <button class="btn btn-success" id="btnStartTransaction" onclick="StartTransaction('@cs.ChargePointId', @cs.ConnectorId, '@cs.ConnectorName')"><i class="fa-solid fa-plug-circle-check" title="@Localizer["TitleStartTransaction"]"></i></button>
+                                }
+                                @if (cpOnlineStatus != null)
+                                {
+                                    <button class="btn btn-danger" id="btnStopTransaction" onclick="StopTransaction('@cs.ChargePointId', @cs.ConnectorId, '@cs.ConnectorName')"><i class="fa-solid fa-plug-circle-xmark" title="@Localizer["TitleStopTransaction"]"></i></button>
+                                }
+                            </div>
+                        </td>
                     </tr>
                 }
             }
         </tbody>
     </table>
-}
 
+    @section scripts {
+        <script>
+            function UnlockConnector(chargepointId, connectorid, connectorName) {
+                if (connectorName.length==0) connectorName=chargepointId+':'+connectorid;
+                var msg = '@Localizer["DialogUnlockConnector"]'.replace('%', connectorName);
+                var dialog = new BootstrapDialog({
+                    title: '@Localizer["TitleUnlockConnector"]',
+                    message: msg,
+                    spinicon: 'fa fa-spinner fa-fw',
+                    buttons: [{
+                        id: 'btnUnlock',
+                        label: '@Localizer["TitleUnlockConnector"]',
+                        icon: 'fas fa-lock-open',
+                        autospin: true,
+                        action: function (dialogRef) {
+                            dialogRef.enableButtons(false);
+                            dialogRef.setClosable(false);
+                            dialogRef.getModalBody().html('@Localizer["ExecuteUnlock"]');
+
+                            var xmlhttp = new XMLHttpRequest();
+                            xmlhttp.onreadystatechange = function () {
+                                if (xmlhttp.readyState == XMLHttpRequest.DONE) {
+                                    if (xmlhttp.status == 200) {
+                                        dialogRef.getModalBody().html(xmlhttp.responseText);
+                                    }
+                                    else {
+                                        dialogRef.getModalBody().html('@Localizer["ErrorUnlock"]');
+                                    }
+
+                                    dialogRef.setClosable(true);
+                                    dialogRef.enableButtons(true);
+                                    var $resetButton = dialog.getButton('btnUnlock');
+                                    $resetButton.hide();
+                                    var $cancelButton = dialog.getButton('btnDialogCancel');
+                                    $cancelButton.text('@Localizer["Close"]');
+
+                                }
+                            };
+                            xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/UnlockConnector/"))" + chargepointId + '/' + connectorid, true);
+                            xmlhttp.send();
+                        }
+                    }, {
+                        id: 'btnDialogCancel',
+                        label: '@Localizer["Cancel"]',
+                        action: function (dialogRef) {
+                            dialogRef.close();
+                        }
+                    }]
+                });
+                dialog.open();
+            }
+
+            @{
+                StringBuilder sb = new StringBuilder();
+                if (Model.ChargeTags != null)
+                {
+                        foreach (ChargeTag ct in Model.ChargeTags)
+                        {
+                                sb.Append("<option value=\"");
+                                sb.Append(ct.TagId.Replace("'", "&#39;"));
+                                sb.Append("\">");
+                                sb.Append(Html.Encode(ct.TagName));
+                                sb.Append("<//option>");
+                        }
+                }
+            }
+            function StartTransaction(chargepointId, connectorid, connectorName) {
+                if (connectorName.length==0) connectorName=chargepointId+':'+connectorid;
+                var msg = '@Html.Raw(Localizer["DialogStartTransaction"].Value.Replace("%options%",sb.ToString()))';
+                msg = msg.replace('%connector%', connectorName);
+                var dialog = new BootstrapDialog({
+                    title: '@Localizer["TitleStartTransaction"]',
+                    message: msg,
+                    spinicon: 'fa fa-spinner fa-fw',
+                    buttons: [{
+                        id: 'btnStartTransaction',
+                        label: '@Localizer["TitleStartTransaction"]',
+                        icon: 'fa-solid fa-plug-circle-check',
+                        autospin: true,
+                        action: function (dialogRef) {
+                            var chargeTag = dialogRef.$modalBody.find('select').val();
+
+                            dialogRef.enableButtons(false);
+                            dialogRef.setClosable(false);
+                            dialogRef.getModalBody().html('@Localizer["ExecuteStartTransaction"]');
+
+                            var xmlhttp = new XMLHttpRequest();
+                            xmlhttp.onreadystatechange = function () {
+                                if (xmlhttp.readyState == XMLHttpRequest.DONE) {
+                                    if (xmlhttp.status == 200) {
+                                        dialogRef.getModalBody().html(xmlhttp.responseText);
+                                    }
+                                    else {
+                                        dialogRef.getModalBody().html('@Localizer["ErrorStartTransaction"]');
+                                    }
+
+                                    dialogRef.setClosable(true);
+                                    dialogRef.enableButtons(true);
+                                    var $resetButton = dialog.getButton('btnStartTransaction');
+                                    $resetButton.hide();
+                                    var $cancelButton = dialog.getButton('btnDialogCancel');
+                                    $cancelButton.text('@Localizer["Close"]');
+
+                                }
+                            };
+                            xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/StartTransaction/"))" + chargepointId + '/' + connectorid + '/' + chargeTag, true);
+                            xmlhttp.send();
+                        }
+                    }, {
+                        id: 'btnDialogCancel',
+                        label: '@Localizer["Cancel"]',
+                        action: function (dialogRef) {
+                            dialogRef.close();
+                        }
+                    }]
+                });
+                dialog.open();
+            }
+
+            function StopTransaction(chargepointId, connectorid, connectorName) {
+                if (connectorName.length==0) connectorName=chargepointId+':'+connectorid;
+                var msg = '@Localizer["DialogStopTransaction"]'.replace('%', connectorName);
+                var dialog = new BootstrapDialog({
+                    title: '@Localizer["TitleStopTransaction"]',
+                    message: msg,
+                    spinicon: 'fa fa-spinner fa-fw',
+                    buttons: [{
+                        id: 'btnStopTransaction',
+                        label: '@Localizer["TitleStopTransaction"]',
+                        icon: 'fa-solid fa-plug-circle-xmark',
+                        autospin: true,
+                        action: function (dialogRef) {
+                            dialogRef.enableButtons(false);
+                            dialogRef.setClosable(false);
+                            dialogRef.getModalBody().html('@Localizer["ExecuteStopTransaction"]');
+
+                            var xmlhttp = new XMLHttpRequest();
+                            xmlhttp.onreadystatechange = function () {
+                                if (xmlhttp.readyState == XMLHttpRequest.DONE) {
+                                    if (xmlhttp.status == 200) {
+                                        dialogRef.getModalBody().html(xmlhttp.responseText);
+                                    }
+                                    else {
+                                        dialogRef.getModalBody().html('@Localizer["ErrorStopTransaction"]');
+                                    }
+
+                                    dialogRef.setClosable(true);
+                                    dialogRef.enableButtons(true);
+                                    var $resetButton = dialog.getButton('btnStopTransaction');
+                                    $resetButton.hide();
+                                    var $cancelButton = dialog.getButton('btnDialogCancel');
+                                    $cancelButton.text('@Localizer["Close"]');
+
+                                }
+                            };
+                            xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/StopTransaction/"))" + chargepointId + '/' + connectorid, true);
+                            xmlhttp.send();
+                        }
+                    }, {
+                        id: 'btnDialogCancel',
+                        label: '@Localizer["Cancel"]',
+                        action: function (dialogRef) {
+                            dialogRef.close();
+                        }
+                    }]
+                });
+                dialog.open();
+            }
+        </script>
+    }
+}

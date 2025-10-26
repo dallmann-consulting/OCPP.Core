@@ -16,6 +16,8 @@ OCPP V1.6:
 * Authorize
 * StartTransaction
 * StopTransaction
+* RemoteStartTransaction
+* RemoteStopTransaction
 * MeterValues
 * StatusNotification
 * DataTransfer
@@ -29,6 +31,8 @@ OCPP V2.0 and V2.1:
 * Heartbeat
 * Authorize
 * TransactionEvent
+* RequestStartTransaction
+* RequestStopTransaction
 * MeterValues
 * StatusNotification
 * DataTransfer
