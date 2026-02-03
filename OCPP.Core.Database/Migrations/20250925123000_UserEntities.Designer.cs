@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OCPP.Core.Database;
 
@@ -11,9 +12,11 @@ using OCPP.Core.Database;
 namespace OCPP.Core.Database.Migrations
 {
     [DbContext(typeof(OCPPCoreContext))]
-    partial class OCPPCoreContextModelSnapshot : ModelSnapshot
+    [Migration("20250925123000_UserEntities")]
+    partial class UserEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -80,69 +83,6 @@ namespace OCPP.Core.Database.Migrations
                         .HasName("PK_ChargeKeys");
 
                     b.ToTable("ChargeTags");
-                });
-
-            modelBuilder.Entity("OCPP.Core.Database.User", b =>
-                {
-                    b.Property<int>("UserId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
-
-                    b.Property<bool>("IsAdmin")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("UserId");
-
-                    b.HasIndex("Username")
-                        .IsUnique();
-
-                    b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("OCPP.Core.Database.UserChargeTag", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TagId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("UserId", "TagId");
-
-                    b.HasIndex("TagId");
-
-                    b.ToTable("UserChargeTags");
-                });
-
-            modelBuilder.Entity("OCPP.Core.Database.UserChargePoint", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ChargePointId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("UserId", "ChargePointId");
-
-                    b.HasIndex("ChargePointId");
-
-                    b.ToTable("UserChargePoints");
                 });
 
             modelBuilder.Entity("OCPP.Core.Database.ConnectorStatus", b =>
@@ -332,6 +272,52 @@ namespace OCPP.Core.Database.Migrations
                     b.ToTable("Transactions");
                 });
 
+            modelBuilder.Entity("OCPP.Core.Database.User", b =>
+                {
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("OCPP.Core.Database.UserChargeTag", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TagId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("UserId", "TagId");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("UserChargeTags");
+                });
+
             modelBuilder.Entity("OCPP.Core.Database.Transaction", b =>
                 {
                     b.HasOne("OCPP.Core.Database.ChargePoint", "ChargePoint")
@@ -362,29 +348,9 @@ namespace OCPP.Core.Database.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("OCPP.Core.Database.UserChargePoint", b =>
-                {
-                    b.HasOne("OCPP.Core.Database.ChargePoint", "ChargePoint")
-                        .WithMany("UserChargePoints")
-                        .HasForeignKey("ChargePointId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("OCPP.Core.Database.User", "User")
-                        .WithMany("UserChargePoints")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ChargePoint");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("OCPP.Core.Database.ChargePoint", b =>
                 {
                     b.Navigation("Transactions");
-                    b.Navigation("UserChargePoints");
                 });
 
             modelBuilder.Entity("OCPP.Core.Database.ChargeTag", b =>
@@ -395,7 +361,6 @@ namespace OCPP.Core.Database.Migrations
             modelBuilder.Entity("OCPP.Core.Database.User", b =>
                 {
                     b.Navigation("UserChargeTags");
-                    b.Navigation("UserChargePoints");
                 });
 #pragma warning restore 612, 618
         }

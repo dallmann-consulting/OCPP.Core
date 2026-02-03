@@ -17,19 +17,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -40,12 +35,10 @@ namespace OCPP.Core.Management
     /// </summary>
     public class UserManager : IUserManager
     {
-        private IConfiguration _configuration;
         private OCPPCoreContext _dbContext;
 
-        public UserManager(IConfiguration configuration, OCPPCoreContext dbContext)
+        public UserManager(OCPPCoreContext dbContext)
         {
-            _configuration = configuration;
             _dbContext = dbContext;
         }
 
@@ -53,33 +46,25 @@ namespace OCPP.Core.Management
         {
             try
             {
-                IEnumerable cfgUsers = _configuration.GetSection("Users").GetChildren();
-
-                bool success = false;
-                foreach (ConfigurationSection cfgUser in cfgUsers)
+                User dbUser = await _dbContext.Users.FirstOrDefaultAsync(dbUser => dbUser.Username == user.Username);
+                if (dbUser != null && dbUser.Password == user.Password)
                 {
-                    if (cfgUser.GetValue<string>("Username") == user.Username &&
-                        cfgUser.GetValue<string>("Password") == user.Password)
+                    user.UserId = dbUser.UserId;
+                    user.IsAdmin = dbUser.IsAdmin;
+                    ClaimsIdentity identity = new ClaimsIdentity(this.GetUserClaims(user), CookieAuthenticationDefaults.AuthenticationScheme);
+                    ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+
+                    AuthenticationProperties authProperties = new AuthenticationProperties
                     {
-                        user.IsAdmin = cfgUser.GetValue<bool>(Constants.AdminRoleName);
-                        ClaimsIdentity identity = new ClaimsIdentity(this.GetUserClaims(user), CookieAuthenticationDefaults.AuthenticationScheme);
-                        ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+                        IsPersistent = true, // Persist the cookie after the browser is closed
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddHours(72)
+                    };
 
-                        AuthenticationProperties authProperties = new AuthenticationProperties
-                        {
-                            IsPersistent = true, // Persist the cookie after the browser is closed
-                            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(72)
-                        };
+                    WriteMessageLog("Login", $"Success - User '{user.Username}'");
 
-                        success = true;
-                        WriteMessageLog("Login", $"Success - User '{user.Username}'");
-
-                        await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
-                        break;
-                    }
+                    await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
                 }
-
-                if (!success)
+                else
                 {
                     WriteMessageLog("Login", $"Failure - User '{user.Username}'");
                 }
@@ -99,7 +84,7 @@ namespace OCPP.Core.Management
         {
             List<Claim> claims = new List<Claim>();
 
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, user.Username));
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()));
             claims.Add(new Claim(ClaimTypes.Name, user.Username));
             claims.AddRange(this.GetUserRoleClaims(user));
             return claims;
@@ -109,7 +94,6 @@ namespace OCPP.Core.Management
         {
             List<Claim> claims = new List<Claim>();
 
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, user.Username));
             if (user.IsAdmin)
             {
                 claims.Add(new Claim(ClaimTypes.Role, Constants.AdminRoleName));

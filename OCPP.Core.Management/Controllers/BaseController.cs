@@ -18,12 +18,14 @@
  */
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
+using System.Security.Claims;
 
 namespace OCPP.Core.Management.Controllers
 {
@@ -46,6 +48,36 @@ namespace OCPP.Core.Management.Controllers
             UserManager = userManager;
             Config = config;
             DbContext = dbContext;
+        }
+
+        protected int? GetCurrentUserId()
+        {
+            string userIdValue = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdValue, out int userId))
+            {
+                return userId;
+            }
+
+            return null;
+        }
+
+        protected HashSet<string> GetPermittedChargePointIds()
+        {
+            if (User != null && User.IsInRole(Constants.AdminRoleName))
+            {
+                return null;
+            }
+
+            int? userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+            }
+
+            return DbContext.UserChargePoints
+                .Where(point => point.UserId == userId.Value)
+                .Select(point => point.ChargePointId)
+                .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
         }
 
     }

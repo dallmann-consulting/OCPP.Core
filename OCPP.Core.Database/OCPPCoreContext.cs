@@ -39,6 +39,9 @@ namespace OCPP.Core.Database
         public virtual DbSet<ConnectorStatus> ConnectorStatuses { get; set; }
         public virtual DbSet<MessageLog> MessageLogs { get; set; }
         public virtual DbSet<Transaction> Transactions { get; set; }
+        public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<UserChargeTag> UserChargeTags { get; set; }
+        public virtual DbSet<UserChargePoint> UserChargePoints { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -129,6 +132,68 @@ namespace OCPP.Core.Database
                     .HasConstraintName("FK_Transactions_ChargePoint");
 
                 entity.HasIndex(e => new { e.ChargePointId, e.ConnectorId });
+            });
+
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.ToTable("Users");
+
+                entity.HasIndex(e => e.Username)
+                    .IsUnique();
+
+                entity.Property(e => e.Username)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Password)
+                    .IsRequired()
+                    .HasMaxLength(100);
+            });
+
+            modelBuilder.Entity<UserChargeTag>(entity =>
+            {
+                entity.ToTable("UserChargeTags");
+
+                entity.HasKey(e => new { e.UserId, e.TagId });
+
+                entity.Property(e => e.TagId)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.HasIndex(e => e.TagId);
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.UserChargeTags)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.ChargeTag)
+                    .WithMany(p => p.UserChargeTags)
+                    .HasForeignKey(d => d.TagId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserChargePoint>(entity =>
+            {
+                entity.ToTable("UserChargePoints");
+
+                entity.HasKey(e => new { e.UserId, e.ChargePointId });
+
+                entity.Property(e => e.ChargePointId)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.HasIndex(e => e.ChargePointId);
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.UserChargePoints)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.ChargePoint)
+                    .WithMany(p => p.UserChargePoints)
+                    .HasForeignKey(d => d.ChargePointId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             OnModelCreatingPartial(modelBuilder);

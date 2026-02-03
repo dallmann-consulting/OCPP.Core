@@ -1,0 +1,35 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using OCPP.Core.Database
+@using OCPP.Core.Management.Models
+@inject IViewLocalizer Localizer
+@model MyChargeTagsViewModel
+@{
+    ViewData["Title"] = Localizer["Title"];
+}
+
+<h4>@Localizer["MyChargeTags"]</h4>
+
+<table id="dtMyChargeTags" class="table table-striped table-bordered table-sm table-hover" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th>@Localizer["ChargeTagId"]</th>
+            <th>@Localizer["ChargeTagName"]</th>
+            <th>@Localizer["ChargeTagBlocked"]</th>
+            <th>@Localizer["ChargeTagExpiry"]</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.ChargeTags != null)
+        {
+            foreach (ChargeTag tag in Model.ChargeTags)
+            {
+                <tr>
+                    <td>@tag.TagId</td>
+                    <td>@tag.TagName</td>
+                    <td>@((tag.Blocked.HasValue && tag.Blocked.Value) ? Localizer["Yes"] : Localizer["No"])</td>
+                    <td>@(tag.ExpiryDate.HasValue ? tag.ExpiryDate.Value.ToString("g") : "-")</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>

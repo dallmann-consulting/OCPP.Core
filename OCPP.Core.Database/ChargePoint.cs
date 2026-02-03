@@ -29,6 +29,7 @@ namespace OCPP.Core.Database
         public ChargePoint()
         {
             Transactions = new HashSet<Transaction>();
+            UserChargePoints = new HashSet<UserChargePoint>();
         }
 
         public string ChargePointId { get; set; }
@@ -39,5 +40,6 @@ namespace OCPP.Core.Database
         public string ClientCertThumb { get; set; }
 
         public virtual ICollection<Transaction> Transactions { get; set; }
+        public virtual ICollection<UserChargePoint> UserChargePoints { get; set; }
     }
 }

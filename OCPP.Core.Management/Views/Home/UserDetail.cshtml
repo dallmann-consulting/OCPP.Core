@@ -1,0 +1,114 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using OCPP.Core.Management.Models
+@inject IViewLocalizer Localizer
+@model UserViewModel
+@{
+    ViewData["Title"] = Localizer["Title"];
+}
+
+<form method="post">
+    <div class="form-row">
+        <div class="col-md-10">
+            <h4>@(Model.UserId.HasValue ? Localizer["EditUser"] : Localizer["NewUser"])</h4>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="col-md-12">
+            @if (ViewBag.ErrorMsg != null)
+            {
+                <div class="alert alert-danger">
+                    @ViewBag.ErrorMsg
+                </div>
+            }
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="col-md-6">
+            <label class="inline-label" for="Username">@Localizer["UserNameLabel"]</label>
+            <input type="text" class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 50)" data-val-length-max="50" data-val-required="@Localizer["RequiredField"]" id="Username" maxlength="50" name="Username" placeholder="@Localizer["UserNamePlaceholder"]" value="@Model.Username" />
+        </div>
+        <div class="col-md-6">
+            <label class="inline-label" for="Password">@Localizer["UserPasswordLabel"]</label>
+            <input type="password" class="form-control" data-val="@(Model.UserId.HasValue ? "false" : "true")" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 100)" data-val-length-max="100" data-val-required="@Localizer["RequiredField"]" id="Password" maxlength="100" name="Password" placeholder="@Localizer["UserPasswordPlaceholder"]" />
+            @if (Model.UserId.HasValue)
+            {
+                <small class="form-text text-muted">@Localizer["UserPasswordHint"]</small>
+            }
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="col-md-6">
+            <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" id="IsAdmin" name="IsAdmin" value="true" @(Model.IsAdmin ? "checked" : "") />
+                <input type="hidden" name="IsAdmin" value="false" />
+                <label class="form-check-label inline-label" for="IsAdmin">@Localizer["UserIsAdminLabel"]</label>
+            </div>
+        </div>
+    </div>
+    <hr />
+    <div class="form-row">
+        <div class="col-md-12">
+            <h5>@Localizer["AssignedChargeTags"]</h5>
+            @if (Model.ChargeTags != null && Model.ChargeTags.Count > 0)
+            {
+                <div class="list-group">
+                    @for (int index = 0; index < Model.ChargeTags.Count; index++)
+                    {
+                        <div class="list-group-item">
+                            <input type="hidden" name="ChargeTags[@index].TagId" value="@Model.ChargeTags[index].TagId" />
+                            <input type="hidden" name="ChargeTags[@index].TagName" value="@Model.ChargeTags[index].TagName" />
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="ChargeTags[@index].IsAssigned" value="true" @(Model.ChargeTags[index].IsAssigned ? "checked" : "") />
+                                <input type="hidden" name="ChargeTags[@index].IsAssigned" value="false" />
+                                <label class="form-check-label">@Model.ChargeTags[index].TagId - @Model.ChargeTags[index].TagName</label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">@Localizer["NoChargeTagsAvailable"]</div>
+            }
+        </div>
+    </div>
+    <hr />
+    <div class="form-row">
+        <div class="col-md-12">
+            <h5>@Localizer["AssignedChargePoints"]</h5>
+            @if (Model.ChargePoints != null && Model.ChargePoints.Count > 0)
+            {
+                <div class="list-group">
+                    @for (int index = 0; index < Model.ChargePoints.Count; index++)
+                    {
+                        <div class="list-group-item">
+                            <input type="hidden" name="ChargePoints[@index].ChargePointId" value="@Model.ChargePoints[index].ChargePointId" />
+                            <input type="hidden" name="ChargePoints[@index].ChargePointName" value="@Model.ChargePoints[index].ChargePointName" />
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="ChargePoints[@index].IsAssigned" value="true" @(Model.ChargePoints[index].IsAssigned ? "checked" : "") />
+                                <input type="hidden" name="ChargePoints[@index].IsAssigned" value="false" />
+                                <label class="form-check-label">@Model.ChargePoints[index].ChargePointId - @Model.ChargePoints[index].ChargePointName</label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">@Localizer["NoChargePointsAvailable"]</div>
+            }
+        </div>
+    </div>
+    <div class="form-row mt-3">
+        <div class="col-md-10">
+            <button class="btn btn-primary" type="submit">@(Model.UserId.HasValue ? Localizer["Save"] : Localizer["SaveNew"])</button>
+            <a class="btn btn-secondary" href="~/Home/User">@Localizer["Cancel"]</a>
+        </div>
+        @if (Model.UserId.HasValue)
+        {
+            <div class="col-md-2 text-right">
+                <button class="btn btn-danger" type="submit" name="action" value="Delete">@Localizer["Delete"]</button>
+            </div>
+        }
+    </div>
+</form>

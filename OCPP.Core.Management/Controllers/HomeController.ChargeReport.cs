@@ -296,6 +296,7 @@ namespace OCPP.Core.Management.Controllers
             DateTime dbStartDate = startDate.Value.ToUniversalTime();
             // Stop date => use next day and compare with "<" (no clock times needed)
             DateTime dbStopDate = stopDate.Value.AddDays(1).ToUniversalTime();
+            HashSet<string> permittedChargePointIds = GetPermittedChargePointIds();
 
             // Load transactions with LEFT JOIN charge tags
             var transactions = (from t in DbContext.Transactions
@@ -305,7 +306,8 @@ namespace OCPP.Core.Management.Controllers
                                  from stopCT in ft.DefaultIfEmpty()
                                  where (t.StartTime >= dbStartDate &&
                                         t.StartTime <= dbStopDate &&
-                                        (!t.StopTime.HasValue || t.StopTime < dbStopDate))
+                                        (!t.StopTime.HasValue || t.StopTime < dbStopDate) &&
+                                        (permittedChargePointIds == null || permittedChargePointIds.Contains(t.ChargePointId)))
                                  select new TransactionExtended
                                  {
                                      TransactionId = t.TransactionId,
@@ -375,6 +377,7 @@ namespace OCPP.Core.Management.Controllers
             DateTime dbStartDate = startDate.Value.ToUniversalTime();
             // Stop date => use next day and compare with "<" (no clock times needed)
             DateTime dbStopDate = stopDate.Value.AddDays(1).ToUniversalTime();
+            HashSet<string> permittedChargePointIds = GetPermittedChargePointIds();
 
             var tlvm = new TransactionListViewModel
             {
@@ -384,6 +387,12 @@ namespace OCPP.Core.Management.Controllers
 
             Logger.LogTrace("ChargeReport: Loading charge points and connectors...");
             tlvm.ConnectorStatuses = DbContext.ConnectorStatuses.Include(cs => cs.ChargePoint).ToList();
+            if (permittedChargePointIds != null)
+            {
+                tlvm.ConnectorStatuses = tlvm.ConnectorStatuses
+                    .Where(connector => permittedChargePointIds.Contains(connector.ChargePointId))
+                    .ToList();
+            }
 
             Logger.LogTrace("ChargeReport: Loading transactions...");
             tlvm.Transactions = (from t in DbContext.Transactions
@@ -393,7 +402,8 @@ namespace OCPP.Core.Management.Controllers
                                  from stopCT in ft.DefaultIfEmpty()
                                  where (t.StartTime >= dbStartDate && 
                                         t.StartTime <= dbStopDate && 
-                                        (!t.StopTime.HasValue || t.StopTime < dbStopDate))
+                                        (!t.StopTime.HasValue || t.StopTime < dbStopDate) &&
+                                        (permittedChargePointIds == null || permittedChargePointIds.Contains(t.ChargePointId)))
                                  select new TransactionExtended
                                  {
                                      TransactionId = t.TransactionId,

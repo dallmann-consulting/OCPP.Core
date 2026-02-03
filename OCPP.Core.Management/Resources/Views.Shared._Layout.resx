@@ -132,10 +132,16 @@
   <data name="Connectors" xml:space="preserve">
     <value>Connectors</value>
   </data>
+  <data name="MyChargeTags" xml:space="preserve">
+    <value>My RFID-Tags</value>
+  </data>
   <data name="Logout" xml:space="preserve">
     <value>Logout</value>
   </data>
   <data name="Overview" xml:space="preserve">
     <value>Overview</value>
+  </data>
+  <data name="Users" xml:space="preserve">
+    <value>Users</value>
   </data>
 </root>

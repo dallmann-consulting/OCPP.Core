@@ -28,6 +28,9 @@
                         <li class="nav-item active">
                             <a class="nav-link" href="~/">@Localizer["Overview"] <span class="sr-only">(current)</span></a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/Home/MyChargeTags">@Localizer["MyChargeTags"]</a>
+                        </li>
                         @if (this.User.IsInRole(Constants.AdminRoleName))
                         {
                             <li class="nav-item dropdown">
@@ -35,6 +38,7 @@
                                     @Localizer["Administration"]
                                 </a>
                                 <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                    <a class="dropdown-item" href="~/Home/User">@Localizer["Users"]</a>
                                     <a class="dropdown-item" href="~/Home/ChargeTag">@Localizer["ChargeTags"]</a>
                                     <a class="dropdown-item" href="~/Home/ChargePoint">@Localizer["ChargePoints"]</a>
                                     <a class="dropdown-item" href="~/Home/Connector">@Localizer["Connectors"]</a>

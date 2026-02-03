@@ -1,0 +1,40 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using OCPP.Core.Database
+@using OCPP.Core.Management.Models
+@inject IViewLocalizer Localizer
+@model UserViewModel
+@{
+    ViewData["Title"] = Localizer["Title"];
+}
+
+<h4>@Localizer["UserList"]</h4>
+<table id="dtUsers" class="table table-striped table-bordered table-sm table-hover" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th>@Localizer["UserNameLabel"]</th>
+            <th>@Localizer["UserIsAdminLabel"]</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Users != null)
+        {
+            foreach (User user in Model.Users)
+            {
+                <tr class="table-row" data-href='@Url.Action("User", Constants.HomeController, new { id = user.UserId })'>
+                    <td>@user.Username</td>
+                    <td>@(user.IsAdmin ? Localizer["Yes"] : Localizer["No"])</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<a class="btn btn-secondary" href="~/Home/User/@@">@Localizer["AddNew"]</a>
+
+<script>
+    $(document).ready(function () {
+        $(".table-row").click(function () {
+            window.document.location = $(this).data("href");
+        });
+    });
+</script>
