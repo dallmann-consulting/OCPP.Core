@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using System.Linq
 @model ChargeTagViewModel
 @inject IViewLocalizer Localizer
 @{
@@ -93,6 +94,34 @@
                 <div class="col-sm-6">
                     <div class="form-check">
                         @Html.CheckBoxFor(m => m.Blocked, new { @class = "form-check-input checkbox-lg" })
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <label class="inline-label">@Localizer["ChargeTagUsersLabel"]</label>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        @if (Model.Users != null && Model.Users.Any())
+                        {
+                            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                                @for (int i = 0; i < Model.Users.Count; i++)
+                                {
+                                    <div class="form-check">
+                                        <input type="hidden" name="Users[@i].UserId" value="@Model.Users[i].UserId" />
+                                        <input type="hidden" name="Users[@i].Username" value="@Model.Users[i].Username" />
+                                        <input type="hidden" name="Users[@i].IsAssigned" value="false" />
+                                        <input class="form-check-input" type="checkbox" name="Users[@i].IsAssigned" value="true" @(Model.Users[i].IsAssigned ? "checked" : "") />
+                                        <label class="form-check-label">@Model.Users[i].Username</label>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-muted">@Localizer["ChargeTagUsersEmpty"]</div>
+                        }
                     </div>
                 </div>
             </div>
