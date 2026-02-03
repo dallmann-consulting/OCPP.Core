@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2025 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,35 +17,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using OCPP.Core.Database;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace OCPP.Core.Management.Models
 {
-    public class ChargeTagViewModel
+    public class ChargeTagUserAssignmentViewModel
     {
-        public List<ChargeTag> ChargeTags { get; set; }
+        public int UserId { get; set; }
 
-        public string CurrentTagId { get; set; }
+        public string Username { get; set; }
 
-        public List<ChargeTagUserAssignmentViewModel> Users { get; set; }
-
-        [Required, StringLength(50)]
-        public string TagId { get; set; }
-
-        [Required, StringLength(200)]
-        public string TagName { get; set; }
-
-        [StringLength(50)]
-        public string ParentTagId { get; set; }
-
-        [DataType(DataType.Date)]
-        public DateTime? ExpiryDate { get; set; }
-
-        public bool Blocked { get; set; }
+        public bool IsAssigned { get; set; }
     }
 }
