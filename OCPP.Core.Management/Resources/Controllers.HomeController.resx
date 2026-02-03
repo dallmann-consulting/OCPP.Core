@@ -186,4 +186,13 @@
   <data name="TransactionID" xml:space="preserve">
     <value>Transaction ID</value>
   </data>
+  <data name="UserNameExists" xml:space="preserve">
+    <value>A user with that username already exists.</value>
+  </data>
+  <data name="UserNameRequired" xml:space="preserve">
+    <value>Please enter a username.</value>
+  </data>
+  <data name="UserPasswordRequired" xml:space="preserve">
+    <value>Please enter a password.</value>
+  </data>
 </root>

@@ -43,6 +43,11 @@ namespace OCPP.Core.Management.Controllers
             try
             {
                 var tlvm = LoadTransactionListViewModel(Id, ConnectorId);
+                if (tlvm == null)
+                {
+                    TempData["ErrMsgKey"] = "AccessDenied";
+                    return RedirectToAction("Error", new { Id = "" });
+                }
                 var workbook = CreateSpreadsheet(tlvm);
 
                 using var memoryStream = new MemoryStream();
@@ -74,6 +79,11 @@ namespace OCPP.Core.Management.Controllers
             try
             {
                 var tlvm = LoadTransactionListViewModel(Id, ConnectorId);
+                if (tlvm == null)
+                {
+                    TempData["ErrMsgKey"] = "AccessDenied";
+                    return RedirectToAction("Error", new { Id = "" });
+                }
                 var workbook = CreateSpreadsheet(tlvm);
 
                 using var memoryStream = new MemoryStream();
@@ -96,6 +106,13 @@ namespace OCPP.Core.Management.Controllers
             if (!int.TryParse(ConnectorId, out int currentConnectorId))
             {
                 currentConnectorId = -1;
+            }
+
+            HashSet<string> permittedChargePointIds = GetPermittedChargePointIds();
+            if (!string.IsNullOrEmpty(Id) && permittedChargePointIds != null && !permittedChargePointIds.Contains(Id))
+            {
+                Logger.LogWarning("Export: Access denied to charge point {0} for user {1}", Id, User?.Identity?.Name);
+                return null;
             }
 
             var tlvm = new TransactionListViewModel
@@ -122,6 +139,12 @@ namespace OCPP.Core.Management.Controllers
 
             Logger.LogTrace("Export: Loading charge points and connectors...");
             tlvm.ConnectorStatuses = DbContext.ConnectorStatuses.Include(cs => cs.ChargePoint).ToList();
+            if (permittedChargePointIds != null)
+            {
+                tlvm.ConnectorStatuses = tlvm.ConnectorStatuses
+                    .Where(connector => permittedChargePointIds.Contains(connector.ChargePointId))
+                    .ToList();
+            }
 
             tlvm.CurrentConnectorName = tlvm.ConnectorStatuses
                 .FirstOrDefault(cs => cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)?.ToString() ?? $"{Id}:{currentConnectorId}";

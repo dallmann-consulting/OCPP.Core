@@ -117,82 +117,61 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ChargePointId" xml:space="preserve">
-    <value>Ladestation</value>
+  <data name="AssignedChargeTags" xml:space="preserve">
+    <value>Assigned RFID-Tags</value>
   </data>
-  <data name="ChargePointIdExists" xml:space="preserve">
-    <value>Es existiert bereits eine Ladestation mit dieser Kennung.</value>
+  <data name="AssignedChargePoints" xml:space="preserve">
+    <value>Assigned charge points</value>
   </data>
-  <data name="ChargePointIdRequired" xml:space="preserve">
-    <value>Bitte geben Sie die Kennung der Ladestation an.</value>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
   </data>
-  <data name="ChargeReport" xml:space="preserve">
-    <value>RFID Auswertung</value>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
   </data>
-  <data name="ChargeReportEnergy" xml:space="preserve">
-    <value>Energie</value>
+  <data name="EditUser" xml:space="preserve">
+    <value>Edit user</value>
   </data>
-  <data name="ChargeReportGroup" xml:space="preserve">
-    <value>Gruppe</value>
+  <data name="FieldMaxLength" xml:space="preserve">
+    <value>Max. {0} characters</value>
   </data>
-  <data name="ChargeReportTag" xml:space="preserve">
-    <value>RFID-Karte</value>
+  <data name="NewUser" xml:space="preserve">
+    <value>New user</value>
   </data>
-  <data name="ChargeSum" xml:space="preserve">
-    <value>Geladen</value>
+  <data name="NoChargeTagsAvailable" xml:space="preserve">
+    <value>No RFID tags available.</value>
   </data>
-  <data name="ChargeTagIdExists" xml:space="preserve">
-    <value>Die RFID-Nummer existiert bereits.</value>
+  <data name="NoChargePointsAvailable" xml:space="preserve">
+    <value>No charge points available.</value>
   </data>
-  <data name="ChargeTagIdRequired" xml:space="preserve">
-    <value>Bitte geben Sie eine RFID-Nummer an.</value>
+  <data name="RequiredField" xml:space="preserve">
+    <value>Required</value>
   </data>
-  <data name="Connector" xml:space="preserve">
-    <value>Anschluss</value>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
   </data>
-  <data name="Energy-kWh" xml:space="preserve">
-    <value>Energie (kWh)</value>
+  <data name="SaveNew" xml:space="preserve">
+    <value>Create</value>
   </data>
-  <data name="ErrorOCPPServer" xml:space="preserve">
-    <value>Es konnte kein aktueller Status vom OCPP-Server abgerufen werden.</value>
+  <data name="Title" xml:space="preserve">
+    <value>Management</value>
   </data>
-  <data name="ReportSheetName" xml:space="preserve">
-    <value>Transaktionen</value>
+  <data name="UserIsAdminLabel" xml:space="preserve">
+    <value>Administrator</value>
   </data>
-  <data name="StartMeter" xml:space="preserve">
-    <value>Beginn-Zähler</value>
+  <data name="UserNameLabel" xml:space="preserve">
+    <value>Username</value>
   </data>
-  <data name="StartTag" xml:space="preserve">
-    <value>RFID-Karte</value>
+  <data name="UserNamePlaceholder" xml:space="preserve">
+    <value>Enter username</value>
   </data>
-  <data name="StartTagID" xml:space="preserve">
-    <value>RFID-Nummer</value>
+  <data name="UserPasswordHint" xml:space="preserve">
+    <value>Leave empty to keep existing password.</value>
   </data>
-  <data name="StartTime" xml:space="preserve">
-    <value>Beginn</value>
+  <data name="UserPasswordLabel" xml:space="preserve">
+    <value>Password</value>
   </data>
-  <data name="StopMeter" xml:space="preserve">
-    <value>Ende-Zähler</value>
-  </data>
-  <data name="StopTag" xml:space="preserve">
-    <value>RFID-Karte</value>
-  </data>
-  <data name="StopTagID" xml:space="preserve">
-    <value>RFID-Nummer</value>
-  </data>
-  <data name="StopTime" xml:space="preserve">
-    <value>Ende</value>
-  </data>
-  <data name="TransactionID" xml:space="preserve">
-    <value>Transaktions-ID</value>
-  </data>
-  <data name="UserNameExists" xml:space="preserve">
-    <value>Ein Benutzer mit diesem Namen existiert bereits.</value>
-  </data>
-  <data name="UserNameRequired" xml:space="preserve">
-    <value>Bitte einen Benutzernamen eingeben.</value>
-  </data>
-  <data name="UserPasswordRequired" xml:space="preserve">
-    <value>Bitte ein Kennwort eingeben.</value>
+  <data name="UserPasswordPlaceholder" xml:space="preserve">
+    <value>Enter password</value>
   </data>
 </root>

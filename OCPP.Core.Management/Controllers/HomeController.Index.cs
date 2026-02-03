@@ -58,6 +58,7 @@ namespace OCPP.Core.Management.Controllers
             overviewModel.ChargePoints = new List<ChargePointsOverviewViewModel>();
             try
             {
+                HashSet<string> permittedChargePointIds = GetPermittedChargePointIds();
                 Dictionary<string, ChargePointStatus> dictOnlineStatus = new Dictionary<string, ChargePointStatus>();
                 #region Load online status from OCPP server
                 string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
@@ -167,6 +168,7 @@ namespace OCPP.Core.Management.Controllers
                             StopReason = transaction.StopReason
                         }
                     )
+                    .Where(x => permittedChargePointIds == null || permittedChargePointIds.Contains(x.ChargePointId))
                     .Where(x => x.TransactionId == null ||
                                 x.TransactionId == DbContext.Transactions
                                     .Where(t => t.ChargePointId == x.ChargePointId && t.ConnectorId == x.ConnectorId)
@@ -195,6 +197,12 @@ namespace OCPP.Core.Management.Controllers
 
                 // List of configured charge points
                 List<ChargePoint> dbChargePoints = DbContext.ChargePoints.AsNoTracking().ToList<ChargePoint>();
+                if (permittedChargePointIds != null)
+                {
+                    dbChargePoints = dbChargePoints
+                        .Where(chargePoint => permittedChargePointIds.Contains(chargePoint.ChargePointId))
+                        .ToList();
+                }
                 if (dbChargePoints != null)
                 {
                     // Iterate through all charge points in database

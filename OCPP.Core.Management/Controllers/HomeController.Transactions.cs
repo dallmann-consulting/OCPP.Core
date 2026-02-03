@@ -50,6 +50,7 @@ namespace OCPP.Core.Management.Controllers
 
             try
             {
+                HashSet<string> permittedChargePointIds = GetPermittedChargePointIds();
                 string ts = Request.Query["t"];
                 int days = 30;
                 if (ts == "2")
@@ -73,9 +74,21 @@ namespace OCPP.Core.Management.Controllers
 
                 Logger.LogTrace("Transactions: Loading charge points...");
                 tlvm.ChargePoints = DbContext.ChargePoints.ToList<ChargePoint>();
+                if (permittedChargePointIds != null)
+                {
+                    tlvm.ChargePoints = tlvm.ChargePoints
+                        .Where(chargePoint => permittedChargePointIds.Contains(chargePoint.ChargePointId))
+                        .ToList();
+                }
 
                 Logger.LogTrace("Transactions: Loading charge points connectors...");
                 tlvm.ConnectorStatuses = DbContext.ConnectorStatuses.ToList<ConnectorStatus>();
+                if (permittedChargePointIds != null)
+                {
+                    tlvm.ConnectorStatuses = tlvm.ConnectorStatuses
+                        .Where(connector => permittedChargePointIds.Contains(connector.ChargePointId))
+                        .ToList();
+                }
 
                 // Count connectors for every charge point (=> naming scheme)
                 Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
@@ -95,6 +108,13 @@ namespace OCPP.Core.Management.Controllers
 
                 if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
                 {
+                    if (permittedChargePointIds != null && !permittedChargePointIds.Contains(tlvm.CurrentChargePointId))
+                    {
+                        Logger.LogWarning("Transactions: Access denied to charge point {0} for user {1}", tlvm.CurrentChargePointId, User?.Identity?.Name);
+                        TempData["ErrMsgKey"] = "AccessDenied";
+                        return RedirectToAction("Error", new { Id = "" });
+                    }
+
                     Logger.LogTrace("Transactions: Loading charge point transactions...");
                     tlvm.Transactions = (from t in DbContext.Transactions
                                          join startCT in DbContext.ChargeTags on t.StartTagId equals startCT.TagId into ft_tmp

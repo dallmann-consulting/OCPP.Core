@@ -32,6 +32,8 @@ namespace OCPP.Core.Database
         public DateTime? ExpiryDate { get; set; }
         public bool? Blocked { get; set; }
 
+        public virtual ICollection<UserChargeTag> UserChargeTags { get; set; } = new List<UserChargeTag>();
+
         public override string ToString()
         {
             if (!string.IsNullOrEmpty(TagName))
