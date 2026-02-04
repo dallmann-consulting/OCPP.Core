@@ -126,6 +126,9 @@
   <data name="Cancel" xml:space="preserve">
     <value>Abbrechen</value>
   </data>
+  <data name="ChargePointHiddenLabel" xml:space="preserve">
+    <value>Für Benutzer ausblenden</value>
+  </data>
   <data name="Delete" xml:space="preserve">
     <value>Löschen</value>
   </data>

@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2025 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,33 +17,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using OCPP.Core.Database;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace OCPP.Core.Management.Models
 {
-    public class TransactionListViewModel
+    public class ChargeTagUserAssignmentViewModel
     {
-        public List<ChargePoint> ChargePoints { get; set; }
+        public int UserId { get; set; }
 
-        public List<ConnectorStatus> ConnectorStatuses { get; set; }
+        public string Username { get; set; }
 
-        public List<ChargeTag> ChargeTags { get; set; }
-
-        public string CurrentChargePointId { get; set; }
-
-        public int CurrentConnectorId { get; set; }
-
-        public string CurrentConnectorName { get; set; }
-
-        public string SelectedTagId { get; set; }
-
-        public List<TransactionExtended> Transactions { get; set; }
-
-        public int Timespan { get; set; }
-
+        public bool IsAssigned { get; set; }
     }
 }

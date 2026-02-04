@@ -32,6 +32,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using OCPP.Core.Database;
 
 namespace OCPP.Core.Management
@@ -93,6 +94,8 @@ namespace OCPP.Core.Management
 
             app.UseStaticFiles();
 
+            EnsureDefaultUsers(app);
+
             app.UseAuthentication();
             app.UseRouting();
             app.UseAuthorization();
@@ -109,6 +112,50 @@ namespace OCPP.Core.Management
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}/{connectorId?}/{param?}/");
             });
+        }
+
+        private void EnsureDefaultUsers(IApplicationBuilder app)
+        {
+            using var scope = app.ApplicationServices.CreateScope();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Startup>>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<OCPPCoreContext>();
+
+            try
+            {
+                dbContext.Database.Migrate();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to apply database migrations.");
+                return;
+            }
+
+            if (dbContext.Users.Any())
+            {
+                return;
+            }
+
+            var userConfigs = Configuration.GetSection("Users").GetChildren();
+            foreach (var userConfig in userConfigs)
+            {
+                string username = userConfig.GetValue<string>("Username");
+                string password = userConfig.GetValue<string>("Password");
+                bool isAdmin = userConfig.GetValue<bool>(Constants.AdminRoleName);
+
+                if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                {
+                    continue;
+                }
+
+                dbContext.Users.Add(new User
+                {
+                    Username = username,
+                    Password = password,
+                    IsAdmin = isAdmin
+                });
+            }
+
+            dbContext.SaveChanges();
         }
     }
 }

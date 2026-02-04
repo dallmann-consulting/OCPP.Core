@@ -183,6 +183,9 @@ namespace OCPP.Core.Database
                     .IsRequired()
                     .HasMaxLength(100);
 
+                entity.Property(e => e.IsHidden)
+                    .HasDefaultValue(false);
+
                 entity.HasIndex(e => e.ChargePointId);
 
                 entity.HasOne(d => d.User)

@@ -32,6 +32,7 @@ namespace OCPP.Core.Management.Models
 
         public string CurrentTagId { get; set; }
 
+        public List<ChargeTagUserAssignmentViewModel> Users { get; set; }
 
         [Required, StringLength(50)]
         public string TagId { get; set; }

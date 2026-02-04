@@ -59,6 +59,7 @@ namespace OCPP.Core.Management.Controllers
             try
             {
                 HashSet<string> permittedChargePointIds = GetPermittedChargePointIds();
+                HashSet<string> hiddenChargePointIds = GetHiddenChargePointIds();
                 Dictionary<string, ChargePointStatus> dictOnlineStatus = new Dictionary<string, ChargePointStatus>();
                 #region Load online status from OCPP server
                 string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
@@ -168,7 +169,7 @@ namespace OCPP.Core.Management.Controllers
                             StopReason = transaction.StopReason
                         }
                     )
-                    .Where(x => permittedChargePointIds == null || permittedChargePointIds.Contains(x.ChargePointId))
+                    .Where(x => hiddenChargePointIds == null || !hiddenChargePointIds.Contains(x.ChargePointId))
                     .Where(x => x.TransactionId == null ||
                                 x.TransactionId == DbContext.Transactions
                                     .Where(t => t.ChargePointId == x.ChargePointId && t.ConnectorId == x.ConnectorId)
@@ -197,10 +198,10 @@ namespace OCPP.Core.Management.Controllers
 
                 // List of configured charge points
                 List<ChargePoint> dbChargePoints = DbContext.ChargePoints.AsNoTracking().ToList<ChargePoint>();
-                if (permittedChargePointIds != null)
+                if (hiddenChargePointIds != null && hiddenChargePointIds.Count > 0)
                 {
                     dbChargePoints = dbChargePoints
-                        .Where(chargePoint => permittedChargePointIds.Contains(chargePoint.ChargePointId))
+                        .Where(chargePoint => !hiddenChargePointIds.Contains(chargePoint.ChargePointId))
                         .ToList();
                 }
                 if (dbChargePoints != null)
@@ -208,6 +209,8 @@ namespace OCPP.Core.Management.Controllers
                     // Iterate through all charge points in database
                     foreach (ChargePoint cp in dbChargePoints)
                     {
+                        bool isPermittedChargePoint = permittedChargePointIds == null ||
+                            permittedChargePointIds.Contains(cp.ChargePointId);
                         ChargePointStatus cpOnlineStatus = null;
                         dictOnlineStatus.TryGetValue(cp.ChargePointId, out cpOnlineStatus);
 
@@ -305,6 +308,19 @@ namespace OCPP.Core.Management.Controllers
                                         }
                                     }
 
+                                    if (!isPermittedChargePoint)
+                                    {
+                                        cpovm.MeterStart = -1;
+                                        cpovm.MeterStop = -1;
+                                        cpovm.StartTime = null;
+                                        cpovm.StopTime = null;
+                                        cpovm.CurrentChargeData = null;
+                                        if (cpovm.ConnectorStatus == ConnectorStatusEnum.Undefined)
+                                        {
+                                            cpovm.ConnectorStatus = ConnectorStatusEnum.Available;
+                                        }
+                                    }
+
                                     overviewModel.ChargePoints.Add(cpovm);
                                 }
                             }
@@ -320,6 +336,18 @@ namespace OCPP.Core.Management.Controllers
                             cpovm.Comment = cp.Comment;
                             cpovm.Online = cpOnlineStatus != null;
                             cpovm.ConnectorStatus = ConnectorStatusEnum.Undefined;
+                            if (!isPermittedChargePoint)
+                            {
+                                cpovm.MeterStart = -1;
+                                cpovm.MeterStop = -1;
+                                cpovm.StartTime = null;
+                                cpovm.StopTime = null;
+                                cpovm.CurrentChargeData = null;
+                                if (cpovm.ConnectorStatus == ConnectorStatusEnum.Undefined)
+                                {
+                                    cpovm.ConnectorStatus = ConnectorStatusEnum.Available;
+                                }
+                            }
                             overviewModel.ChargePoints.Add(cpovm);
                         }
                     }

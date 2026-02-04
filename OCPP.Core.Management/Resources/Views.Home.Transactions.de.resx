@@ -162,6 +162,12 @@
   <data name="TimeSpanLabel" xml:space="preserve">
     <value>Zeit:</value>
   </data>
+  <data name="TagAll" xml:space="preserve">
+    <value>Alle RFID-Tags</value>
+  </data>
+  <data name="TagFilterLabel" xml:space="preserve">
+    <value>RFID-Tag:</value>
+  </data>
   <data name="Title" xml:space="preserve">
     <value>Management</value>
   </data>
