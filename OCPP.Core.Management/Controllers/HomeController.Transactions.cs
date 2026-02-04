@@ -47,10 +47,15 @@ namespace OCPP.Core.Management.Controllers
             tlvm.CurrentConnectorId = currentConnectorId;
             tlvm.ConnectorStatuses = new List<ConnectorStatus>();
             tlvm.Transactions = new List<TransactionExtended>();
+            tlvm.ChargeTags = new List<ChargeTag>();
+            tlvm.SelectedTagId = string.IsNullOrWhiteSpace(Request.Query["tagId"])
+                ? null
+                : Request.Query["tagId"].ToString();
 
             try
             {
                 HashSet<string> permittedChargePointIds = GetPermittedChargePointIds();
+                HashSet<string> permittedChargeTagIds = GetPermittedChargeTagIds();
                 string ts = Request.Query["t"];
                 int days = 30;
                 if (ts == "2")
@@ -79,6 +84,26 @@ namespace OCPP.Core.Management.Controllers
                     tlvm.ChargePoints = tlvm.ChargePoints
                         .Where(chargePoint => permittedChargePointIds.Contains(chargePoint.ChargePointId))
                         .ToList();
+                }
+
+                Logger.LogTrace("Transactions: Loading charge tags...");
+                tlvm.ChargeTags = DbContext.ChargeTags
+                    .OrderBy(tag => tag.TagName)
+                    .ToList();
+                if (permittedChargeTagIds != null)
+                {
+                    tlvm.ChargeTags = tlvm.ChargeTags
+                        .Where(tag => permittedChargeTagIds.Contains(tag.TagId))
+                        .ToList();
+                }
+
+                if (!string.IsNullOrEmpty(tlvm.SelectedTagId) &&
+                    permittedChargeTagIds != null &&
+                    !permittedChargeTagIds.Contains(tlvm.SelectedTagId))
+                {
+                    Logger.LogWarning("Transactions: Access denied to charge tag {0} for user {1}", tlvm.SelectedTagId, User?.Identity?.Name);
+                    TempData["ErrMsgKey"] = "AccessDenied";
+                    return RedirectToAction("Error", new { Id = "" });
                 }
 
                 Logger.LogTrace("Transactions: Loading charge points connectors...");
@@ -123,7 +148,13 @@ namespace OCPP.Core.Management.Controllers
                                          from stopCT in ft.DefaultIfEmpty()
                                          where (t.ChargePointId == tlvm.CurrentChargePointId &&
                                                     t.ConnectorId == tlvm.CurrentConnectorId &&
-                                                    t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
+                                                    t.StartTime >= DateTime.UtcNow.AddDays(-1 * days) &&
+                                                    (permittedChargeTagIds == null ||
+                                                     permittedChargeTagIds.Contains(t.StartTagId) ||
+                                                     permittedChargeTagIds.Contains(t.StopTagId)) &&
+                                                    (string.IsNullOrEmpty(tlvm.SelectedTagId) ||
+                                                     t.StartTagId == tlvm.SelectedTagId ||
+                                                     t.StopTagId == tlvm.SelectedTagId))
                                          select new TransactionExtended
                                          {
                                              TransactionId = t.TransactionId,

@@ -135,6 +135,12 @@
   <data name="ChargeTagNamePlaceholder" xml:space="preserve">
     <value>Display name</value>
   </data>
+  <data name="ChargeTagUsersEmpty" xml:space="preserve">
+    <value>No users available</value>
+  </data>
+  <data name="ChargeTagUsersLabel" xml:space="preserve">
+    <value>Assigned users</value>
+  </data>
   <data name="EditChargeTag" xml:space="preserve">
     <value>Edit RFID-Tag</value>
   </data>

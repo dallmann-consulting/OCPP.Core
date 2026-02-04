@@ -23,6 +23,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
@@ -31,7 +32,8 @@ namespace OCPP.Core.Management.Controllers
     public partial class HomeController : BaseController
     {
         [Authorize]
-        public IActionResult User(string Id, UserViewModel uvm)
+        [ActionName("User")]
+        public IActionResult UserManagement(string Id, UserViewModel uvm)
         {
             try
             {
@@ -159,16 +161,15 @@ namespace OCPP.Core.Management.Controllers
                             .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
                         uvm.ChargeTags = BuildChargeTagAssignments(dbChargeTags, assignedTags);
 
-                        HashSet<string> assignedChargePoints = DbContext.UserChargePoints
+                        List<UserChargePoint> userChargePoints = DbContext.UserChargePoints
                             .Where(point => point.UserId == currentUser.UserId)
-                            .Select(point => point.ChargePointId)
-                            .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
-                        uvm.ChargePoints = BuildChargePointAssignments(dbChargePoints, assignedChargePoints);
+                            .ToList();
+                        uvm.ChargePoints = BuildChargePointAssignments(dbChargePoints, userChargePoints);
                     }
                     else
                     {
                         uvm.ChargeTags = BuildChargeTagAssignments(dbChargeTags, new HashSet<string>(StringComparer.InvariantCultureIgnoreCase));
-                        uvm.ChargePoints = BuildChargePointAssignments(dbChargePoints, new HashSet<string>(StringComparer.InvariantCultureIgnoreCase));
+                        uvm.ChargePoints = BuildChargePointAssignments(dbChargePoints, new List<UserChargePoint>());
                     }
 
                     string viewName = (!string.IsNullOrEmpty(Id) || Id == "@") ? "UserDetail" : "UserList";
@@ -252,20 +253,44 @@ namespace OCPP.Core.Management.Controllers
                     .Select(point => point.ChargePointId)
                     .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
 
-            return BuildChargePointAssignments(chargePoints, selectedChargePointIds);
+            Dictionary<string, bool> hiddenSelections = selectedAssignments == null
+                ? new Dictionary<string, bool>(StringComparer.InvariantCultureIgnoreCase)
+                : selectedAssignments.ToDictionary(point => point.ChargePointId, point => point.IsHidden, StringComparer.InvariantCultureIgnoreCase);
+
+            return BuildChargePointAssignments(chargePoints, selectedChargePointIds, hiddenSelections);
         }
 
-        private List<UserChargePointAssignmentViewModel> BuildChargePointAssignments(IEnumerable<ChargePoint> chargePoints, HashSet<string> assignedChargePointIds)
+        private List<UserChargePointAssignmentViewModel> BuildChargePointAssignments(IEnumerable<ChargePoint> chargePoints, List<UserChargePoint> assignments)
+        {
+            HashSet<string> assignedChargePointIds = assignments
+                .Select(point => point.ChargePointId)
+                .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
+
+            Dictionary<string, bool> hiddenAssignments = assignments
+                .ToDictionary(point => point.ChargePointId, point => point.IsHidden, StringComparer.InvariantCultureIgnoreCase);
+
+            return BuildChargePointAssignments(chargePoints, assignedChargePointIds, hiddenAssignments);
+        }
+
+        private List<UserChargePointAssignmentViewModel> BuildChargePointAssignments(
+            IEnumerable<ChargePoint> chargePoints,
+            HashSet<string> assignedChargePointIds,
+            Dictionary<string, bool> hiddenAssignments)
         {
             List<UserChargePointAssignmentViewModel> assignments = new List<UserChargePointAssignmentViewModel>();
 
             foreach (ChargePoint chargePoint in chargePoints)
             {
+                bool isHidden = hiddenAssignments != null &&
+                    hiddenAssignments.TryGetValue(chargePoint.ChargePointId, out bool hiddenValue) &&
+                    hiddenValue;
+
                 assignments.Add(new UserChargePointAssignmentViewModel
                 {
                     ChargePointId = chargePoint.ChargePointId,
                     ChargePointName = chargePoint.Name,
-                    IsAssigned = assignedChargePointIds.Contains(chargePoint.ChargePointId)
+                    IsAssigned = assignedChargePointIds.Contains(chargePoint.ChargePointId),
+                    IsHidden = isHidden
                 });
             }
 
@@ -335,13 +360,25 @@ namespace OCPP.Core.Management.Controllers
 
             foreach (string chargePointId in assignedChargePointIds)
             {
-                if (!existingAssignments.Any(point => point.ChargePointId.Equals(chargePointId, StringComparison.InvariantCultureIgnoreCase)))
+                bool isHidden = assignments
+                    .FirstOrDefault(point => point.ChargePointId.Equals(chargePointId, StringComparison.InvariantCultureIgnoreCase))
+                    ?.IsHidden ?? false;
+
+                UserChargePoint existingAssignment = existingAssignments
+                    .FirstOrDefault(point => point.ChargePointId.Equals(chargePointId, StringComparison.InvariantCultureIgnoreCase));
+
+                if (existingAssignment == null)
                 {
                     DbContext.UserChargePoints.Add(new UserChargePoint
                     {
                         UserId = userId,
-                        ChargePointId = chargePointId
+                        ChargePointId = chargePointId,
+                        IsHidden = isHidden
                     });
+                }
+                else
+                {
+                    existingAssignment.IsHidden = isHidden;
                 }
             }
         }

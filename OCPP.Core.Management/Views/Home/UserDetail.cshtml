@@ -84,10 +84,15 @@
                         <div class="list-group-item">
                             <input type="hidden" name="ChargePoints[@index].ChargePointId" value="@Model.ChargePoints[index].ChargePointId" />
                             <input type="hidden" name="ChargePoints[@index].ChargePointName" value="@Model.ChargePoints[index].ChargePointName" />
+                            <input type="hidden" name="ChargePoints[@index].IsHidden" value="false" />
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="ChargePoints[@index].IsAssigned" value="true" @(Model.ChargePoints[index].IsAssigned ? "checked" : "") />
                                 <input type="hidden" name="ChargePoints[@index].IsAssigned" value="false" />
                                 <label class="form-check-label">@Model.ChargePoints[index].ChargePointId - @Model.ChargePoints[index].ChargePointName</label>
+                            </div>
+                            <div class="form-check mt-1">
+                                <input class="form-check-input" type="checkbox" name="ChargePoints[@index].IsHidden" value="true" @(Model.ChargePoints[index].IsHidden ? "checked" : "") />
+                                <label class="form-check-label">@Localizer["ChargePointHiddenLabel"]</label>
                             </div>
                         </div>
                     }
