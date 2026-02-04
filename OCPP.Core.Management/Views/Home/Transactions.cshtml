@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using System.Linq
 @model TransactionListViewModel
 @inject IViewLocalizer Localizer
 @{
@@ -6,7 +7,20 @@
 }
 <br />
 @{
-    string timespan = (Model.Timespan == 2) ? "?t=2" : ((Model.Timespan == 3) ? "?t=3" : string.Empty);
+    List<string> queryParts = new List<string>();
+    if (Model.Timespan == 2)
+    {
+        queryParts.Add("t=2");
+    }
+    else if (Model.Timespan == 3)
+    {
+        queryParts.Add("t=3");
+    }
+    if (!string.IsNullOrEmpty(Model.SelectedTagId))
+    {
+        queryParts.Add($"tagId={Uri.EscapeDataString(Model.SelectedTagId)}");
+    }
+    string querySuffix = queryParts.Any() ? $"?{string.Join("&", queryParts)}" : string.Empty;
 
     List<ConnectorStatusViewModel> connectorStatusViewModels = new List<ConnectorStatusViewModel>();
 
@@ -60,6 +74,16 @@
             currentConnectorName = connectorName;
         }
     }
+
+    string selectedTagName = Localizer["TagAll"].Value;
+    if (!string.IsNullOrEmpty(Model.SelectedTagId) && Model.ChargeTags != null)
+    {
+        ChargeTag selectedTag = Model.ChargeTags.FirstOrDefault(tag => tag.TagId == Model.SelectedTagId);
+        if (selectedTag != null)
+        {
+            selectedTagName = string.IsNullOrEmpty(selectedTag.TagName) ? selectedTag.TagId : selectedTag.TagName;
+        }
+    }
 }
 
 <div class="container fill">
@@ -75,7 +99,7 @@
                 <div class="dropdown-menu" aria-labelledby="ddbChargePoint">
                     @foreach (ConnectorStatusViewModel csvm in connectorStatusViewModels)
                     {
-                        <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(csvm.ChargePointId)/@csvm.ConnectorId@timespan">@csvm.ConnectorName</a>
+                        <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(csvm.ChargePointId)/@csvm.ConnectorId@querySuffix">@csvm.ConnectorName</a>
                     }
                 </div>
             </div>
@@ -102,19 +126,45 @@
                     }
                 </button>
                 <div class="dropdown-menu" aria-labelledby="ddbTimespan">
-                    <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId">@Localizer["TimeSpan30"]</a>
-                    <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId?t=2">@Localizer["TimeSpan90"]</a>
-                    <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId?t=3">@Localizer["TimeSpan365"]</a>
+                    <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@(string.IsNullOrEmpty(Model.SelectedTagId) ? string.Empty : $"?tagId={Uri.EscapeDataString(Model.SelectedTagId)}")">@Localizer["TimeSpan30"]</a>
+                    <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId?t=2@(string.IsNullOrEmpty(Model.SelectedTagId) ? string.Empty : $"&tagId={Uri.EscapeDataString(Model.SelectedTagId)}")">@Localizer["TimeSpan90"]</a>
+                    <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId?t=3@(string.IsNullOrEmpty(Model.SelectedTagId) ? string.Empty : $"&tagId={Uri.EscapeDataString(Model.SelectedTagId)}")">@Localizer["TimeSpan365"]</a>
                 </div>
             </div>
         </div>
-        <div class="col-3">
+        <div class="col-1">
         </div>
         <div class="col-md-auto align-self-center">
-            <a href="~/Home/Export/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@timespan" data-toggle="tooltip" data-placement="top" title="@Localizer["DownloadCsv"]">
+            @Localizer["TagFilterLabel"]
+        </div>
+        <div class="col-md-auto align-self-center">
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="ddbTagFilter" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    @selectedTagName
+                </button>
+                <div class="dropdown-menu" aria-labelledby="ddbTagFilter">
+                    <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@(Model.Timespan == 2 ? "?t=2" : Model.Timespan == 3 ? "?t=3" : string.Empty)">@Localizer["TagAll"]</a>
+                    @if (Model.ChargeTags != null)
+                    {
+                        foreach (ChargeTag tag in Model.ChargeTags)
+                        {
+                            string displayName = string.IsNullOrEmpty(tag.TagName) ? tag.TagId : tag.TagName;
+                            string tagQuery = Model.Timespan == 2 ? $"?t=2&tagId={Uri.EscapeDataString(tag.TagId)}" :
+                                Model.Timespan == 3 ? $"?t=3&tagId={Uri.EscapeDataString(tag.TagId)}" :
+                                $"?tagId={Uri.EscapeDataString(tag.TagId)}";
+                            <a class="dropdown-item" href="~/Home/Transactions/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@tagQuery">@displayName</a>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-1">
+        </div>
+        <div class="col-md-auto align-self-center">
+            <a href="~/Home/Export/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@querySuffix" data-toggle="tooltip" data-placement="top" title="@Localizer["DownloadCsv"]">
                 <i class="fas fa-file-csv fa-2x"></i>
             </a>
-            <a href="~/Home/ExportXlsx/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@timespan" data-toggle="tooltip" data-placement="top" title="@Localizer["DownloadXlsx"]">
+            <a href="~/Home/ExportXlsx/@Uri.EscapeDataString(Model.CurrentChargePointId)/@Model.CurrentConnectorId@querySuffix" data-toggle="tooltip" data-placement="top" title="@Localizer["DownloadXlsx"]">
                 <i class="fas fa-file-excel fa-2x"></i>
             </a>
         </div>

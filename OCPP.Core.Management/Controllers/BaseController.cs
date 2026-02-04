@@ -75,8 +75,46 @@ namespace OCPP.Core.Management.Controllers
             }
 
             return DbContext.UserChargePoints
-                .Where(point => point.UserId == userId.Value)
+                .Where(point => point.UserId == userId.Value && !point.IsHidden)
                 .Select(point => point.ChargePointId)
+                .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
+        }
+
+        protected HashSet<string> GetHiddenChargePointIds()
+        {
+            if (User != null && User.IsInRole(Constants.AdminRoleName))
+            {
+                return new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+            }
+
+            int? userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+            }
+
+            return DbContext.UserChargePoints
+                .Where(point => point.UserId == userId.Value && point.IsHidden)
+                .Select(point => point.ChargePointId)
+                .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
+        }
+
+        protected HashSet<string> GetPermittedChargeTagIds()
+        {
+            if (User != null && User.IsInRole(Constants.AdminRoleName))
+            {
+                return null;
+            }
+
+            int? userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+            }
+
+            return DbContext.UserChargeTags
+                .Where(tag => tag.UserId == userId.Value)
+                .Select(tag => tag.TagId)
                 .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
         }
 

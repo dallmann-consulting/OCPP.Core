@@ -2,7 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OCPP.Core.Database;
 
@@ -11,13 +11,15 @@ using OCPP.Core.Database;
 namespace OCPP.Core.Database.Migrations
 {
     [DbContext(typeof(OCPPCoreContext))]
-    partial class OCPPCoreContextModelSnapshot : ModelSnapshot
+    [Migration("20250925131000_UserChargePointHidden")]
+    partial class UserChargePointHidden
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.3")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -50,8 +52,9 @@ namespace OCPP.Core.Database.Migrations
 
                     b.HasKey("ChargePointId");
 
-                    b.HasIndex(new[] { "ChargePointId" }, "ChargePoint_Identifier")
-                        .IsUnique();
+                    b.HasIndex("ChargePointId")
+                        .IsUnique()
+                        .HasDatabaseName("ChargePoint_Identifier");
 
                     b.ToTable("ChargePoint", (string)null);
                 });
@@ -80,6 +83,97 @@ namespace OCPP.Core.Database.Migrations
                         .HasName("PK_ChargeKeys");
 
                     b.ToTable("ChargeTags");
+                });
+
+            modelBuilder.Entity("OCPP.Core.Database.MessageLog", b =>
+                {
+                    b.Property<int>("LogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LogId"));
+
+                    b.Property<string>("ChargePointId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("LogTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Result")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("LogId");
+
+                    b.HasIndex("LogTime")
+                        .HasDatabaseName("IX_MessageLog_ChargePointId");
+
+                    b.ToTable("MessageLog", (string)null);
+                });
+
+            modelBuilder.Entity("OCPP.Core.Database.Transaction", b =>
+                {
+                    b.Property<int>("TransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TransactionId"));
+
+                    b.Property<string>("ChargePointId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("ConnectorId")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("MeterStart")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("MeterStop")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StartResult")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("StartTagId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("StopTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StopReason")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("StopTagId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Uid")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("TransactionId");
+
+                    b.HasIndex("ChargePointId", "ConnectorId");
+
+                    b.ToTable("Transactions");
                 });
 
             modelBuilder.Entity("OCPP.Core.Database.User", b =>
@@ -208,133 +302,9 @@ namespace OCPP.Core.Database.Migrations
                     b.Property<DateTime?>("LastStatusTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<double?>("MeterStart")
-                        .HasColumnType("float");
+                    b.HasKey("ChargePointId", "ConnectorId");
 
-                    b.Property<double?>("MeterStop")
-                        .HasColumnType("float");
-
-                    b.Property<string>("StartResult")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("StartTagId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("StartTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("StopReason")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("StopTagId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("StopTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("TransactionId")
-                        .HasColumnType("int");
-
-                    b.ToTable((string)null);
-
-                    b.ToView("ConnectorStatusView", (string)null);
-                });
-
-            modelBuilder.Entity("OCPP.Core.Database.MessageLog", b =>
-                {
-                    b.Property<int>("LogId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LogId"));
-
-                    b.Property<string>("ChargePointId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int?>("ConnectorId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ErrorCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("LogTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Result")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("LogId");
-
-                    b.HasIndex(new[] { "LogTime" }, "IX_MessageLog_ChargePointId");
-
-                    b.ToTable("MessageLog", (string)null);
-                });
-
-            modelBuilder.Entity("OCPP.Core.Database.Transaction", b =>
-                {
-                    b.Property<int>("TransactionId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TransactionId"));
-
-                    b.Property<string>("ChargePointId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("ConnectorId")
-                        .HasColumnType("int");
-
-                    b.Property<double>("MeterStart")
-                        .HasColumnType("float");
-
-                    b.Property<double?>("MeterStop")
-                        .HasColumnType("float");
-
-                    b.Property<string>("StartResult")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("StartTagId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("StartTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("StopReason")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("StopTagId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("StopTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Uid")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("TransactionId");
-
-                    b.HasIndex("ChargePointId", "ConnectorId");
-
-                    b.ToTable("Transactions");
+                    b.ToView("ConnectorStatusView");
                 });
 
             modelBuilder.Entity("OCPP.Core.Database.Transaction", b =>
@@ -342,6 +312,7 @@ namespace OCPP.Core.Database.Migrations
                     b.HasOne("OCPP.Core.Database.ChargePoint", "ChargePoint")
                         .WithMany("Transactions")
                         .HasForeignKey("ChargePointId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
                         .IsRequired()
                         .HasConstraintName("FK_Transactions_ChargePoint");
 
@@ -389,6 +360,7 @@ namespace OCPP.Core.Database.Migrations
             modelBuilder.Entity("OCPP.Core.Database.ChargePoint", b =>
                 {
                     b.Navigation("Transactions");
+
                     b.Navigation("UserChargePoints");
                 });
 
@@ -399,8 +371,9 @@ namespace OCPP.Core.Database.Migrations
 
             modelBuilder.Entity("OCPP.Core.Database.User", b =>
                 {
-                    b.Navigation("UserChargeTags");
                     b.Navigation("UserChargePoints");
+
+                    b.Navigation("UserChargeTags");
                 });
 #pragma warning restore 612, 618
         }

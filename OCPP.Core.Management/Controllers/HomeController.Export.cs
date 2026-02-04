@@ -48,6 +48,12 @@ namespace OCPP.Core.Management.Controllers
                     TempData["ErrMsgKey"] = "AccessDenied";
                     return RedirectToAction("Error", new { Id = "" });
                 }
+                if (!string.IsNullOrEmpty(tlvm.SelectedTagId) &&
+                    tlvm.ChargeTags != null &&
+                    !tlvm.ChargeTags.Any(tag => tag.TagId == tlvm.SelectedTagId))
+                {
+                    return Forbid();
+                }
                 var workbook = CreateSpreadsheet(tlvm);
 
                 using var memoryStream = new MemoryStream();
@@ -84,6 +90,12 @@ namespace OCPP.Core.Management.Controllers
                     TempData["ErrMsgKey"] = "AccessDenied";
                     return RedirectToAction("Error", new { Id = "" });
                 }
+                if (!string.IsNullOrEmpty(tlvm.SelectedTagId) &&
+                    tlvm.ChargeTags != null &&
+                    !tlvm.ChargeTags.Any(tag => tag.TagId == tlvm.SelectedTagId))
+                {
+                    return Forbid();
+                }
                 var workbook = CreateSpreadsheet(tlvm);
 
                 using var memoryStream = new MemoryStream();
@@ -109,6 +121,7 @@ namespace OCPP.Core.Management.Controllers
             }
 
             HashSet<string> permittedChargePointIds = GetPermittedChargePointIds();
+            HashSet<string> permittedChargeTagIds = GetPermittedChargeTagIds();
             if (!string.IsNullOrEmpty(Id) && permittedChargePointIds != null && !permittedChargePointIds.Contains(Id))
             {
                 Logger.LogWarning("Export: Access denied to charge point {0} for user {1}", Id, User?.Identity?.Name);
@@ -120,7 +133,11 @@ namespace OCPP.Core.Management.Controllers
                 CurrentChargePointId = Id,
                 CurrentConnectorId = currentConnectorId,
                 ConnectorStatuses = new List<ConnectorStatus>(),
-                Transactions = new List<TransactionExtended>()
+                Transactions = new List<TransactionExtended>(),
+                ChargeTags = new List<ChargeTag>(),
+                SelectedTagId = string.IsNullOrWhiteSpace(Request.Query["tagId"])
+                    ? null
+                    : Request.Query["tagId"].ToString()
             };
 
             string ts = Request.Query["t"];
@@ -146,6 +163,17 @@ namespace OCPP.Core.Management.Controllers
                     .ToList();
             }
 
+            Logger.LogTrace("Export: Loading charge tags...");
+            tlvm.ChargeTags = DbContext.ChargeTags
+                .OrderBy(tag => tag.TagName)
+                .ToList();
+            if (permittedChargeTagIds != null)
+            {
+                tlvm.ChargeTags = tlvm.ChargeTags
+                    .Where(tag => permittedChargeTagIds.Contains(tag.TagId))
+                    .ToList();
+            }
+
             tlvm.CurrentConnectorName = tlvm.ConnectorStatuses
                 .FirstOrDefault(cs => cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)?.ToString() ?? $"{Id}:{currentConnectorId}";
 
@@ -159,7 +187,13 @@ namespace OCPP.Core.Management.Controllers
                                       from stopCT in ft.DefaultIfEmpty()
                                       where (t.ChargePointId == tlvm.CurrentChargePointId &&
                                                 t.ConnectorId == tlvm.CurrentConnectorId &&
-                                                t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
+                                                t.StartTime >= DateTime.UtcNow.AddDays(-1 * days) &&
+                                                (permittedChargeTagIds == null ||
+                                                 permittedChargeTagIds.Contains(t.StartTagId) ||
+                                                 permittedChargeTagIds.Contains(t.StopTagId)) &&
+                                                (string.IsNullOrEmpty(tlvm.SelectedTagId) ||
+                                                 t.StartTagId == tlvm.SelectedTagId ||
+                                                 t.StopTagId == tlvm.SelectedTagId))
                                      select new TransactionExtended
                                       {
                                           TransactionId = t.TransactionId,

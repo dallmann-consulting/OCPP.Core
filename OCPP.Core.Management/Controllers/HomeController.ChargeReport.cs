@@ -297,6 +297,7 @@ namespace OCPP.Core.Management.Controllers
             // Stop date => use next day and compare with "<" (no clock times needed)
             DateTime dbStopDate = stopDate.Value.AddDays(1).ToUniversalTime();
             HashSet<string> permittedChargePointIds = GetPermittedChargePointIds();
+            HashSet<string> permittedChargeTagIds = GetPermittedChargeTagIds();
 
             // Load transactions with LEFT JOIN charge tags
             var transactions = (from t in DbContext.Transactions
@@ -307,7 +308,10 @@ namespace OCPP.Core.Management.Controllers
                                  where (t.StartTime >= dbStartDate &&
                                         t.StartTime <= dbStopDate &&
                                         (!t.StopTime.HasValue || t.StopTime < dbStopDate) &&
-                                        (permittedChargePointIds == null || permittedChargePointIds.Contains(t.ChargePointId)))
+                                        (permittedChargePointIds == null || permittedChargePointIds.Contains(t.ChargePointId)) &&
+                                        (permittedChargeTagIds == null ||
+                                         permittedChargeTagIds.Contains(t.StartTagId) ||
+                                         permittedChargeTagIds.Contains(t.StopTagId)))
                                  select new TransactionExtended
                                  {
                                      TransactionId = t.TransactionId,
@@ -378,6 +382,7 @@ namespace OCPP.Core.Management.Controllers
             // Stop date => use next day and compare with "<" (no clock times needed)
             DateTime dbStopDate = stopDate.Value.AddDays(1).ToUniversalTime();
             HashSet<string> permittedChargePointIds = GetPermittedChargePointIds();
+            HashSet<string> permittedChargeTagIds = GetPermittedChargeTagIds();
 
             var tlvm = new TransactionListViewModel
             {
@@ -403,7 +408,10 @@ namespace OCPP.Core.Management.Controllers
                                  where (t.StartTime >= dbStartDate && 
                                         t.StartTime <= dbStopDate && 
                                         (!t.StopTime.HasValue || t.StopTime < dbStopDate) &&
-                                        (permittedChargePointIds == null || permittedChargePointIds.Contains(t.ChargePointId)))
+                                        (permittedChargePointIds == null || permittedChargePointIds.Contains(t.ChargePointId)) &&
+                                        (permittedChargeTagIds == null ||
+                                         permittedChargeTagIds.Contains(t.StartTagId) ||
+                                         permittedChargeTagIds.Contains(t.StopTagId)))
                                  select new TransactionExtended
                                  {
                                      TransactionId = t.TransactionId,

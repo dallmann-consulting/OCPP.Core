@@ -26,5 +26,7 @@ namespace OCPP.Core.Management.Models
         public string ChargePointName { get; set; }
 
         public bool IsAssigned { get; set; }
+
+        public bool IsHidden { get; set; }
     }
 }

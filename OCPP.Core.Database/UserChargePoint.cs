@@ -27,6 +27,8 @@ namespace OCPP.Core.Database
 
         public string ChargePointId { get; set; }
 
+        public bool IsHidden { get; set; }
+
         public virtual ChargePoint ChargePoint { get; set; }
 
         public virtual User User { get; set; }
