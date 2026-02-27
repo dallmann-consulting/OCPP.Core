@@ -195,6 +195,80 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// Sends a Remote Start Transaction to the chargepoint
+        /// </summary>
+        private async Task RemoteStartTransaction20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
+            ControllerOCPP20 controller20 = new ControllerOCPP20(_configuration, _logFactory, chargePointStatus);
+
+            Messages_OCPP20.ResetRequest resetRequest = new Messages_OCPP20.ResetRequest();
+            resetRequest.Type = Messages_OCPP20.ResetEnumType.OnIdle;
+            resetRequest.CustomData = new CustomDataType();
+            resetRequest.CustomData.VendorId = ControllerOCPP20.VendorId;
+
+            string jsonResetRequest = JsonConvert.SerializeObject(resetRequest);
+
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = "RemoteStartTransaction";
+            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.JsonPayload = jsonResetRequest;
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
+
+            // store HttpContext with MsgId for later answer processing (=> send anwer to API caller)
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            // Send OCPP message with optional logging/dump
+            await SendOcpp20Message(msgOut, logger, chargePointStatus.WebSocket);
+
+            // Wait for asynchronous chargepoint response and processing
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            //
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        /// <summary>
+        /// Sends a Remote Stop Transaction to the chargepoint
+        /// </summary>
+        private async Task RemoteStopTransaction20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
+            ControllerOCPP20 controller20 = new ControllerOCPP20(_configuration, _logFactory, chargePointStatus);
+
+            Messages_OCPP20.ResetRequest resetRequest = new Messages_OCPP20.ResetRequest();
+            resetRequest.Type = Messages_OCPP20.ResetEnumType.OnIdle;
+            resetRequest.CustomData = new CustomDataType();
+            resetRequest.CustomData.VendorId = ControllerOCPP20.VendorId;
+
+            string jsonResetRequest = JsonConvert.SerializeObject(resetRequest);
+
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = "RemoteStopTransaction";
+            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.JsonPayload = jsonResetRequest;
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
+
+            // store HttpContext with MsgId for later answer processing (=> send anwer to API caller)
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            // Send OCPP message with optional logging/dump
+            await SendOcpp20Message(msgOut, logger, chargePointStatus.WebSocket);
+
+            // Wait for asynchronous chargepoint response and processing
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            //
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        /// <summary>
         /// Sends a Unlock-Request to the chargepoint
         /// </summary>
         private async Task UnlockConnector20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext, string urlConnectorId)

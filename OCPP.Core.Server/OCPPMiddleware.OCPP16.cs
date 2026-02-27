@@ -149,7 +149,7 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
-        /// Waits for new OCPP V1.6 messages on the open websocket connection and delegates processing to a controller
+        /// Sends a (Soft-)Reset to the chargepoint
         /// </summary>
         private async Task Reset16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext)
         {
@@ -186,6 +186,74 @@ namespace OCPP.Core.Server
                 logger.LogInformation("OCPPMiddleware.OCPP16 => Reset16: Timeout (ChargePoint='{0}')", chargePointStatus.Id);
             }
 
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        /// <summary>
+        /// Sends a Remote Start Transaction to the chargepoint
+        /// </summary>
+        private async Task RemoteStartTransaction16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
+            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus);
+
+            Messages_OCPP16.ResetRequest resetRequest = new Messages_OCPP16.ResetRequest();
+            resetRequest.Type = Messages_OCPP16.ResetRequestType.Soft;
+            string jsonResetRequest = JsonConvert.SerializeObject(resetRequest);
+
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = "RemoteStartTransaction";
+            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.JsonPayload = jsonResetRequest;
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
+
+            // store HttpContext with MsgId for later answer processing (=> send anwer to API caller)
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            // Send OCPP message with optional logging/dump
+            await SendOcpp16Message(msgOut, logger, chargePointStatus.WebSocket);
+
+            // Wait for asynchronous chargepoint response and processing
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            //
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        /// <summary>
+        /// Sends a Remote Start Transaction to the chargepoint
+        /// </summary>
+        private async Task RemoteStopTransaction16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
+            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus);
+
+            Messages_OCPP16.ResetRequest resetRequest = new Messages_OCPP16.ResetRequest();
+            resetRequest.Type = Messages_OCPP16.ResetRequestType.Soft;
+            string jsonResetRequest = JsonConvert.SerializeObject(resetRequest);
+
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = "RemoteStopTransaction";
+            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.JsonPayload = jsonResetRequest;
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
+
+            // store HttpContext with MsgId for later answer processing (=> send anwer to API caller)
+            _requestQueue.Add(msgOut.UniqueId, msgOut);
+
+            // Send OCPP message with optional logging/dump
+            await SendOcpp16Message(msgOut, logger, chargePointStatus.WebSocket);
+
+            // Wait for asynchronous chargepoint response and processing
+            string apiResult = await msgOut.TaskCompletionSource.Task;
+
+            //
             apiCallerContext.Response.StatusCode = 200;
             apiCallerContext.Response.ContentType = "application/json";
             await apiCallerContext.Response.WriteAsync(apiResult);
