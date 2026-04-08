@@ -13,6 +13,19 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Server.Extensions
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Extensions.AzureServiceBus", "Extensions\OCPP.Core.Extensions.AzureServiceBus\OCPP.Core.Extensions.AzureServiceBus.csproj", "{ADFE2098-320F-4C2C-ADA8-2BD7068B152E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C5037E44-6E5F-49A6-BA3C-D30666E5FC55}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		compose.yaml = compose.yaml
+		Dockerfile = Dockerfile
+		Installation.md = Installation.md
+		LICENSE = LICENSE
+		README.md = README.md
+		ocpp-core.service = ocpp-core.service
+		Server-API.md = Server-API.md
+	EndProjectSection
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Extensions.Authorization", "Extensions\OCPP.Core.Extensions.Authorization\OCPP.Core.Extensions.Authorization.csproj", "{1F534B25-22BE-4A7F-AF03-4D51C008A2BD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OCPP.Core.Test", "OCPP.Core.Test\OCPP.Core.Test.csproj", "{3222291D-6C00-4DE7-8267-8B3D7B50A831}"

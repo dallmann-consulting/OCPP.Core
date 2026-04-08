@@ -91,6 +91,14 @@ They are compiled 'portable' and run on different platforms.
 	```
 * Open "http://localhost:8082" in a browser.
 
+### Docker
+A docker compose file is provided as a template to run the two container images (server and management interface), this should be tweaked to your preference.
+If using SQLite, then both containers need access to the relevant shared folder.
+
+A ocpp-core.service template is provided for systemd startup of the docker compose containers.
+This requires a user "ocpp" being setup, and is assuming you have a working directory of
+/usr/bin/local/ocpp.core.  Adjust as appropriate.
+
 
 
 ## Build
@@ -101,7 +109,7 @@ If you use VS you can simply open and the compile the solution. Visual Studio wi
 
 For deployments you should "publish" each project. Then visual studio will automatically add all necessary files (like "wwwroot" - see below) to the output.
 
-## Build with SDK
+### Build with SDK
 Make sure that the [.NET-Core SDK 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) is installed.
 
 Open a command shell (cmd) and navigate to the folder where the "OCPP.Core.sln" file is. Then enter the following command to start a debug build:
@@ -110,6 +118,16 @@ Open a command shell (cmd) and navigate to the folder where the "OCPP.Core.sln" 
 ```dotnet publish OCPP.Core.sln```
 
 You will hopefully see that all three projects were compiled without errors. You should then have the same output like the VS-Build (see screenshot above).
+
+### Build with Docker
+You can quickly build all components using docker compose on the root directory of the repository: ```docker compose build```
+
+Alternatively, you can build the individual components with:
+
+```
+docker build --target final_server -t ocpp.core.server
+docker build --target final_management -t ocpp.core.management
+```
 
 # Running
 
@@ -145,3 +163,7 @@ To run an ASP.NET-Core application in IIS you need to install the .NET-Core Host
 https://dotnetcoretutorials.com/2019/12/23/hosting-an-asp-net-core-web-application-in-iis/
 
 Then you can create a website or app-folder in IIS and point to the compiler output folder. If you're using SQL-Server and want integrated security you might also need to configure the app pool.
+
+## Run with Docker
+Simply run ```docker compose up``` to start up the server and management instances.  Remember to customise your compose.yaml file with relevant settings, and
+provide a reverse proxy for the ports you have selected.
