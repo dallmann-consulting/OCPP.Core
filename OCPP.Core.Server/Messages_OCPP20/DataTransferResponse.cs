@@ -49,7 +49,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         public partial class DataTransferResponse
     {
             [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public CustomDataType CustomData { get; set; }
+            public CustomDataType? CustomData { get; set; }
 
             [Newtonsoft.Json.JsonProperty("status", Required = Newtonsoft.Json.Required.Always)]
             [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -57,11 +57,11 @@ namespace OCPP.Core.Server.Messages_OCPP20
             public DataTransferStatusEnumType Status { get; set; }
 
             [Newtonsoft.Json.JsonProperty("statusInfo", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public StatusInfoType StatusInfo { get; set; }
+            public StatusInfoType? StatusInfo { get; set; }
 
             /// <summary>Data without specified length or format, in response to request.
             /// </summary>
             [Newtonsoft.Json.JsonProperty("data", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public object Data { get; set; }
+            public object? Data { get; set; }
         }
     }

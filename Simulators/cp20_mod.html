@@ -174,7 +174,7 @@
 					$('#red').show();
 					_websocket.close(3001);
 				} else {
-					_websocket = new WebSocket(wsurl + "" + CP, ["ocpp2.0", "ocpp1.5"]);
+					_websocket = new WebSocket(wsurl + "" + CP, ["ocpp2.0.1"]);
 					_websocket.onopen = function(authorizationData) {
 
 						sessionStorage.setItem('LastAction', "BootNotification");

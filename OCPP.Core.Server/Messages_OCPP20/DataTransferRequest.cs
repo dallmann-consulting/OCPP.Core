@@ -30,21 +30,20 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class DataTransferRequest
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>May be used to indicate a specific message or implementation.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("messageId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.StringLength(50)]
-        public string MessageId { get; set; }
+        public string? MessageId { get; set; }
 
         /// <summary>Data without specified length or format. This needs to be decided by both parties (Open to implementation).
         /// </summary>
         [Newtonsoft.Json.JsonProperty("data", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public object Data { get; set; }
+        public object? Data { get; set; }
 
         /// <summary>This identifies the Vendor specific implementation
-        /// 
         /// </summary>
         [Newtonsoft.Json.JsonProperty("vendorId", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]

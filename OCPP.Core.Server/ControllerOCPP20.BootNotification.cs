@@ -48,10 +48,6 @@ namespace OCPP.Core.Server
                 bootNotificationResponse.CurrentTime = DateTimeOffset.UtcNow;
                 bootNotificationResponse.Interval = Configuration.GetValue<int>("HeartBeatInterval", 300);  // in seconds
 
-                bootNotificationResponse.StatusInfo = new StatusInfoType();
-                bootNotificationResponse.StatusInfo.ReasonCode = string.Empty;
-                bootNotificationResponse.StatusInfo.AdditionalInfo = string.Empty;
-
                 bootNotificationResponse.CustomData = new CustomDataType();
                 bootNotificationResponse.CustomData.VendorId = VendorId;
 

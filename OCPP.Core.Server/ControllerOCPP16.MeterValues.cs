@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-20251 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -77,7 +77,7 @@ namespace OCPP.Core.Server
                     // Known charge station => process meter values
                     double currentChargeKW = -1;
                     double meterKWH = -1;
-                    DateTimeOffset? meterTime = null;
+                    DateTimeOffset meterTime = DateTime.UtcNow;
                     double stateOfCharge = -1;
                     foreach (MeterValue meterValue in meterValueRequest.MeterValue)
                     {
@@ -171,32 +171,7 @@ namespace OCPP.Core.Server
                         if (meterKWH >= 0)
                         {
                             UpdateConnectorStatus(connectorId, null, null, meterKWH, meterTime);
-                        }
-
-                        if (currentChargeKW >= 0 || meterKWH >= 0 || stateOfCharge >= 0)
-                        {
-                            if (ChargePointStatus.OnlineConnectors.ContainsKey(connectorId))
-                            {
-                                OnlineConnectorStatus ocs = ChargePointStatus.OnlineConnectors[connectorId];
-                                if (currentChargeKW >= 0) ocs.ChargeRateKW = currentChargeKW;
-                                if (meterKWH >= 0) ocs.MeterKWH = meterKWH;
-                                if (stateOfCharge >= 0) ocs.SoC = stateOfCharge;
-                            }
-                            else
-                            {
-                                OnlineConnectorStatus ocs = new OnlineConnectorStatus();
-                                if (currentChargeKW >= 0) ocs.ChargeRateKW = currentChargeKW;
-                                if (meterKWH >= 0) ocs.MeterKWH = meterKWH;
-                                if (stateOfCharge >= 0) ocs.SoC = stateOfCharge;
-                                if (ChargePointStatus.OnlineConnectors.TryAdd(connectorId, ocs))
-                                {
-                                    Logger.LogTrace("MeterValues => Set OnlineConnectorStatus for ChargePoint={0} / Connector={1} / Values: {2}", ChargePointStatus?.Id, connectorId, msgMeterValue);
-                                }
-                                else
-                                {
-                                    Logger.LogError("MeterValues => Error adding new OnlineConnectorStatus for ChargePoint={0} / Connector={1} / Values: {2}", ChargePointStatus?.Id, connectorId, msgMeterValue);
-                                }
-                            }
+                            UpdateMemoryConnectorStatus(connectorId, meterKWH, meterTime, currentChargeKW, stateOfCharge);
                         }
                     }
                 }

@@ -35,7 +35,7 @@ namespace OCPP.Core.Management.Controllers
     public class AccountController : BaseController
     {
         public AccountController(
-            UserManager userManager,
+            IUserManager userManager,
             ILoggerFactory loggerFactory,
             IConfiguration config,
             OCPPCoreContext dbContext) : base(userManager, loggerFactory, config, dbContext)

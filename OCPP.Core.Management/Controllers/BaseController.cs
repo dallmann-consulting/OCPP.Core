@@ -29,7 +29,7 @@ namespace OCPP.Core.Management.Controllers
 {
     public class BaseController : Controller
     {
-        protected UserManager UserManager { get; private set; }
+        protected IUserManager UserManager { get; private set; }
 
         protected ILogger Logger { get; set; }
 
@@ -38,7 +38,7 @@ namespace OCPP.Core.Management.Controllers
         protected OCPPCoreContext DbContext { get; private set; }
 
         public BaseController(
-            UserManager userManager,
+            IUserManager userManager,
             ILoggerFactory loggerFactory,
             IConfiguration config,
             OCPPCoreContext dbContext)

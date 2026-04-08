@@ -211,7 +211,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class EVSEType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>Identified_ Object. MRID. Numeric_ Identifier
         /// urn:x-enexis:ecdm:uid:1:569198
@@ -223,7 +223,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// <summary>An id to designate a specific connector (on an EVSE) by connector index number.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("connectorId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int ConnectorId { get; set; }
+        public int? ConnectorId { get; set; }
     }
 
     /// <summary>Transaction
@@ -233,7 +233,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class TransactionType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>This contains the Id of the transaction.
         /// </summary>
@@ -244,30 +244,30 @@ namespace OCPP.Core.Server.Messages_OCPP20
 
         [Newtonsoft.Json.JsonProperty("chargingState", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
-        public ChargingStateEnumType ChargingState { get; set; }
+        public ChargingStateEnumType? ChargingState { get; set; }
 
         /// <summary>Transaction. Time_ Spent_ Charging. Elapsed_ Time
         /// urn:x-oca:ocpp:uid:1:569415
         /// Contains the total time that energy flowed from EVSE to EV during the transaction (in seconds). Note that timeSpentCharging is smaller or equal to the duration of the transaction.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("timeSpentCharging", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int TimeSpentCharging { get; set; }
+        public int? TimeSpentCharging { get; set; }
 
         [Newtonsoft.Json.JsonProperty("stoppedReason", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
-        public ReasonEnumType StoppedReason { get; set; }
+        public ReasonEnumType? StoppedReason { get; set; }
 
         /// <summary>The ID given to remote start request (&amp;lt;&amp;lt;requeststarttransactionrequest, RequestStartTransactionRequest&amp;gt;&amp;gt;. This enables to CSMS to match the started transaction to the given start request.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("remoteStartId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int RemoteStartId { get; set; }
+        public int? RemoteStartId { get; set; }
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.3.1.0 (Newtonsoft.Json v9.0.0.0)")]
     public partial class TransactionEventRequest
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("eventType", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -276,7 +276,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
 
         [Newtonsoft.Json.JsonProperty("meterValue", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.MinLength(1)]
-        public System.Collections.Generic.ICollection<MeterValueType> MeterValue { get; set; }
+        public System.Collections.Generic.ICollection<MeterValueType>? MeterValue { get; set; }
 
         /// <summary>The date and time at which this transaction event occurred.
         /// </summary>
@@ -297,31 +297,31 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// <summary>Indication that this transaction event happened when the Charging Station was offline. Default = false, meaning: the event occurred when the Charging Station was online.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("offline", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool Offline { get; set; } = false;
+        public bool? Offline { get; set; } = false;
 
         /// <summary>If the Charging Station is able to report the number of phases used, then it SHALL provide it. When omitted the CSMS may be able to determine the number of phases used via device management.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("numberOfPhasesUsed", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int NumberOfPhasesUsed { get; set; }
+        public int? NumberOfPhasesUsed { get; set; }
 
         /// <summary>The maximum current of the connected cable in Ampere (A).
         /// </summary>
         [Newtonsoft.Json.JsonProperty("cableMaxCurrent", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int CableMaxCurrent { get; set; }
+        public int? CableMaxCurrent { get; set; }
 
         /// <summary>This contains the Id of the reservation that terminates as a result of this transaction.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("reservationId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int ReservationId { get; set; }
+        public int? ReservationId { get; set; }
 
         [Newtonsoft.Json.JsonProperty("transactionInfo", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public TransactionType TransactionInfo { get; set; } = new TransactionType();
 
         [Newtonsoft.Json.JsonProperty("evse", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public EVSEType Evse { get; set; }
+        public EVSEType? Evse { get; set; }
 
         [Newtonsoft.Json.JsonProperty("idToken", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public IdTokenType IdToken { get; set; }
+        public IdTokenType? IdToken { get; set; }
     }
 }

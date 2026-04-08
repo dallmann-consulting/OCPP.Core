@@ -66,7 +66,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         public partial class ChargingProfileType
         {
             [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public CustomDataType CustomData { get; set; }
+            public CustomDataType? CustomData { get; set; }
 
             /// <summary>Identified_ Object. MRID. Numeric_ Identifier
             /// urn:x-enexis:ecdm:uid:1:569198
@@ -94,21 +94,21 @@ namespace OCPP.Core.Server.Messages_OCPP20
 
             [Newtonsoft.Json.JsonProperty("recurrencyKind", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
             [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
-            public RecurrencyKindEnumType RecurrencyKind { get; set; }
+            public RecurrencyKindEnumType? RecurrencyKind { get; set; }
 
             /// <summary>Charging_ Profile. Valid_ From. Date_ Time
             /// urn:x-oca:ocpp:uid:1:569234
             /// Point in time at which the profile starts to be valid. If absent, the profile is valid as soon as it is received by the Charging Station.
             /// </summary>
             [Newtonsoft.Json.JsonProperty("validFrom", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public System.DateTimeOffset ValidFrom { get; set; }
+            public System.DateTimeOffset? ValidFrom { get; set; }
 
             /// <summary>Charging_ Profile. Valid_ To. Date_ Time
             /// urn:x-oca:ocpp:uid:1:569235
             /// Point in time at which the profile stops to be valid. If absent, the profile is valid until it is replaced by another profile.
             /// </summary>
             [Newtonsoft.Json.JsonProperty("validTo", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public System.DateTimeOffset ValidTo { get; set; }
+            public System.DateTimeOffset? ValidTo { get; set; }
 
             [Newtonsoft.Json.JsonProperty("chargingSchedule", Required = Newtonsoft.Json.Required.Always)]
             [System.ComponentModel.DataAnnotations.Required]
@@ -120,7 +120,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
             /// </summary>
             [Newtonsoft.Json.JsonProperty("transactionId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
             [System.ComponentModel.DataAnnotations.StringLength(36)]
-            public string TransactionId { get; set; }
+            public string? TransactionId { get; set; }
         }
 
 
@@ -128,7 +128,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         public partial class SetChargingProfileRequest
         {
             [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public CustomDataType CustomData { get; set; }
+            public CustomDataType? CustomData { get; set; }
 
             /// <summary>For TxDefaultProfile an evseId=0 applies the profile to each individual evse. For ChargingStationMaxProfile and ChargingStationExternalConstraints an evseId=0 contains an overal limit for the whole Charging Station.
             /// </summary>

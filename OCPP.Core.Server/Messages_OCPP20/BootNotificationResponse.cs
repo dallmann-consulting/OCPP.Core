@@ -66,7 +66,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class BootNotificationResponse
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>This contains the CSMS’s current time.
         /// </summary>
@@ -85,8 +85,6 @@ namespace OCPP.Core.Server.Messages_OCPP20
         public RegistrationStatusEnumType Status { get; set; }
 
         [Newtonsoft.Json.JsonProperty("statusInfo", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public StatusInfoType StatusInfo { get; set; }
-
-
+        public StatusInfoType? StatusInfo { get; set; }
     }
 }

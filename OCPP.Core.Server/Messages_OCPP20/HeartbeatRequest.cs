@@ -25,6 +25,6 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class HeartbeatRequest
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
     }
 }

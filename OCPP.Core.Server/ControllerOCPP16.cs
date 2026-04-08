@@ -52,7 +52,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Processes the charge point message and returns the answer message
         /// </summary>
-        public OCPPMessage ProcessRequest(OCPPMessage msgIn)
+        public OCPPMessage ProcessRequest(OCPPMessage msgIn, OCPPMiddleware ocppMiddleware)
         {
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "3";
@@ -65,35 +65,27 @@ namespace OCPP.Core.Server
                 case "BootNotification":
                     errorCode = HandleBootNotification(msgIn, msgOut);
                     break;
-
                 case "Heartbeat":
                     errorCode = HandleHeartBeat(msgIn, msgOut);
                     break;
-
                 case "Authorize":
-                    errorCode = HandleAuthorize(msgIn, msgOut);
+                    errorCode = HandleAuthorize(msgIn, msgOut, ocppMiddleware);
                     break;
-
                 case "StartTransaction":
-                    errorCode = HandleStartTransaction(msgIn, msgOut);
+                    errorCode = HandleStartTransaction(msgIn, msgOut, ocppMiddleware);
                     break;
-
                 case "StopTransaction":
-                    errorCode = HandleStopTransaction(msgIn, msgOut);
+                    errorCode = HandleStopTransaction(msgIn, msgOut, ocppMiddleware);
                     break;
-
                 case "MeterValues":
                     errorCode = HandleMeterValues(msgIn, msgOut);
                     break;
-
                 case "StatusNotification":
                     errorCode = HandleStatusNotification(msgIn, msgOut);
                     break;
-
                 case "DataTransfer":
                     errorCode = HandleDataTransfer(msgIn, msgOut);
                     break;
-
                 default:
                     errorCode = ErrorCodes.NotSupported;
                     WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
@@ -123,19 +115,21 @@ namespace OCPP.Core.Server
                 case "Reset":
                     HandleReset(msgIn, msgOut);
                     break;
-
                 case "UnlockConnector":
                     HandleUnlockConnector(msgIn, msgOut);
                     break;
-
                 case "SetChargingProfile":
                     HandleSetChargingProfile(msgIn, msgOut);
                     break;
-
                 case "ClearChargingProfile":
                     HandleClearChargingProfile(msgIn, msgOut);
                     break;
-
+                case "RemoteStartTransaction":
+                    HandleRemoteStartTransaction(msgIn, msgOut);
+                    break;
+                case "RemoteStopTransaction":
+                    HandleRemoteStopTransaction(msgIn, msgOut);
+                    break;
                 default:
                     WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");
                     break;

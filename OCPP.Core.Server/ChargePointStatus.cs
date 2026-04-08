@@ -107,6 +107,11 @@ namespace OCPP.Core.Server
         public double? MeterKWH { get; set; }
 
         /// <summary>
+        /// Timestamp from meter value
+        /// </summary>
+        public DateTimeOffset MeterValueDate { get; set; }
+
+        /// <summary>
         /// StateOfCharges in percent
         /// </summary>
         public double? SoC { get; set; }

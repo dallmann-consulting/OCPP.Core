@@ -226,7 +226,7 @@
 
                             var remStrt = JSON.stringify([3, id, {"status": "Accepted"}]);
                             _websocket.send(remStrt);
-                            startTransaction();
+                            startTransaction(ddata[3].connectorId, ddata[3].idTag);
 
                             break;
                         case "UnlockConnector": /////////ERROR!!!!!!!!
@@ -292,13 +292,13 @@
         _websocket.send(Auth);
     }
 
-    function startTransaction(connectorId){
+    function startTransaction(connectorId, idTag){
         sessionStorage.setItem('LastAction', "startTransaction"+connectorId);
         connector_locked = true;
         logMsg("Connector"+connectorId+" status changed to: " + connector_locked);
         var strtT = JSON.stringify([2, id, "StartTransaction", {
             "connectorId": connectorId,
-            "idTag": $("#TAG").val(),
+            "idTag": idTag,
             "timestamp": formatDate(new Date()),
             "meterStart": 0,
             "reservationId": 0
@@ -435,10 +435,10 @@
         });
 
         $('#start1').click(function () {
-            startTransaction(1);
+            startTransaction(1, $("#TAG").val());
         });
         $('#start2').click(function () {
-            startTransaction(2);
+            startTransaction(2, $("#TAG").val());
         });
 
         $('#stop1').click(function () {

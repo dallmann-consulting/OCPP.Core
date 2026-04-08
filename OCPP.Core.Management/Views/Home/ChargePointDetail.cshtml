@@ -131,8 +131,17 @@
             </div>
             <div class="row">
                 <div class="col-sm-2">
-                    <button type="submit" class="btn btn-primary">@Localizer[(Model.CurrentId == "@") ? "SaveNew" : "Save"].Value</button>
+                    <button type="submit" class="btn btn-primary"><i class=" fas fa-save"></i>&nbsp;@Localizer[(Model.CurrentId == "@") ? "SaveNew" : "Save"].Value</button>
                 </div>
+                <div class="col-sm-2">
+                    <button type="button" class="btn btn-secondary" id="btnBack" onclick="history.back()">@Localizer["Back"].Value</button>
+                </div>
+                @if (Model.CurrentId != "@")
+                {
+                    <div class="col-sm-2">
+                        <button type="button" class="btn btn-warning" id="btnDelete" onclick="DeleteChargepoint()"><i class="fas fa-trash"></i>&nbsp;@Localizer["Delete"].Value</button>
+                    </div>
+                }
             </div>
             @if (!string.IsNullOrWhiteSpace(Model.ChargePointId))
             {
@@ -150,12 +159,10 @@
                     <div class="col-sm-2">
                         <button type="button" class="btn btn-info" id="btnReset" title="@Localizer["TitleReset"]" onclick="ResetChargepoint()"><i class="fas fa-redo"></i> @Localizer["TitleReset"]</button>
                     </div>
-                    <div class="col-sm-2">
-                        <button type="button" class="btn btn-info" id="btnUnlock" title="@Localizer["TitleUnlockConnector"]" onclick="UnlockConnector()"><i class="fas fa-lock-open"></i> @Localizer["TitleUnlockConnector"]</button>
-                    </div>
                 </div>
             }
         </div>
+        <input type="hidden" name="action" id="hidAction" value="" />
     }
 
 
@@ -210,43 +217,20 @@
                 });
                 dialog.open();
             }
-
-            function UnlockConnector() {
+            
+            function DeleteChargepoint() {
                 var dialog = new BootstrapDialog({
-                    title: '@Localizer["TitleUnlockConnector"]',
-                    message: '@string.Format(Localizer["DialogUnlockConnector"].Value, Model.Name)',
-                    spinicon: 'fa fa-spinner fa-fw',
+                    title: '@Localizer["TitleDelete"]',
+                    message: '@Localizer["DialogDelete"]',
+                    //spinicon: 'fa fa-spinner fa-fw',
                     buttons: [{
-                        id: 'btnUnlock',
-                        label: '@Localizer["TitleUnlockConnector"]',
-                        icon: 'fas fa-lock-open',
-                        autospin: true,
+                        id: 'btnDialogReset',
+                        label: '@Localizer["TitleDelete"]',
+                        icon: 'fas fa-trash',
+                        //autospin: true,
                         action: function (dialogRef) {
-                            dialogRef.enableButtons(false);
-                            dialogRef.setClosable(false);
-                            dialogRef.getModalBody().html('@Localizer["ExecuteUnlock"]');
-
-                            var xmlhttp = new XMLHttpRequest();
-                            xmlhttp.onreadystatechange = function () {
-                                if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-                                    if (xmlhttp.status == 200) {
-                                        dialogRef.getModalBody().html(xmlhttp.responseText);
-                                    }
-                                    else {
-                                        dialogRef.getModalBody().html('@Localizer["ErrorUnlock"]');
-                                    }
-
-                                    dialogRef.setClosable(true);
-                                    dialogRef.enableButtons(true);
-                                    var $resetButton = dialog.getButton('btnUnlock');
-                                    $resetButton.hide();
-                                    var $cancelButton = dialog.getButton('btnDialogCancel');
-                                    $cancelButton.text('@Localizer["Close"]');
-
-                                }
-                            };
-                                xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/UnlockConnector/" + Uri.EscapeDataString(Model.ChargePointId)))", true);
-                            xmlhttp.send();
+                            $("#hidAction").val('Delete');
+                            $("form").submit();
                         }
                     }, {
                         id: 'btnDialogCancel',

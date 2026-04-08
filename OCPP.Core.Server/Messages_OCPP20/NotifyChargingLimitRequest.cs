@@ -66,7 +66,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class ChargingLimitType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("chargingLimitSource", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -78,7 +78,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// Indicates whether the charging limit is critical for the grid.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("isGridCritical", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool IsGridCritical { get; set; }
+        public bool? IsGridCritical { get; set; }
 
 
     }
@@ -91,7 +91,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class ChargingSchedulePeriodType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>Charging_ Schedule_ Period. Start_ Period. Elapsed_ Time
         /// urn:x-oca:ocpp:uid:1:569240
@@ -112,13 +112,13 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// The number of phases that can be used for charging. If a number of phases is needed, numberPhases=3 will be assumed unless another number is given.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("numberPhases", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int NumberPhases { get; set; }
+        public int? NumberPhases { get; set; }
 
         /// <summary>Values: 1..3, Used if numberPhases=1 and if the EVSE is capable of switching the phase connected to the EV, i.e. ACPhaseSwitchingSupported is defined and true. It’s not allowed unless both conditions above are true. If both conditions are true, and phaseToUse is omitted, the Charging Station / EVSE will make the selection on its own.
         /// 
         /// </summary>
         [Newtonsoft.Json.JsonProperty("phaseToUse", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int PhaseToUse { get; set; }
+        public int? PhaseToUse { get; set; }
 
 
     }
@@ -131,7 +131,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class ChargingScheduleType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>Identifies the ChargingSchedule.
         /// </summary>
@@ -143,14 +143,14 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// Starting point of an absolute schedule. If absent the schedule will be relative to start of charging.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("startSchedule", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.DateTimeOffset StartSchedule { get; set; }
+        public System.DateTimeOffset? StartSchedule { get; set; }
 
         /// <summary>Charging_ Schedule. Duration. Elapsed_ Time
         /// urn:x-oca:ocpp:uid:1:569236
         /// Duration of the charging schedule in seconds. If the duration is left empty, the last period will continue indefinitely or until end of the transaction if chargingProfilePurpose = TxProfile.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("duration", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int Duration { get; set; }
+        public int? Duration { get; set; }
 
         [Newtonsoft.Json.JsonProperty("chargingRateUnit", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -168,10 +168,10 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// Minimum charging rate supported by the EV. The unit of measure is defined by the chargingRateUnit. This parameter is intended to be used by a local smart charging algorithm to optimize the power allocation for in the case a charging process is inefficient at lower charging rates. Accepts at most one digit fraction (e.g. 8.1)
         /// </summary>
         [Newtonsoft.Json.JsonProperty("minChargingRate", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public double MinChargingRate { get; set; }
+        public double? MinChargingRate { get; set; }
 
         [Newtonsoft.Json.JsonProperty("salesTariff", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public SalesTariffType SalesTariff { get; set; }
+        public SalesTariffType? SalesTariff { get; set; }
     }
 
     /// <summary>Consumption_ Cost
@@ -181,7 +181,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class ConsumptionCostType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>Consumption_ Cost. Start_ Value. Numeric
         /// urn:x-oca:ocpp:uid:1:569246
@@ -204,7 +204,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class CostType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("costKind", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -223,7 +223,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// Values: -3..3, The amountMultiplier defines the exponent to base 10 (dec). The final value is determined by: amount * 10 ^ amountMultiplier
         /// </summary>
         [Newtonsoft.Json.JsonProperty("amountMultiplier", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int AmountMultiplier { get; set; }
+        public int? AmountMultiplier { get; set; }
     }
 
     /// <summary>Relative_ Timer_ Interval
@@ -233,7 +233,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class RelativeTimeIntervalType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>Relative_ Timer_ Interval. Start. Elapsed_ Time
         /// urn:x-oca:ocpp:uid:1:569279
@@ -247,7 +247,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// Duration of the interval, in seconds.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("duration", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int Duration { get; set; }
+        public int? Duration { get; set; }
     }
 
     /// <summary>Sales_ Tariff_ Entry
@@ -257,7 +257,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class SalesTariffEntryType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("relativeTimeInterval", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
@@ -269,12 +269,12 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// </summary>
         [Newtonsoft.Json.JsonProperty("ePriceLevel", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.Range(0, int.MaxValue)]
-        public int EPriceLevel { get; set; }
+        public int? EPriceLevel { get; set; }
 
         [Newtonsoft.Json.JsonProperty("consumptionCost", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.MinLength(1)]
         [System.ComponentModel.DataAnnotations.MaxLength(3)]
-        public System.Collections.Generic.ICollection<ConsumptionCostType> ConsumptionCost { get; set; }
+        public System.Collections.Generic.ICollection<ConsumptionCostType>? ConsumptionCost { get; set; }
     }
 
     /// <summary>Sales_ Tariff
@@ -285,7 +285,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class SalesTariffType
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         /// <summary>Identified_ Object. MRID. Numeric_ Identifier
         /// urn:x-enexis:ecdm:uid:1:569198
@@ -300,14 +300,14 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// </summary>
         [Newtonsoft.Json.JsonProperty("salesTariffDescription", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.StringLength(32)]
-        public string SalesTariffDescription { get; set; }
+        public string? SalesTariffDescription { get; set; }
 
         /// <summary>Sales_ Tariff. Num_ E_ Price_ Levels. Counter
         /// urn:x-oca:ocpp:uid:1:569284
         /// Defines the overall number of distinct price levels used across all provided SalesTariff elements.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("numEPriceLevels", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int NumEPriceLevels { get; set; }
+        public int? NumEPriceLevels { get; set; }
 
         [Newtonsoft.Json.JsonProperty("salesTariffEntry", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
@@ -320,16 +320,16 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class NotifyChargingLimitRequest
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("chargingSchedule", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.ComponentModel.DataAnnotations.MinLength(1)]
-        public System.Collections.Generic.ICollection<ChargingScheduleType> ChargingSchedule { get; set; }
+        public System.Collections.Generic.ICollection<ChargingScheduleType>? ChargingSchedule { get; set; }
 
         /// <summary>The charging schedule contained in this notification applies to an EVSE. evseId must be &amp;gt; 0.
         /// </summary>
         [Newtonsoft.Json.JsonProperty("evseId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int EvseId { get; set; }
+        public int? EvseId { get; set; }
 
         [Newtonsoft.Json.JsonProperty("chargingLimit", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]

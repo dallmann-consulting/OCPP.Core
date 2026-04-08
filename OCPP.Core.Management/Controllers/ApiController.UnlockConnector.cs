@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2025 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -34,7 +34,7 @@ namespace OCPP.Core.Management.Controllers
     {
         [Authorize]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public async Task<IActionResult> UnlockConnector(string Id)
+        public async Task<IActionResult> UnlockConnector(string Id, int connectorId)
         {
             if (User != null && !User.IsInRole(Constants.AdminRoleName))
             {
@@ -66,8 +66,8 @@ namespace OCPP.Core.Management.Controllers
                                         serverApiUrl += "/";
                                     }
                                     Uri uri = new Uri(serverApiUrl);
-                                    uri = new Uri(uri, $"UnlockConnector/{Uri.EscapeDataString(Id)}");
-                                    httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
+                                    uri = new Uri(uri, $"UnlockConnector/{Uri.EscapeDataString(Id)}/{connectorId}");
+                                    httpClient.Timeout = new TimeSpan(0, 0, 15); // use short timeout
 
                                     // API-Key authentication?
                                     if (!string.IsNullOrWhiteSpace(apiKeyConfig))
@@ -103,8 +103,11 @@ namespace OCPP.Core.Management.Controllers
                                                     case "NotSupported":
                                                         resultContent = _localizer["UnlockConnectorNotSupported"];
                                                         break;
+                                                    case "Timeout":
+                                                        resultContent = _localizer["Timeout"];
+                                                        break;
                                                     default:
-                                                        resultContent = string.Format(_localizer["UnlockConnectorUnknownStatus"], status);
+                                                        resultContent = string.Format(_localizer["UnknownStatus"], status);
                                                         break;
                                                 }
                                             }
@@ -126,7 +129,7 @@ namespace OCPP.Core.Management.Controllers
                                     {
                                         // Chargepoint offline
                                         httpStatuscode = (int)HttpStatusCode.OK;
-                                        resultContent = _localizer["UnlockConnectorOffline"];
+                                        resultContent = _localizer["ChargerOffline"];
                                     }
                                     else
                                     {

@@ -48,7 +48,7 @@ namespace OCPP.Core.Server.Messages_OCPP20
     public partial class UnlockConnectorResponse
     {
         [Newtonsoft.Json.JsonProperty("customData", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public CustomDataType CustomData { get; set; }
+        public CustomDataType? CustomData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("status", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -56,6 +56,6 @@ namespace OCPP.Core.Server.Messages_OCPP20
         public UnlockStatusEnumType Status { get; set; }
 
         [Newtonsoft.Json.JsonProperty("statusInfo", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public StatusInfoType StatusInfo { get; set; }
+        public StatusInfoType? StatusInfo { get; set; }
     }
 }

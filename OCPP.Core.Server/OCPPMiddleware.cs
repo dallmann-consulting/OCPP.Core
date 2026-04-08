@@ -18,21 +18,20 @@
  */
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
-using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OCPP.Core.Server
@@ -41,13 +40,18 @@ namespace OCPP.Core.Server
     {
         // Supported OCPP protocols (in order)
         private const string Protocol_OCPP16 = "ocpp1.6";
-        private const string Protocol_OCPP20 = "ocpp2.0";
-        private static readonly string[] SupportedProtocols = { Protocol_OCPP20, Protocol_OCPP16 /*, "ocpp1.5" */};
+        private const string Protocol_OCPP201 = "ocpp2.0.1";
+        private const string Protocol_OCPP21 = "ocpp2.1";
+        private static readonly string[] SupportedProtocols = { Protocol_OCPP16, Protocol_OCPP201, Protocol_OCPP21 };
 
         // RegExp for splitting ocpp message parts
         // ^\[\s*(\d)\s*,\s*\"([^"]*)\"\s*,(?:\s*\"(\w*)\"\s*,)?\s*(.*)\s*\]$
         // Third block is optional, because responses don't have an action
         private static string MessageRegExp = "^\\[\\s*(\\d+)\\s*,\\s*\"([^\"]+)\"\\s*,\\s*(?:\\s*\"(\\w+)\"\\s*,)?\\s*(\\{[^}]+\\}|\\{[\\s\\S]*?\\})\\s*\\]$";
+
+        // Timeout in ms for waiting for responses from charger (for communication scheme server => charger)
+        private int TimoutWaitForCharger = 60 * 1000;   // 60 seconds
+
 
         private readonly RequestDelegate _next;
         private readonly ILoggerFactory _logFactory;
@@ -234,21 +238,54 @@ namespace OCPP.Core.Server
                                 // Handle socket communication
                                 _logger.LogTrace("OCPPMiddleware => Waiting for message...");
 
-                                using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync(subProtocol))
+                                try
                                 {
-                                    _logger.LogTrace("OCPPMiddleware => WebSocket connection with charge point '{0}'", chargepointIdentifier);
-                                    chargePointStatus.WebSocket = webSocket;
-
-                                    if (subProtocol == Protocol_OCPP20)
+                                    using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync(subProtocol))
                                     {
-                                        // OCPP V2.0
-                                        await Receive20(chargePointStatus, context, dbContext);
+                                        _logger.LogTrace("OCPPMiddleware => WebSocket connection with charge point '{0}'", chargepointIdentifier);
+                                        chargePointStatus.WebSocket = webSocket;
+
+                                        if (subProtocol == Protocol_OCPP21)
+                                        {
+                                            // OCPP V2.1
+                                            await Receive21(chargePointStatus, context, dbContext);
+                                        }
+                                        else if (subProtocol == Protocol_OCPP201)
+                                        {
+                                            // OCPP V2.0
+                                            await Receive20(chargePointStatus, context, dbContext);
+                                        }
+                                        else
+                                        {
+                                            // OCPP V1.6
+                                            await Receive16(chargePointStatus, context, dbContext);
+                                        }
+                                    }
+                                }
+                                catch (Exception exp)
+                                {
+                                    if ((exp is WebSocketException || exp is TaskCanceledException) &&
+                                        chargePointStatus?.WebSocket?.State != WebSocketState.Open)
+                                    {
+                                        _logger.LogInformation("OCPPMiddleware => WebSocket connection lost on charge point '{0}' with state '{1}' / close-status '{2}'", chargePointStatus.Id, chargePointStatus.WebSocket.State, chargePointStatus.WebSocket.CloseStatus);
                                     }
                                     else
                                     {
-                                        // OCPP V1.6
-                                        await Receive16(chargePointStatus, context, dbContext);
+                                        _logger.LogTrace("OCPPMiddleware => Receive() unhandled exception '{0}'", exp.Message);
                                     }
+
+                                    // Receive loop has ended anyway
+                                    // => Close connection
+                                    if (chargePointStatus?.WebSocket?.State == WebSocketState.Open)
+                                    {
+                                        try
+                                        {
+                                            await chargePointStatus?.WebSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
+                                        }
+                                        catch { }
+                                    }
+                                    // Remove chargepoint status
+                                    _chargePointStatusDict.Remove(chargePointStatus.Id);
                                 }
                             }
                         }
@@ -337,7 +374,12 @@ namespace OCPP.Core.Server
                                 if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                                 {
                                     // Send message to chargepoint
-                                    if (status.Protocol == Protocol_OCPP20)
+                                    if (status.Protocol == Protocol_OCPP21)
+                                    {
+                                        // OCPP V2.1
+                                        await Reset21(status, context, dbContext);
+                                    }
+                                    else if (status.Protocol == Protocol_OCPP201)
                                     {
                                         // OCPP V2.0
                                         await Reset20(status, context, dbContext);
@@ -377,7 +419,12 @@ namespace OCPP.Core.Server
                                 if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                                 {
                                     // Send message to chargepoint
-                                    if (status.Protocol == Protocol_OCPP20)
+                                    if (status.Protocol == Protocol_OCPP21)
+                                    {
+                                        // OCPP V2.1
+                                        await UnlockConnector21(status, context, dbContext, urlConnectorId);
+                                    }
+                                    else if (status.Protocol == Protocol_OCPP201)
                                     {
                                         // OCPP V2.0
                                         await UnlockConnector20(status, context, dbContext, urlConnectorId);
@@ -427,7 +474,12 @@ namespace OCPP.Core.Server
                                         if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                                         {
                                             // Send message to chargepoint
-                                            if (status.Protocol == Protocol_OCPP20)
+                                            if (status.Protocol == Protocol_OCPP21)
+                                            {
+                                                // OCPP V2.1
+                                                await SetChargingProfile21(status, context, dbContext, urlConnectorId, power, unit);
+                                            }
+                                            else if (status.Protocol == Protocol_OCPP201)
                                             {
                                                 // OCPP V2.0
                                                 await SetChargingProfile20(status, context, dbContext, urlConnectorId, power, unit);
@@ -479,7 +531,12 @@ namespace OCPP.Core.Server
                                 if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                                 {
                                     // Send message to chargepoint
-                                    if (status.Protocol == Protocol_OCPP20)
+                                    if (status.Protocol == Protocol_OCPP21)
+                                    {
+                                        // OCPP V2.1
+                                        await ClearChargingProfile21(status, context, dbContext, urlConnectorId);
+                                    }
+                                    else if (status.Protocol == Protocol_OCPP201)
                                     {
                                         // OCPP V2.0
                                         await ClearChargingProfile20(status, context, dbContext, urlConnectorId);
@@ -506,6 +563,135 @@ namespace OCPP.Core.Server
                         else
                         {
                             _logger.LogError("OCPPMiddleware ClearChargingProfile => Missing chargepoint ID");
+                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        }
+                    }
+                    else if (cmd == "StartTransaction")
+                    {
+                        if (!string.IsNullOrEmpty(urlChargePointId))
+                        {
+                            // Parse connector id (int value)
+                            if (!string.IsNullOrEmpty(urlConnectorId) && int.TryParse(urlConnectorId, out int connectorId))
+                            {
+                                if (!string.IsNullOrEmpty(urlParam))
+                                {
+                                    try
+                                    {
+                                        ChargePointStatus status = null;
+                                        if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
+                                        {
+                                            // Send message to chargepoint
+                                            if (status.Protocol == Protocol_OCPP21)
+                                            {
+                                                // OCPP V2.1
+                                                await RequestStartTransaction21(status, context, dbContext, urlConnectorId, urlParam);
+                                            }
+                                            else if (status.Protocol == Protocol_OCPP201)
+                                            {
+                                                // OCPP V2.0
+                                                await RequestStartTransaction20(status, context, dbContext, urlConnectorId, urlParam);
+                                            }
+                                            else
+                                            {
+                                                // OCPP V1.6
+                                                await RemoteStartTransaction16(status, context, dbContext, urlConnectorId, urlParam);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // Chargepoint offline
+                                            _logger.LogError("OCPPMiddleware StartTransaction => Chargepoint offline: {0}", urlChargePointId);
+                                            context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                                        }
+                                    }
+                                    catch (Exception exp)
+                                    {
+                                        _logger.LogError(exp, "OCPPMiddleware StartTransaction => Error: {0}", exp.Message);
+                                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                                    }
+                                }
+                                else
+                                {
+                                    _logger.LogError("OCPPMiddleware StartTransaction => Missing tokenId");
+                                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                                }
+                            }
+                            else
+                            {
+                                _logger.LogError($"OCPPMiddleware StartTransaction => Bad connector ID: '{0}'", urlConnectorId);
+                                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogError("OCPPMiddleware StartTransaction => Missing chargepoint ID");
+                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        }
+                    }
+                    else if (cmd == "StopTransaction")
+                    {
+                        if (!string.IsNullOrEmpty(urlChargePointId))
+                        {
+                            try
+                            {
+                                ChargePointStatus status = null;
+                                if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
+                                {
+                                    if (int.TryParse(urlConnectorId, out int connectorId))
+                                    {
+                                        // Check last (open) transaction
+                                        Transaction transaction = dbContext.Transactions
+                                            .Where(t => t.ChargePointId == urlChargePointId && t.ConnectorId == connectorId)
+                                            .OrderByDescending(t => t.TransactionId)
+                                            .FirstOrDefault();
+
+                                        if (transaction != null && !transaction.StopTime.HasValue)
+                                        {
+                                            // Send message to chargepoint
+                                            if (status.Protocol == Protocol_OCPP21)
+                                            {
+                                                // OCPP V2.1
+                                                await RequestStopTransaction21(status, context, dbContext, urlConnectorId, transaction.Uid);
+                                            }
+                                            else if (status.Protocol == Protocol_OCPP201)
+                                            {
+                                                // OCPP V2.0
+                                                await RequestStopTransaction20(status, context, dbContext, urlConnectorId, transaction.Uid);
+                                            }
+                                            else
+                                            {
+                                                // OCPP V1.6
+                                                await RemoteStopTransaction16(status, context, dbContext, urlConnectorId, transaction.TransactionId);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            _logger.LogError("OCPPMiddleware StopTransaction => connector '{0}' has no open transaction", urlConnectorId);
+                                            context.Response.StatusCode = (int)HttpStatusCode.FailedDependency;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        _logger.LogError("OCPPMiddleware StopTransaction => invalid connector ID: '{0}'", urlConnectorId);
+                                        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                                    }
+                                }
+                                else
+                                {
+                                    // Chargepoint offline
+                                    _logger.LogError("OCPPMiddleware StopTransaction => Chargepoint offline: {0}", urlChargePointId);
+                                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                                }
+                            }
+                            catch (Exception exp)
+                            {
+                                _logger.LogError(exp, "OCPPMiddleware StopTransaction => Error: {0}", exp.Message);
+                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogError("OCPPMiddleware StopTransaction => Missing chargepoint ID");
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
                     }

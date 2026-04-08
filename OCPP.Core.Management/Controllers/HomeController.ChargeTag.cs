@@ -26,6 +26,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
@@ -52,7 +53,7 @@ namespace OCPP.Core.Management.Controllers
                 ctvm.CurrentTagId = Id;
 
                 Logger.LogTrace("ChargeTag: Loading charge tags...");
-                List<ChargeTag> dbChargeTags = DbContext.ChargeTags.ToList<ChargeTag>();
+                List<ChargeTag> dbChargeTags = DbContext.ChargeTags.OrderBy(x => x.TagName).ToList<ChargeTag>();
                 Logger.LogInformation("ChargeTag: Found {0} charge tags", dbChargeTags.Count);
 
                 ChargeTag currentChargeTag = null;
@@ -120,13 +121,25 @@ namespace OCPP.Core.Management.Controllers
                     }
                     else if (currentChargeTag.TagId == Id)
                     {
-                        // Save existing tag
-                        currentChargeTag.TagName = ctvm.TagName;
-                        currentChargeTag.ParentTagId = ctvm.ParentTagId;
-                        currentChargeTag.ExpiryDate = ctvm.ExpiryDate;
-                        currentChargeTag.Blocked = ctvm.Blocked;
-                        DbContext.SaveChanges();
-                        Logger.LogInformation("ChargeTag: Edit => charge tag saved: {0} / {1}", ctvm.TagId, ctvm.TagName);
+                        if (Request.Form["action"] == "Delete")
+                        {
+                            // Delete existing tag
+                            Logger.LogDebug("ChargeTag: Edit => Deleting tag {0} ...", ctvm.TagId);
+                            DbContext.Remove<ChargeTag>(currentChargeTag);
+                            DbContext.SaveChanges();
+                            Logger.LogInformation("ChargeTag: Edit => charge tag deleted: {0}", ctvm.TagId);
+                        }
+                        else
+                        {
+                            // Save existing tag
+                            Logger.LogDebug("ChargeTag: Edit => Saving tag {0} ...", ctvm.TagId);
+                            currentChargeTag.TagName = ctvm.TagName;
+                            currentChargeTag.ParentTagId = ctvm.ParentTagId;
+                            currentChargeTag.ExpiryDate = ctvm.ExpiryDate;
+                            currentChargeTag.Blocked = ctvm.Blocked;
+                            DbContext.SaveChanges();
+                            Logger.LogInformation("ChargeTag: Edit => charge tag saved: {0} / {1}", ctvm.TagId, ctvm.TagName);
+                        }
                     }
 
                     return RedirectToAction("ChargeTag", new { Id = "" });
@@ -150,11 +163,10 @@ namespace OCPP.Core.Management.Controllers
                     string viewName = (!string.IsNullOrEmpty(ctvm.TagId) || Id=="@") ? "ChargeTagDetail" : "ChargeTagList";
                     return View(viewName, ctvm);
                 }
-
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "ChargeTag: Error loading charge tags from database");
+                Logger.LogError(exp, "ChargeTag: Error loading oder saving charge tag(s) from database");
                 TempData["ErrMessage"] = exp.Message;
                 return RedirectToAction("Error", new { Id = "" });
             }

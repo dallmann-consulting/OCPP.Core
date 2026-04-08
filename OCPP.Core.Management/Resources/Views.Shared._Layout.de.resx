@@ -127,7 +127,7 @@
     <value>Lade-Auswertung</value>
   </data>
   <data name="ChargeTags" xml:space="preserve">
-    <value>RFID-Karte</value>
+    <value>RFID-Karten</value>
   </data>
   <data name="Connectors" xml:space="preserve">
     <value>Anschlüsse</value>
