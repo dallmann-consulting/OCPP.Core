@@ -11,7 +11,7 @@ x-envs: &common-envs
     Logging__LogLevel__OCPP: "Information"
     Logging__LogLevel__Default: "Information"
     DOTNET_ENVIRONMENT: Production
-    ASPNET_ENVIRONMENT: Production
+    ASPNETCORE_ENVIRONMENT: Production
 
 
 services:

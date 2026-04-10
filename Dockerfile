@@ -29,8 +29,8 @@ RUN dotnet publish "./OCPP.Core.Server.csproj" -c $BUILD_CONFIGURATION -o /app/p
 FROM base AS final_server
 WORKDIR /app
 COPY --chown=$APP_UID --from=publish_server /app/publish .
-ENTRYPOINT ["dotnet", "OCPP.Core.Server.dll"]
 RUN mkdir /tmp/ocpp
+ENTRYPOINT ["dotnet", "OCPP.Core.Server.dll"]
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build_management
 ARG BUILD_CONFIGURATION=Release
