@@ -144,7 +144,7 @@ namespace OCPP.Core.Server
             finally
             {
                 logger.LogInformation("OCPPMiddleware.Receive16 => Websocket closed: State={0} / CloseStatus={1}", chargePointStatus.WebSocket.State, chargePointStatus.WebSocket.CloseStatus);
-                _chargePointStatusDict.Remove(chargePointStatus.Id);
+                _chargePointStatusDict.TryRemove(chargePointStatus.Id, out _);
             }
         }
 

@@ -24,6 +24,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -59,7 +60,7 @@ namespace OCPP.Core.Server
         private readonly IConfiguration _configuration;
 
         // Dictionary with status objects for each charge point
-        private static Dictionary<string, ChargePointStatus> _chargePointStatusDict = new Dictionary<string, ChargePointStatus>();
+        private static readonly ConcurrentDictionary<string, ChargePointStatus> _chargePointStatusDict = new ConcurrentDictionary<string, ChargePointStatus>();
 
         // Dictionary for processing asynchronous API calls
         private Dictionary<string, OCPPMessage> _requestQueue = new Dictionary<string, OCPPMessage>();
@@ -210,22 +211,20 @@ namespace OCPP.Core.Server
                             {
                                 _logger.LogTrace("OCPPMiddleware => Store/Update status object");
 
-                                lock (_chargePointStatusDict)
+                                // Remove stale entry if WebSocket is no longer open
+                                if (_chargePointStatusDict.TryGetValue(chargepointIdentifier, out ChargePointStatus existingStatus) &&
+                                    existingStatus.WebSocket.State != WebSocketState.Open)
                                 {
-                                    // Check if this chargepoint already/still hat a status object
-                                    if (_chargePointStatusDict.ContainsKey(chargepointIdentifier))
-                                    {
-                                        // exists => check status
-                                        if (_chargePointStatusDict[chargepointIdentifier].WebSocket.State != WebSocketState.Open)
-                                        {
-                                            // Closed or aborted => remove
-                                            _chargePointStatusDict.Remove(chargepointIdentifier);
-                                        }
-                                    }
-
-                                    _chargePointStatusDict.Add(chargepointIdentifier, chargePointStatus);
-                                    statusSuccess = true;
+                                    _chargePointStatusDict.TryRemove(chargepointIdentifier, out _);
                                 }
+
+                                // Try to add - fails if chargepoint is already connected with open WebSocket
+                                if (!_chargePointStatusDict.TryAdd(chargepointIdentifier, chargePointStatus))
+                                {
+                                    throw new InvalidOperationException($"Chargepoint '{chargepointIdentifier}' is already connected with an open WebSocket.");
+                                }
+
+                                statusSuccess = true;
                             }
                             catch (Exception exp)
                             {
@@ -285,7 +284,7 @@ namespace OCPP.Core.Server
                                         catch { }
                                     }
                                     // Remove chargepoint status
-                                    _chargePointStatusDict.Remove(chargePointStatus.Id);
+                                    _chargePointStatusDict.TryRemove(chargePointStatus.Id, out _);
                                 }
                             }
                         }
