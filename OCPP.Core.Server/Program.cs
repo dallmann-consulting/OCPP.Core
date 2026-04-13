@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Serilog;
 using OCPP.Core.Database;
 
 namespace OCPP.Core.Server
@@ -42,15 +43,13 @@ namespace OCPP.Core.Server
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .UseSerilog((ctx, config) => config
+                    .ReadFrom.Configuration(ctx.Configuration)
+                    .Enrich.FromLogContext()
+                    .Enrich.WithProperty("CorrelationId", "none"))
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder
-                    .ConfigureLogging((ctx, builder) =>
-                                        {
-                                            builder.AddConfiguration(ctx.Configuration.GetSection("Logging"));
-                                            builder.AddFile(o => o.RootPath = ctx.HostingEnvironment.ContentRootPath);
-                                        })
-                    .UseStartup<Startup>();
+                    webBuilder.UseStartup<Startup>();
                 });
     }
 }

@@ -34,6 +34,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog.Context;
 
 namespace OCPP.Core.Server
 {
@@ -96,6 +97,10 @@ namespace OCPP.Core.Server
                     // Last part is chargepoint identifier
                     chargepointIdentifier = parts[parts.Length - 1];
                 }
+                string correlationId = Guid.NewGuid().ToString("N")[..8];
+                using var _cidProp  = LogContext.PushProperty("CorrelationId", correlationId);
+                using var _cpIdProp = LogContext.PushProperty("ChargePointId", chargepointIdentifier);
+
                 _logger.LogInformation("OCPPMiddleware => Connection request with chargepoint identifier = '{0}'", chargepointIdentifier);
 
                 // Known chargepoint?
