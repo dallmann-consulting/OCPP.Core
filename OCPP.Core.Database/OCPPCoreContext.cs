@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2026 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -85,6 +85,12 @@ namespace OCPP.Core.Database
                 entity.Property(e => e.ConnectorName).HasMaxLength(100);
 
                 entity.Property(e => e.LastStatus).HasMaxLength(100);
+
+                entity.HasOne(e => e.ChargePoint)
+                    .WithMany()
+                    .HasForeignKey(e => e.ChargePointId)
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .HasConstraintName("FK_ConnectorStatus_ChargePoint_ChargePointId");
             });
 
             modelBuilder.Entity<MessageLog>(entity =>
