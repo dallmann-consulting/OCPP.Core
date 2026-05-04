@@ -11,7 +11,7 @@ using OCPP.Core.Database;
 
 namespace OCPP.Core.Database.Migrations
 {
-    [DbContext(typeof(OCPPCoreContext))]
+    [DbContext(typeof(OCPPCoreContextSqlServer))]
     [Migration("20240405204318_TransactionsIndex")]
     partial class TransactionsIndex
     {

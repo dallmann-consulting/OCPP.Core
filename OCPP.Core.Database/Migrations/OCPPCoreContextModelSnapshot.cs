@@ -10,8 +10,8 @@ using OCPP.Core.Database;
 
 namespace OCPP.Core.Database.Migrations
 {
-    [DbContext(typeof(OCPPCoreContext))]
-    partial class OCPPCoreContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(OCPPCoreContextSqlServer))]
+    partial class OCPPCoreContextSqlServerModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
