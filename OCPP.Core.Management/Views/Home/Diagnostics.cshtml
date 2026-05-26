@@ -1,0 +1,212 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@model DiagnosticsViewModel
+@inject IViewLocalizer Localizer
+@{
+    ViewData["Title"] = @Localizer["Title"];
+}
+
+<br />
+<h4>@Localizer["Title"]</h4>
+
+@* Summary cards *@
+<div class="row mb-3">
+    <div class="col-sm-3">
+        <div class="card text-white bg-secondary">
+            <div class="card-body p-2 text-center">
+                <div class="h3 mb-0">@Model.TotalConnectors</div>
+                <small>@Localizer["SummaryTotal"]</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card text-white @(Model.ServerOnline ? "bg-success" : "bg-danger")">
+            <div class="card-body p-2 text-center">
+                <div class="h3 mb-0">@Model.OnlineCount</div>
+                <small>@Localizer["SummaryOnline"]</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card text-white @(Model.OpenTransactionCount > 0 ? "bg-info" : "bg-secondary")">
+            <div class="card-body p-2 text-center">
+                <div class="h3 mb-0">@Model.OpenTransactionCount</div>
+                <small>@Localizer["SummaryOpenTx"]</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card text-white @(Model.AnomalyCount > 0 ? "bg-danger" : "bg-success")">
+            <div class="card-body p-2 text-center">
+                <div class="h3 mb-0">@Model.AnomalyCount</div>
+                <small>@Localizer["SummaryAnomalies"]</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.ServerOnline)
+{
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i> @Localizer["ServerOfflineWarning"]
+    </div>
+}
+
+@if (Model.Connectors != null && Model.Connectors.Count > 0)
+{
+    <table class="table table-sm table-bordered" style="font-size: 0.875rem;">
+        <thead class="thead-light">
+            <tr>
+                <th style="width: 1.5rem;"></th>
+                <th>@Localizer["ColChargePoint"]</th>
+                <th>@Localizer["ColConnector"]</th>
+                <th>@Localizer["ColOnline"]</th>
+                <th>@Localizer["ColLiveStatus"]</th>
+                <th>@Localizer["ColDbStatus"]</th>
+                <th>@Localizer["ColLastMeter"]</th>
+                <th>@Localizer["ColOpenTransaction"]</th>
+                <th>@Localizer["ColLiveData"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (ConnectorDiagnosticsRow row in Model.Connectors)
+            {
+                string rowClass = row.IsAnomalous ? "table-danger" : "";
+                <tr class="@rowClass">
+                    <td class="text-center">
+                        @if (row.IsAnomalous)
+                        {
+                            <i class="fas fa-exclamation-triangle text-danger" title="@Localizer["AnomalyHint"]"></i>
+                        }
+                    </td>
+                    <td>
+                        @row.ChargePointId
+                    </td>
+                    <td>
+                        @row.ConnectorId
+                        @if (!string.IsNullOrWhiteSpace(row.ConnectorName))
+                        {
+                            <span class="text-muted"> &ndash; @row.ConnectorName</span>
+                        }
+                    </td>
+                    <td>
+                        @if (row.ChargePointOnline)
+                        {
+                            <i class="fas fa-link text-success" title="@Localizer["Online"]"></i>
+                            if (!string.IsNullOrWhiteSpace(row.OcppProtocol))
+                            {
+                                <small class="text-muted ml-1">@row.OcppProtocol</small>
+                            }
+                        }
+                        else
+                        {
+                            <i class="fas fa-unlink text-danger" title="@Localizer["Offline"]"></i>
+                            <small class="text-muted ml-1">@Localizer["Offline"]</small>
+                        }
+                    </td>
+                    <td>
+                        @if (row.ChargePointOnline && row.LiveStatus.HasValue)
+                        {
+                            string liveStatusClass = row.LiveStatus.Value switch
+                            {
+                                ConnectorStatusEnum.Available  => "badge-success",
+                                ConnectorStatusEnum.Occupied   => "badge-primary",
+                                ConnectorStatusEnum.Unavailable => "badge-warning",
+                                ConnectorStatusEnum.Faulted    => "badge-danger",
+                                _                              => "badge-secondary"
+                            };
+                            <span class="badge @liveStatusClass">@row.LiveStatus.Value.ToString()</span>
+                        }
+                        else if (!row.ChargePointOnline)
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-secondary">@Localizer["StatusUndefined"]</span>
+                        }
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(row.DbStatus))
+                        {
+                            @row.DbStatus
+                            if (row.DbStatusTime.HasValue)
+                            {
+                                <br /><small class="text-muted">@string.Format("{0:G}", row.DbStatusTime.Value.ToLocalTime())</small>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        @if (row.DbLastMeter.HasValue)
+                        {
+                            @string.Format("{0:0.0##} kWh", row.DbLastMeter.Value)
+                            if (row.DbLastMeterTime.HasValue)
+                            {
+                                <br /><small class="text-muted">@string.Format("{0:G}", row.DbLastMeterTime.Value.ToLocalTime())</small>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        @if (row.HasOpenTransaction)
+                        {
+                            <span class="badge badge-info">#@row.OpenTransactionId</span>
+                            if (row.OpenTransactionStart.HasValue)
+                            {
+                                <br /><small>@string.Format("{0:G}", row.OpenTransactionStart.Value.ToLocalTime())</small>
+                            }
+                            if (!string.IsNullOrEmpty(row.OpenTransactionTagId))
+                            {
+                                <br /><small class="text-muted">@row.OpenTransactionTagId</small>
+                            }
+                            if (!row.ChargePointOnline)
+                            {
+                                <br /><span class="badge badge-danger">@Localizer["TxOfflineWarning"]</span>
+                            }
+                            else if (row.LiveStatus == ConnectorStatusEnum.Available)
+                            {
+                                <br /><span class="badge badge-warning">@Localizer["TxAvailableWarning"]</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>
+                        @if (row.ChargePointOnline && row.LiveStatus == ConnectorStatusEnum.Occupied)
+                        {
+                            if (row.LiveChargeRateKW.HasValue && row.LiveChargeRateKW.Value >= 0)
+                            {
+                                @string.Format("{0:0.0} kW", row.LiveChargeRateKW.Value)
+                            }
+                            if (row.LiveSoC.HasValue && row.LiveSoC.Value >= 0)
+                            {
+                                if (row.LiveChargeRateKW.HasValue) { <text> | </text> }
+                                @string.Format("{0:0}%", row.LiveSoC.Value)
+                            }
+                            if (row.LiveMeterKWH.HasValue && row.LiveMeterKWH.Value >= 0)
+                            {
+                                <br /><small class="text-muted">@string.Format("{0:0.0##} kWh", row.LiveMeterKWH.Value)</small>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="text-muted">@Localizer["NoConnectors"]</p>
+}

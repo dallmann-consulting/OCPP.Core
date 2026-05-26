@@ -138,4 +138,7 @@
   <data name="Overview" xml:space="preserve">
     <value>Overview</value>
   </data>
+  <data name="Diagnostics" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
 </root>
