@@ -38,7 +38,7 @@ namespace OCPP.Core.Server
             statusNotificationResponse.CustomData = new CustomDataType();
             statusNotificationResponse.CustomData.VendorId = VendorId;
 
-            int connectorId = 0;
+            int evseId = 0;
 
             try
             {
@@ -46,10 +46,10 @@ namespace OCPP.Core.Server
                 StatusNotificationRequest statusNotificationRequest = DeserializeMessage<StatusNotificationRequest>(msgIn);
                 Logger.LogTrace("StatusNotification => Message deserialized");
 
-                connectorId = statusNotificationRequest.ConnectorId;
+                evseId = statusNotificationRequest.EvseId;
 
                 // Write raw status in DB
-                WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Status={0}", statusNotificationRequest.ConnectorStatus), string.Empty);
+                WriteMessageLog(ChargePointStatus.Id, evseId, msgIn.Action, string.Format("Status={0}", statusNotificationRequest.ConnectorStatus), string.Empty);
 
                 ConnectorStatusEnum newStatus = ConnectorStatusEnum.Undefined;
 
@@ -69,37 +69,37 @@ namespace OCPP.Core.Server
                         newStatus = ConnectorStatusEnum.Faulted;
                         break;
                 }
-                Logger.LogInformation("StatusNotification => ChargePoint={0} / Connector={1} / newStatus={2}", ChargePointStatus?.Id, connectorId, newStatus.ToString());
+                Logger.LogInformation("StatusNotification => ChargePoint={0} / Connector={1} / EvseID={2} / newStatus={3}", ChargePointStatus?.Id, statusNotificationRequest.ConnectorId, evseId, newStatus.ToString());
 
-                if (connectorId > 0)
+                if (evseId > 0)
                 {
-                    if (UpdateConnectorStatus(connectorId, newStatus.ToString(), statusNotificationRequest.Timestamp, null, null) == false)
+                    if (UpdateConnectorStatus(evseId, newStatus.ToString(), statusNotificationRequest.Timestamp, null, null) == false)
                     {
                         errorCode = ErrorCodes.InternalError;
                     }
 
-                    if (ChargePointStatus.OnlineConnectors.ContainsKey(connectorId))
+                    if (ChargePointStatus.OnlineConnectors.ContainsKey(evseId))
                     {
-                        OnlineConnectorStatus ocs = ChargePointStatus.OnlineConnectors[connectorId];
+                        OnlineConnectorStatus ocs = ChargePointStatus.OnlineConnectors[evseId];
                         ocs.Status = newStatus;
                     }
                     else
                     {
                         OnlineConnectorStatus ocs = new OnlineConnectorStatus();
                         ocs.Status = newStatus;
-                        if (ChargePointStatus.OnlineConnectors.TryAdd(connectorId, ocs))
+                        if (ChargePointStatus.OnlineConnectors.TryAdd(evseId, ocs))
                         {
-                            Logger.LogTrace("StatusNotification => new OnlineConnectorStatus with values: ChargePoint={0} / Connector={1} / newStatus={2}", ChargePointStatus?.Id, connectorId, newStatus.ToString());
+                            Logger.LogTrace("StatusNotification => new OnlineConnectorStatus with values: ChargePoint={0} / Connector={1} / newStatus={2}", ChargePointStatus?.Id, evseId, newStatus.ToString());
                         }
                         else
                         {
-                            Logger.LogError("StatusNotification => Error adding new OnlineConnectorStatus for ChargePoint={0} / Connector={1}", ChargePointStatus?.Id, connectorId);
+                            Logger.LogError("StatusNotification => Error adding new OnlineConnectorStatus for ChargePoint={0} / Connector={1}", ChargePointStatus?.Id, evseId);
                         }
                     }
                 }
                 else
                 {
-                    Logger.LogWarning("StatusNotification => Status for unexpected ConnectorId={1} on ChargePoint={0}", ChargePointStatus?.Id, connectorId);
+                    Logger.LogWarning("StatusNotification => Status for unexpected ConnectorId={1} on ChargePoint={0}", ChargePointStatus?.Id, evseId);
                 }
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(statusNotificationResponse);
