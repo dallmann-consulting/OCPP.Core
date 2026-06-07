@@ -21,6 +21,7 @@ RUN dotnet publish "./OCPP.Core.Management/OCPP.Core.Management.csproj" -c $BUIL
 
 # Final single-container image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+LABEL org.opencontainers.image.source="https://github.com/dallmann-consulting/OCPP.Core"
 WORKDIR /app
 EXPOSE 8081 8082
 

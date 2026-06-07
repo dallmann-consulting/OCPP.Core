@@ -98,7 +98,14 @@ A ocpp-core.service template is provided for systemd startup of the docker compo
 This requires a user "ocpp" being setup, and is assuming you have a working directory of
 /usr/bin/local/ocpp.core.  Adjust as appropriate.
 
-
+To use pre-built docker container:
+	```
+	docker pull ghcr.io/dallmann-consulting/ocpp.core:latest
+	```
+or
+	```
+	docker pull udallmann/ocpp.core
+	```
 
 ## Build
 ### Build with Visual Studio
