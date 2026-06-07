@@ -68,14 +68,14 @@ Download a precompiled [release](https://github.com/dallmann-consulting/OCPP.Cor
 They are compiled 'portable' and run on different platforms.
 
 ### Windows
-* Download and install the .NET.Core 3.1 runtime.
+* Download and install the .NET 10 runtime.
 * Extract the ZIP file somewhere. 
 * Open the file "appsettings.json" in the OCPP.Server and configure "MessageDumpDir" to an existing directory or leave it empty to turn off message dumps.
 * Start the "OCPP.Core.Server.exe" and "OCPP.Core.Management.exe". 
 * Open "http://localhost:8082" in a browser.
 
 ### Linux
-* Install the .NET.Core 3.1 runtime for your Linux distribution and version. Instructions [here](https://docs.microsoft.com/en-us/dotnet/core/install/linux).
+* Install the .NET 10 runtime for your Linux distribution and version. Instructions [here](https://docs.microsoft.com/en-us/dotnet/core/install/linux).
 * Extract the ZIP file somewhere. 
 * Open the file "appsettings.json" in both projects
 	* change the paths to the sqlite file to a valid unix path: "SQLite": "Filename=./../SQLite/OCPP.Core.sqlite;"
@@ -92,10 +92,9 @@ They are compiled 'portable' and run on different platforms.
 * Open "http://localhost:8082" in a browser.
 
 ### Docker
-A docker compose file is provided as a template to run the two container images (server and management interface), this should be tweaked to your preference.
-If using SQLite, then both containers need access to the relevant shared folder.
+Both the OCPP server and the Management UI run in a **single container**. A `compose.yaml` is provided that bind-mounts the `./SQLite` folder into the container so the database file is directly accessible on the host.
 
-A ocpp-core.service template is provided for systemd startup of the docker compose containers.
+A ocpp-core.service template is provided for systemd startup of the docker compose container.
 This requires a user "ocpp" being setup, and is assuming you have a working directory of
 /usr/bin/local/ocpp.core.  Adjust as appropriate.
 
@@ -110,7 +109,7 @@ If you use VS you can simply open and the compile the solution. Visual Studio wi
 For deployments you should "publish" each project. Then visual studio will automatically add all necessary files (like "wwwroot" - see below) to the output.
 
 ### Build with SDK
-Make sure that the [.NET-Core SDK 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) is installed.
+Make sure that the [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) is installed.
 
 Open a command shell (cmd) and navigate to the folder where the "OCPP.Core.sln" file is. Then enter the following command to start a debug build:
 
@@ -120,13 +119,12 @@ Open a command shell (cmd) and navigate to the folder where the "OCPP.Core.sln" 
 You will hopefully see that all three projects were compiled without errors. You should then have the same output like the VS-Build (see screenshot above).
 
 ### Build with Docker
-You can quickly build all components using docker compose on the root directory of the repository: ```docker compose build```
+You can build the single container image using docker compose on the root directory of the repository: ```docker compose build```
 
-Alternatively, you can build the individual components with:
+Alternatively, build the image directly:
 
 ```
-docker build --target final_server -t ocpp.core.server
-docker build --target final_management -t ocpp.core.management
+docker build -t ocpp.core .
 ```
 
 # Running
@@ -165,5 +163,10 @@ https://dotnetcoretutorials.com/2019/12/23/hosting-an-asp-net-core-web-applicati
 Then you can create a website or app-folder in IIS and point to the compiler output folder. If you're using SQL-Server and want integrated security you might also need to configure the app pool.
 
 ## Run with Docker
-Simply run ```docker compose up``` to start up the server and management instances.  Remember to customise your compose.yaml file with relevant settings, and
-provide a reverse proxy for the ports you have selected.
+Run ```docker compose up -d``` to start the container. Both services are available immediately (default ports from `compose.yaml`):
+
+ - OCPP WebSocket: `ws://<host>:47532/OCPP/<chargepoint-ID>`
+ - Management UI: `http://<host>:47533`
+
+The SQLite database is stored in the `./SQLite` folder next to `compose.yaml` and is directly accessible on the host.
+To use SQL Server instead, set `ConnectionStrings__SqlServer` in the environment section of `compose.yaml` and remove `ConnectionStrings__SQLite`.

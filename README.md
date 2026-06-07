@@ -1,5 +1,5 @@
 # OCPP.Core
-OCPP.Core is an OCPP ([Open ChargePoint Protocol](https://en.wikipedia.org/wiki/Open_Charge_Point_Protocol)) server written in .NET 8. It includes a management Web-UI for administration of charge points and charge tokens (RFID-Token)
+OCPP.Core is an OCPP ([Open ChargePoint Protocol](https://en.wikipedia.org/wiki/Open_Charge_Point_Protocol)) server written in .NET 10. It includes a management Web-UI for administration of charge points and charge tokens (RFID-Token)
 
 ## Status
 It currently supports OCPP1.6J, 2.0 and 2.1.
@@ -79,13 +79,6 @@ If a connector has a name specified this name overrides the charge point name or
 ## System Requirements
 OCPP.Core is written in .NET 8 and therefore runs on different plattforms. I also installed it in Azure for testing purposes.
 The storage is based on the EntityFramework-Core and supports different databases. The project contains script for SQL-Server (SQL-Express) and SQLite.
-
-Referenced Packages:
-* Microsoft.EntityFrameworkCore
-* Microsoft.EntityFrameworkCore.Sqlite
-* Microsoft.EntityFrameworkCore.SqlServer
-* Newtonsoft.Json
-* Karambolo.Extensions.Logging.File
 
 
 ## Build, Configuration and Installation
