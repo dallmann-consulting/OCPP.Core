@@ -25,12 +25,24 @@ LABEL org.opencontainers.image.source="https://github.com/dallmann-consulting/OC
 WORKDIR /app
 EXPOSE 8081 8082
 
+# Defaults — override via environment variables or compose.yaml
+ENV ASPNETCORE_ENVIRONMENT="Production" \
+    ConnectionStrings__SQLite="Filename=/db/OCPP.Core.sqlite;" \
+    MessageDumpDir="/tmp/ocpp" \
+    ServerApiUrl="http://localhost:8081/API" \
+    ApiKey="" \
+    Logging__LogLevel__Default="Information" \
+    Logging__LogLevel__OCPP="Information" \
+    Users__0__Username="admin" \
+    Users__0__Password="t3st" \
+    Users__0__Administrator="true"
+
 COPY --chown=app:app --from=build_server /app/server ./server/
 COPY --chown=app:app --from=build_management /app/management ./management/
 COPY docker-start.sh /start.sh
 
-RUN mkdir -p /data /tmp/ocpp && \
-    chown app:app /data /tmp/ocpp && \
+RUN mkdir -p /db /tmp/ocpp && \
+    chown app:app /db /tmp/ocpp && \
     sed -i 's/\r//' /start.sh && \
     chmod +x /start.sh
 

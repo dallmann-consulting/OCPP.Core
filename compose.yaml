@@ -15,21 +15,19 @@ services:
     volumes:
       - sqlite:/db
     environment:
-      # Change your API Key to something long and obscure (must match on server and management)
-      ApiKey: xxxx
-      ConnectionStrings__SQLite: "Filename=/db/OCPP.Core.sqlite;"
-      #ConnectionStrings__SqlServer:
-      MessageDumpDir: /tmp/ocpp/
-      Logging__LogLevel__OCPP: "Information"
-      Logging__LogLevel__Default: "Information"
-      DOTNET_ENVIRONMENT: Production
-      ASPNETCORE_ENVIRONMENT: Production
-      # Management UI calls the server within the same container via localhost
-      ServerApiUrl: http://localhost:8081/API
-      # Management UI users (add more with Users__1__*, Users__2__* etc.)
+      # --- Required changes for production ---
+      # Set a long random string; must match on server and management side
+      ApiKey: ""
+      # Change default login credentials
       Users__0__Username: admin
       Users__0__Password: t3st
-      Users__0__Administrator: true
+      Users__0__Administrator: "true"
+      # Add more users: Users__1__Username, Users__1__Password, Users__1__Administrator
+      # --- Optional overrides (defaults are set in the image) ---
+      #ConnectionStrings__SQLite: "Filename=/db/OCPP.Core.sqlite;"
+      #ConnectionStrings__SqlServer: ""
+      #MessageDumpDir: /tmp/ocpp/
+      #Logging__LogLevel__Default: "Information"
     restart: unless-stopped
 
 volumes:

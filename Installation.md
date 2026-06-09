@@ -107,6 +107,10 @@ or
 	docker pull udallmann/ocpp.core
 	```
 
+The default user is "admin" with "t3st" (see "Dockerfile").
+You should change the password and API-key via environment variables on your docker host.
+
+
 ## Build
 ### Build with Visual Studio
 If you use VS you can simply open and the compile the solution. Visual Studio will create the correct file structure in the output directory. It should look something like this:
