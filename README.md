@@ -59,7 +59,7 @@ If you click on a charge point/connector tile you get a list of the latest trans
 
 ![Overview](images/Transactions.png)
 
-The Web-UI has two different roles. A normal user can see the charge points and transactions (screenshots above). An Administrator can also create and edit the charge stations, charge tags and connectors.
+The Web-UI has two different roles. A normal user can see the charge points and transactions (screenshots above). An Administrator can also create and edit the charge stations, charge tags, connectors and can also manage user accounts.
 
 ### Multi connector behavior
 At first, I didn't pay much attention to multiple connectors. Charge points with multiple connectors are not very common. But then we got the charge points in our home installed and it turned out that our devices (with load management) operate as a single charge point with a connector for each charge point (see [here](Real_life_Experiences_KEBA.md)).
@@ -105,7 +105,7 @@ Create new chargepoint:
 
 ![NewChargePoint](images/NewChargePoint.png)
 
-Optionally, you can add authentication data for this chargepoint: Username/Passwort for basic authentication and/or a certificate thumbprint for a client certificate.
+Optionally, you can add authentication data for this chargepoint: Username/Password for basic authentication and/or a certificate thumbprint for a client certificate.
 When you're editing a chargepoint you can send restart or unlock commands to the chargepoint here.
 
 Create new charge tag:

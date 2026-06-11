@@ -18,11 +18,6 @@ services:
       # --- Required changes for production ---
       # Set a long random string; must match on server and management side
       ApiKey: ""
-      # Change default login credentials
-      Users__0__Username: admin
-      Users__0__Password: t3st
-      Users__0__Administrator: "true"
-      # Add more users: Users__1__Username, Users__1__Password, Users__1__Administrator
       # --- Optional overrides (defaults are set in the image) ---
       #ConnectionStrings__SQLite: "Filename=/db/OCPP.Core.sqlite;"
       #ConnectionStrings__SqlServer: ""

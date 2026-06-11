@@ -32,10 +32,7 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     ServerApiUrl="http://localhost:8081/API" \
     ApiKey="" \
     Logging__LogLevel__Default="Information" \
-    Logging__LogLevel__OCPP="Information" \
-    Users__0__Username="admin" \
-    Users__0__Password="t3st" \
-    Users__0__Administrator="true"
+    Logging__LogLevel__OCPP="Information"
 
 COPY --chown=app:app --from=build_server /app/server ./server/
 COPY --chown=app:app --from=build_management /app/management ./management/

@@ -1,0 +1,107 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@model OCPP.Core.Management.Models.UserAdminListModel
+@inject IViewLocalizer Localizer
+@{
+    ViewData["Title"] = Localizer["Title"].Value;
+}
+
+<h1><i class="fas fa-users"></i> @Localizer["Title"]</h1>
+<br/>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="mb-4">
+    <a asp-controller="UserAdmin" asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus"></i> @Localizer["NewUser"]
+    </a>
+</div>
+<br />
+
+<table class="table table-striped">
+    <thead class="thead-dark">
+        <tr>
+            <th>@Localizer["Username"]</th>
+            <th>@Localizer["Role"]</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>
+                    @if (user.IsAdmin)
+                    {
+                        <i class="fa-solid fa-user-gear"></i>
+                    }
+                    else
+                    {
+                        <i class="fa-solid fa-user"></i>
+                    }
+                @user.Username</td>
+                <td>
+                    @if (user.IsAdmin)
+                    {
+                        <span class="badge badge-warning">@Localizer["RoleAdmin"]</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-secondary">@Localizer["RoleUser"]</span>
+                    }
+                </td>
+                <td class="text-right">
+                    <a asp-controller="UserAdmin" asp-action="Edit" asp-route-id="@user.Id"
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i> @Localizer["Edit"]
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            data-userid="@user.Id"
+                            data-username="@user.Username"
+                            onclick="DeleteUser(this)">
+                        <i class="fas fa-trash"></i> @Localizer["Delete"]
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<form id="deleteForm" method="post">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        function DeleteUser(btn) {
+            var userId = $(btn).data('userid');
+            var username = $(btn).data('username');
+            var message = @Json.Serialize(Localizer["DeleteMessage"].Value);
+            message = message.replace('{0}', username);
+
+            var dialog = new BootstrapDialog({
+                title: @Json.Serialize(Localizer["DeleteTitle"].Value),
+                message: message,
+                buttons: [{
+                    id: 'btnDialogDelete',
+                    label: @Json.Serialize(Localizer["Delete"].Value),
+                    icon: 'fas fa-trash',
+                    cssClass: 'btn-danger',
+                    action: function (dialogRef) {
+                        $('#deleteForm').attr('action', '@Url.Action("Delete", "UserAdmin")/' + userId);
+                        $('#deleteForm').submit();
+                    }
+                }, {
+                    id: 'btnDialogCancel',
+                    label: @Json.Serialize(Localizer["Cancel"].Value),
+                    action: function (dialogRef) {
+                        dialogRef.close();
+                    }
+                }]
+            });
+            dialog.open();
+        }
+    </script>
+}

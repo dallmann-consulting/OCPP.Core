@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OCPP.Core.Database;
 
@@ -10,9 +11,11 @@ using OCPP.Core.Database;
 namespace OCPP.Core.Database.Migrations.SQLite
 {
     [DbContext(typeof(OCPPCoreContextSqlite))]
-    partial class OCPPCoreContextSqliteModelSnapshot : ModelSnapshot
+    [Migration("20260610192031_AddIdentity")]
+    partial class AddIdentity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");

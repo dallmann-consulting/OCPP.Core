@@ -1,6 +1,6 @@
-﻿/*
+/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2026 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,12 +17,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -34,16 +31,20 @@ namespace OCPP.Core.Management.Controllers
     [Authorize]
     public class AccountController : BaseController
     {
+        private readonly UserManager<IdentityUser> _identityUserManager;
+
         public AccountController(
             IUserManager userManager,
             ILoggerFactory loggerFactory,
             IConfiguration config,
-            OCPPCoreContext dbContext) : base(userManager, loggerFactory, config, dbContext)
+            OCPPCoreContext dbContext,
+            UserManager<IdentityUser> identityUserManager)
+            : base(userManager, loggerFactory, config, dbContext)
         {
             Logger = loggerFactory.CreateLogger<AccountController>();
+            _identityUserManager = identityUserManager;
         }
 
-        // GET: /Account/Login
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Login(string returnUrl = null)
@@ -52,7 +53,6 @@ namespace OCPP.Core.Management.Controllers
             return View();
         }
 
-        // POST: /Account/Login
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -61,45 +61,74 @@ namespace OCPP.Core.Management.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                await UserManager.SignIn(this.HttpContext, userModel, false);
-                if (userModel != null && !string.IsNullOrWhiteSpace(userModel.Username))
-                {
-                    Logger.LogInformation("User '{0}' logged in", userModel.Username);
+                bool success = await UserManager.SignIn(this.HttpContext, userModel, false);
+                if (success)
                     return RedirectToLocal(returnUrl);
-                }
-                else
-                {
-                    Logger.LogInformation("Invalid login attempt: User '{0}'", userModel.Username);
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt");
-                    return View(userModel);
-                }
-            }
 
-            // If we got this far, something failed, redisplay form
+                ModelState.AddModelError(string.Empty, "Invalid login attempt");
+            }
             return View(userModel);
         }
 
         [AllowAnonymous]
         public async Task<IActionResult> Logout(UserModel userModel)
         {
-            Logger.LogInformation("Signing our user '{0}'", userModel.Username);
             await UserManager.SignOut(this.HttpContext);
-
             return RedirectToAction(nameof(AccountController.Login), "Account");
+        }
+
+        // GET /Account/Setup — only accessible in first-run mode
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult Setup()
+        {
+            if (!ApplicationState.IsFirstRun)
+                return NotFound();
+
+            return View();
+        }
+
+        // POST /Account/Setup
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Setup(SetupModel model)
+        {
+            if (!ApplicationState.IsFirstRun)
+                return NotFound();
+
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var user = new IdentityUser { UserName = model.Username, SecurityStamp = System.Guid.NewGuid().ToString() };
+            var result = await _identityUserManager.CreateAsync(user, model.Password);
+            if (!result.Succeeded)
+            {
+                foreach (var error in result.Errors)
+                    ModelState.AddModelError(string.Empty, error.Description);
+                return View(model);
+            }
+
+            // First user is always admin
+            var roleManager = HttpContext.RequestServices
+                .GetService(typeof(RoleManager<IdentityRole>)) as RoleManager<IdentityRole>;
+            if (roleManager != null && !await roleManager.RoleExistsAsync(Constants.AdminRoleName))
+                await roleManager.CreateAsync(new IdentityRole(Constants.AdminRoleName));
+
+            await _identityUserManager.AddToRoleAsync(user, Constants.AdminRoleName);
+
+            ApplicationState.IsFirstRun = false;
+
+            Logger.LogInformation("First-run setup complete. Admin user '{Username}' created.", model.Username);
+
+            return RedirectToAction(nameof(Login), "Account");
         }
 
         private IActionResult RedirectToLocal(string returnUrl)
         {
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-            {
                 return Redirect(returnUrl);
-            }
-            else
-            {
-                return RedirectToAction(nameof(HomeController.Index), Constants.HomeController);
-            }
+            return RedirectToAction(nameof(HomeController.Index), Constants.HomeController);
         }
     }
 }

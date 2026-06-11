@@ -117,31 +117,13 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Administration" xml:space="preserve">
-    <value>Administration</value>
+  <data name="PasswordMismatch" xml:space="preserve">
+    <value>Die Passwörter stimmen nicht überein.</value>
   </data>
-  <data name="ChargePoints" xml:space="preserve">
-    <value>Charge points</value>
+  <data name="FieldRequired" xml:space="preserve">
+    <value>Das Feld '{0}' ist erforderlich.</value>
   </data>
-  <data name="ChargeReport" xml:space="preserve">
-    <value>Charge Report</value>
-  </data>
-  <data name="ChargeTags" xml:space="preserve">
-    <value>RFID-Tags</value>
-  </data>
-  <data name="Connectors" xml:space="preserve">
-    <value>Connectors</value>
-  </data>
-  <data name="Logout" xml:space="preserve">
-    <value>Logout</value>
-  </data>
-  <data name="Overview" xml:space="preserve">
-    <value>Overview</value>
-  </data>
-  <data name="Diagnostics" xml:space="preserve">
-    <value>Diagnostics</value>
-  </data>
-  <data name="Users" xml:space="preserve">
-    <value>Users</value>
+  <data name="FieldMinLength" xml:space="preserve">
+    <value>Das Feld '{0}' muss mindestens {1} Zeichen lang sein.</value>
   </data>
 </root>
