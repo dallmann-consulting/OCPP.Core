@@ -1,4 +1,4 @@
-﻿/*
+/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
  * Copyright (C) 2020-2025 dallmann consulting GmbH.
  * All Rights Reserved.
@@ -36,6 +36,17 @@ namespace OCPP.Core.Server
 {
     public partial class OCPPMiddleware
     {
+        /// <summary>
+        /// Creates a short unique message ID.
+        /// Some chargers (e.g. eNovates firmware) truncate the echoed OCPP UniqueId
+        /// to a limited length, which breaks response correlation when a full 32-char
+        /// GUID is used. Using an 11-char ID keeps the sent and echoed IDs identical.
+        /// </summary>
+        private static string NewShortUniqueId()
+        {
+            return Guid.NewGuid().ToString("N").Substring(0, 11);
+        }
+
         /// <summary>
         /// Waits for new OCPP V1.6 messages on the open websocket connection and delegates processing to a controller
         /// </summary>
@@ -165,7 +176,7 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "Reset";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.UniqueId = NewShortUniqueId();
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
@@ -216,7 +227,7 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "UnlockConnector";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.UniqueId = NewShortUniqueId();
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
@@ -288,7 +299,7 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "SetChargingProfile";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.UniqueId = NewShortUniqueId();
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
@@ -343,7 +354,7 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "ClearChargingProfile";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.UniqueId = NewShortUniqueId();
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
@@ -404,7 +415,7 @@ namespace OCPP.Core.Server
                 OCPPMessage msgOut = new OCPPMessage();
                 msgOut.MessageType = "2";
                 msgOut.Action = "RemoteStartTransaction";
-                msgOut.UniqueId = Guid.NewGuid().ToString("N");
+                msgOut.UniqueId = NewShortUniqueId();
                 msgOut.JsonPayload = jsonResetRequest;
                 msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
@@ -461,7 +472,7 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "RemoteStopTransaction";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.UniqueId = NewShortUniqueId();
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
