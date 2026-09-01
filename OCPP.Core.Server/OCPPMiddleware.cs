@@ -1,4 +1,4 @@
-﻿/*
+/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
  * Copyright (C) 2020-2024 dallmann consulting GmbH.
  * All Rights Reserved.
@@ -410,6 +410,87 @@ namespace OCPP.Core.Server
                         else
                         {
                             _logger.LogError("OCPPMiddleware SoftReset => Missing chargepoint ID");
+                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        }
+                    }
+                    else if (cmd == "GetConfiguration")
+                    {
+                        if (!string.IsNullOrEmpty(urlChargePointId))
+                        {
+                            try
+                            {
+                                ChargePointStatus status = null;
+                                if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
+                                {
+                                    if (status.Protocol == Protocol_OCPP16 || string.IsNullOrEmpty(status.Protocol))
+                                    {
+                                        // OCPP V1.6 (optional single key via urlConnectorId slot)
+                                        await GetConfiguration16(status, context, dbContext, urlConnectorId);
+                                    }
+                                    else
+                                    {
+                                        _logger.LogError("OCPPMiddleware GetConfiguration => only OCPP1.6 implemented");
+                                        context.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
+                                    }
+                                }
+                                else
+                                {
+                                    // Chargepoint offline
+                                    _logger.LogError("OCPPMiddleware GetConfiguration => Chargepoint offline: {0}", urlChargePointId);
+                                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                                }
+                            }
+                            catch (Exception exp)
+                            {
+                                _logger.LogError(exp, "OCPPMiddleware GetConfiguration => Error: {0}", exp.Message);
+                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogError("OCPPMiddleware GetConfiguration => Missing chargepoint ID");
+                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        }
+                    }
+                    else if (cmd == "ChangeConfiguration")
+                    {
+                        // format: /API/ChangeConfiguration/<chargepointId>/<key>/<value>
+                        // key   = urlConnectorId slot (3rd segment)
+                        // value = urlParam slot       (4th segment)
+                        if (!string.IsNullOrEmpty(urlChargePointId) && !string.IsNullOrEmpty(urlConnectorId) && !string.IsNullOrEmpty(urlParam))
+                        {
+                            try
+                            {
+                                ChargePointStatus status = null;
+                                if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
+                                {
+                                    if (status.Protocol == Protocol_OCPP16 || string.IsNullOrEmpty(status.Protocol))
+                                    {
+                                        // OCPP V1.6 (key = urlConnectorId slot, value = urlParam slot)
+                                        await ChangeConfiguration16(status, context, dbContext, urlConnectorId, urlParam);
+                                    }
+                                    else
+                                    {
+                                        _logger.LogError("OCPPMiddleware ChangeConfiguration => only OCPP1.6 implemented");
+                                        context.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
+                                    }
+                                }
+                                else
+                                {
+                                    // Chargepoint offline
+                                    _logger.LogError("OCPPMiddleware ChangeConfiguration => Chargepoint offline: {0}", urlChargePointId);
+                                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                                }
+                            }
+                            catch (Exception exp)
+                            {
+                                _logger.LogError(exp, "OCPPMiddleware ChangeConfiguration => Error: {0}", exp.Message);
+                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogError("OCPPMiddleware ChangeConfiguration => Missing chargepoint ID, key or value");
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
                     }
