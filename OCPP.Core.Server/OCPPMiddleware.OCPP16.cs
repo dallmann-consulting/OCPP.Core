@@ -38,6 +38,29 @@ namespace OCPP.Core.Server
     {
 
         /// <summary>
+        /// Creates a short, collision-resistant unique message ID.
+        /// Some chargers (e.g. eNovates firmware) truncate the echoed OCPP UniqueId
+        /// to a limited length, which breaks response correlation when a full 32-char
+        /// GUID is used. This produces an 11-character ID from a 62-character
+        /// alphanumeric alphabet (A-Z, a-z, 0-9), giving ~65 bits of entropy while
+        /// staying within the length some firmware tolerates and remaining safe inside
+        /// the OCPP JSON/WebSocket framing (no '+', '/', '=' characters).
+        /// </summary>
+        private static string NewShortUniqueId()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            const int length = 11;
+            byte[] bytes = new byte[length];
+            System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
+            char[] result = new char[length];
+            for (int i = 0; i < length; i++)
+            {
+                result[i] = chars[bytes[i] % chars.Length];
+            }
+            return new string(result);
+        }
+
+        /// <summary>
         /// Waits for new OCPP V1.6 messages on the open websocket connection and delegates processing to a controller
         /// </summary>
         private async Task Receive16(ChargePointStatus chargePointStatus, HttpContext context, OCPPCoreContext dbContext)
@@ -166,7 +189,7 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "Reset";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.UniqueId = NewShortUniqueId();
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
@@ -311,7 +334,7 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "UnlockConnector";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.UniqueId = NewShortUniqueId();
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
@@ -383,7 +406,7 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "SetChargingProfile";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.UniqueId = NewShortUniqueId();
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
@@ -438,7 +461,7 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "ClearChargingProfile";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.UniqueId = NewShortUniqueId();
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
@@ -499,7 +522,7 @@ namespace OCPP.Core.Server
                 OCPPMessage msgOut = new OCPPMessage();
                 msgOut.MessageType = "2";
                 msgOut.Action = "RemoteStartTransaction";
-                msgOut.UniqueId = Guid.NewGuid().ToString("N");
+                msgOut.UniqueId = NewShortUniqueId();
                 msgOut.JsonPayload = jsonResetRequest;
                 msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
@@ -556,7 +579,7 @@ namespace OCPP.Core.Server
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = "RemoteStopTransaction";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
+            msgOut.UniqueId = NewShortUniqueId();
             msgOut.JsonPayload = jsonResetRequest;
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 

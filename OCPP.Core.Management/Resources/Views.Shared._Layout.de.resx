@@ -141,4 +141,7 @@
   <data name="Diagnostics" xml:space="preserve">
     <value>Diagnose</value>
   </data>
+  <data name="Users" xml:space="preserve">
+    <value>Benutzer</value>
+  </data>
 </root>

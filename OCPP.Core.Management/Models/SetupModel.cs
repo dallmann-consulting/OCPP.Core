@@ -1,4 +1,4 @@
-﻿/*
+/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
  * Copyright (C) 2020-2026 dallmann consulting GmbH.
  * All Rights Reserved.
@@ -17,17 +17,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 
-namespace OCPP.Core.Management
+namespace OCPP.Core.Management.Models
 {
-    public class Constants
+    public class SetupModel
     {
-        public const string AdminRoleName = "Administrator";
+        [Required(ErrorMessage = "FieldRequired")]
+        public string Username { get; set; }
 
-        public static string HomeController = "Home";
+        [Required(ErrorMessage = "FieldRequired")]
+        [MinLength(4, ErrorMessage = "FieldMinLength")]
+        public string Password { get; set; }
+
+        [Required(ErrorMessage = "FieldRequired")]
+        [Compare(nameof(Password), ErrorMessage = "PasswordMismatch")]
+        public string ConfirmPassword { get; set; }
     }
 }

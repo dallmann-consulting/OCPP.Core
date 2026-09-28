@@ -117,31 +117,22 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Administration" xml:space="preserve">
-    <value>Administration</value>
+  <data name="Subtitle" xml:space="preserve">
+    <value>Es sind noch keine Benutzer vorhanden. Erstellen Sie das erste Administratorkonto.</value>
   </data>
-  <data name="ChargePoints" xml:space="preserve">
-    <value>Charge points</value>
+  <data name="Password" xml:space="preserve">
+    <value>Passwort</value>
   </data>
-  <data name="ChargeReport" xml:space="preserve">
-    <value>Charge Report</value>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Passwort bestätigen</value>
   </data>
-  <data name="ChargeTags" xml:space="preserve">
-    <value>RFID-Tags</value>
+  <data name="Username" xml:space="preserve">
+    <value>Benutzername</value>
   </data>
-  <data name="Connectors" xml:space="preserve">
-    <value>Connectors</value>
+  <data name="Title" xml:space="preserve">
+    <value>Ersteinrichtung</value>
   </data>
-  <data name="Logout" xml:space="preserve">
-    <value>Logout</value>
-  </data>
-  <data name="Overview" xml:space="preserve">
-    <value>Overview</value>
-  </data>
-  <data name="Diagnostics" xml:space="preserve">
-    <value>Diagnostics</value>
-  </data>
-  <data name="Users" xml:space="preserve">
-    <value>Users</value>
+  <data name="CreateAdmin" xml:space="preserve">
+    <value>Administratorkonto erstellen</value>
   </data>
 </root>

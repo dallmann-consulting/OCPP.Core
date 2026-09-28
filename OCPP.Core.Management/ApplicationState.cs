@@ -1,4 +1,4 @@
-﻿/*
+/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
  * Copyright (C) 2020-2026 dallmann consulting GmbH.
  * All Rights Reserved.
@@ -17,17 +17,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace OCPP.Core.Management
 {
-    public class Constants
+    public static class ApplicationState
     {
-        public const string AdminRoleName = "Administrator";
-
-        public static string HomeController = "Home";
+        /// <summary>
+        /// True when no users exist in the database and no users were configured.
+        /// All requests are redirected to the setup page until the first admin is created.
+        /// </summary>
+        public static bool IsFirstRun { get; set; } = false;
     }
 }

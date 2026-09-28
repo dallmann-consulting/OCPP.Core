@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.7" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.21.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.12" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 

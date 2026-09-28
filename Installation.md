@@ -24,7 +24,7 @@ The project includes templates for SQL-Server and SQLite:
 The main Script in both folders always contain the latest version for a full database. If you are updating from previous versions there are dedicated update skripts.
 
 ## Webserver
-The OCPP-Server and the Web-UI are independent webs/servers and both need database connection information. The Web-UI needs the the URL to the OCPP server for status information and some actions. The config file of the Web-UI contains the users and passwords.
+The OCPP-Server and the Web-UI are independent webs/servers and both need database connection information. The Web-UI needs the the URL to the OCPP server for status information and some actions.
 
 **OCPP.Core.Server**
 Edit the appsettings.json file and configure the 'SQLite' *or* 'SqlServer' entry:
@@ -40,20 +40,10 @@ If you configure a dump directory, the server writes all OCPP requests and respo
 "DbMessageLog": 2,  //0=None, 1=Info, 2=Verbose (all)
 ```
 **OCPP.Core.Management**
-See above for the database connection. The appsettings.json file also contains the user logins, passwords and role. Administrators can create and edit chargepoints and tags. Regular users can see the chargepoints and transactions.
-```
-"Users": [
-	{
-		"Username": "admin",
-		"Password": "t3st",
-		"Administrator": true
-	},
-	{
-		"Username": "user",
-		"Password": "t3st",
-		"Administrator": false
-	}
-]
+See above for the database connection. 
+With an empty database the Management-UI shows a setup page to register the first admin user.
+If you have existing user definitions in your configuration, these users are migrated into the database.
+
 ```
 The Management-UI needs the URL to the OCPP server for internal communication.  To secure this API you can configure API keys (=identical passwords) on both sides:
 ```
@@ -107,8 +97,7 @@ or
 	docker pull udallmann/ocpp.core
 	```
 
-The default user is "admin" with "t3st" (see "Dockerfile").
-You should change the password and API-key via environment variables on your docker host.
+You should change the API-key via environment variables on your docker host.
 
 
 ## Build

@@ -19,6 +19,8 @@
 
 using System;
 using System.IO;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Configuration;
@@ -27,7 +29,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace OCPP.Core.Database
 {
-    public partial class OCPPCoreContext : DbContext
+    public partial class OCPPCoreContext : IdentityDbContext<IdentityUser>
     {
         public OCPPCoreContext(DbContextOptions<OCPPCoreContext> options)
             : base(options)
@@ -47,6 +49,8 @@ namespace OCPP.Core.Database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<ChargePoint>(entity =>
             {
                 entity.ToTable("ChargePoint");
