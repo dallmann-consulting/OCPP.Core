@@ -110,6 +110,41 @@ The answer should be:
 The server checks the last transaction for the specified connector and return the http code 424 (FailedDependency) when no open transaction was found.
 
 
+### GetConfiguration
+
+Reads the configuration keys of a charge point. With no key, the charge point
+returns all keys; with a key, only that one.
+
+```
+/API/GetConfiguration/station42
+/API/GetConfiguration/station42/HeartBeatInterval
+```
+
+The answer is the raw OCPP GetConfiguration payload, e.g.:
+
+```
+{
+  "configurationKey": [
+    { "key": "HeartBeatInterval", "readonly": false, "value": "300" }
+  ],
+  "unknownKey": []
+}
+```
+
+### ChangeConfiguration
+
+Sets a single configuration key to a new value.
+
+```
+/API/ChangeConfiguration/station42/HeartBeatInterval/240
+```
+
+The answer should be:
+{"status"="Accepted"} or {"status"="Rejected"} or
+{"status"="RebootRequired"} or OCPP1.6 {"status"="NotSupported"}
+
+
+
 ### In general
 These commands means that the server send a request to the charger and the charger needs to answer in a reasonable period
 of time. The server can not wait indefinitely and the OCPP server waits for 60 seconds.

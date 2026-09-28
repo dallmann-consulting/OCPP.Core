@@ -1,4 +1,4 @@
-﻿/*
+/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
  * Copyright (C) 2020-2021 dallmann consulting GmbH.
  * All Rights Reserved.
@@ -114,6 +114,12 @@ namespace OCPP.Core.Server
             {
                 case "Reset":
                     HandleReset(msgIn, msgOut);
+                    break;
+                case "GetConfiguration":
+                    HandleGetConfiguration(msgIn, msgOut);
+                    break;
+                case "ChangeConfiguration":
+                    HandleChangeConfiguration(msgIn, msgOut);
                     break;
                 case "UnlockConnector":
                     HandleUnlockConnector(msgIn, msgOut);

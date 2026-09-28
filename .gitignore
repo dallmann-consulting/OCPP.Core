@@ -340,5 +340,5 @@ ASALocalRun/
 healthchecksdb
 /OCPP.Core.Server/Messages_OCPP16/ResetResponse.cs
 /OCPP.Core.Server/Messages_OCPP16/ResetRequest.cs
-OCPP.Core.Server/.DS_Store
+
 .DS_Store
