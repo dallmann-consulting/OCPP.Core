@@ -65,7 +65,7 @@ namespace OCPP.Core.Server
         private static readonly ConcurrentDictionary<string, ChargePointStatus> _chargePointStatusDict = new ConcurrentDictionary<string, ChargePointStatus>();
 
         // Dictionary for processing asynchronous API calls
-        private Dictionary<string, OCPPMessage> _requestQueue = new Dictionary<string, OCPPMessage>();
+        private readonly ConcurrentDictionary<string, OCPPMessage> _requestQueue = new ConcurrentDictionary<string, OCPPMessage>();
 
         public OCPPMiddleware(RequestDelegate next, ILoggerFactory logFactory, IConfiguration configuration)
         {
@@ -830,6 +830,68 @@ namespace OCPP.Core.Server
                 _logger.LogWarning("OCPPMiddleware => Bad path request");
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
             }
+        }
+
+        /// <summary>
+        /// Sends a request to the chargepoint and waits (asynchronously) for the answer.
+        /// Returns the result of the answer processing in the controller or null (=timeout or API caller aborted)
+        /// </summary>
+        private async Task<string> SendRequestAndWait(ChargePointStatus chargePointStatus, string action, object request, ILogger logger, CancellationToken cancellationToken)
+        {
+            OCPPMessage msgOut = new OCPPMessage();
+            msgOut.MessageType = "2";
+            msgOut.Action = action;
+            // OCPP 1.6: short id for firmware that truncates the echoed id
+            msgOut.UniqueId = (chargePointStatus.Protocol == Protocol_OCPP21 || chargePointStatus.Protocol == Protocol_OCPP201) ? Guid.NewGuid().ToString("N") : NewShortUniqueId();
+            msgOut.JsonPayload = JsonConvert.SerializeObject(request);
+            // Continuations must not run synchronously in the receive loop of the chargepoint (=> SetResult in the controller)
+            msgOut.TaskCompletionSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // store message with MsgId for later answer processing (=> send answer to API caller)
+            _requestQueue.TryAdd(msgOut.UniqueId, msgOut);
+            try
+            {
+                // Send OCPP message with optional logging/dump
+                await SendOcppMessage(msgOut, logger, chargePointStatus);
+
+                // Wait for asynchronous chargepoint response and processing
+                Task completedTask = await Task.WhenAny(msgOut.TaskCompletionSource.Task, Task.Delay(TimoutWaitForCharger, cancellationToken));
+                if (completedTask == msgOut.TaskCompletionSource.Task)
+                {
+                    return await msgOut.TaskCompletionSource.Task;
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    logger.LogInformation("OCPPMiddleware => {0}: API caller aborted (ChargePoint='{1}')", action, chargePointStatus.Id);
+                }
+                else
+                {
+                    logger.LogInformation("OCPPMiddleware => {0}: Timeout (ChargePoint='{1}')", action, chargePointStatus.Id);
+                }
+                return null;
+            }
+            finally
+            {
+                // late answers are only logged
+                _requestQueue.TryRemove(msgOut.UniqueId, out _);
+            }
+        }
+
+        /// <summary>
+        /// Sends an OCPP message with the protocol of the chargepoint
+        /// </summary>
+        private Task SendOcppMessage(OCPPMessage msg, ILogger logger, ChargePointStatus chargePointStatus)
+        {
+            if (chargePointStatus.Protocol == Protocol_OCPP21)
+            {
+                return SendOcpp21Message(msg, logger, chargePointStatus);
+            }
+            else if (chargePointStatus.Protocol == Protocol_OCPP201)
+            {
+                return SendOcpp20Message(msg, logger, chargePointStatus);
+            }
+            return SendOcpp16Message(msg, logger, chargePointStatus);
         }
 
         /// <summary>
