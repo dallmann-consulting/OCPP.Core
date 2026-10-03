@@ -175,7 +175,7 @@ The answer contains one result per variable:
 
 `status` is one of the OCPP 2.x values: Accepted, Rejected, UnknownComponent,
 UnknownVariable, NotSupportedAttributeType, RebootRequired (SetVariables only) -
-or "Timeout" if the charge point didn't answer. `statusInfo` contains optional
+or "Timeout"/"Disconnected" if the charge point didn't answer. `statusInfo` contains optional
 details. `value` is only returned by GetVariables. `mutability` (ReadOnly, WriteOnly,
 ReadWrite) is returned when reading all values; with OCPP 1.6 always.
 
@@ -231,4 +231,6 @@ Mapping for OCPP 2.x:
 ### In general
 These commands means that the server send a request to the charger and the charger needs to answer in a reasonable period
 of time. The server can not wait indefinitely and the OCPP server waits for 60 seconds.
-After that the API caller will geht the response {"status"="Timeout"}.
+After that the API caller will get the response {"status"="Timeout"}.
+If the charger disconnects while the server waits for the answer, the API caller immediately gets
+the response {"status"="Disconnected"}.

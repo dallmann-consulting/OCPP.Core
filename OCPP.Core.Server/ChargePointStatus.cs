@@ -88,6 +88,19 @@ namespace OCPP.Core.Server
         public WebSocket WebSocket { get; set; }
 
         /// <summary>
+        /// Only one send operation at a time is allowed on a WebSocket
+        /// (receive loop answers and API requests are sent concurrently)
+        /// </summary>
+        [JsonIgnore]
+        public SemaphoreSlim SendLock { get; } = new SemaphoreSlim(1, 1);
+
+        /// <summary>
+        /// Requests sent to the chargepoint that wait for an answer (key = unique id)
+        /// </summary>
+        [JsonIgnore]
+        public ConcurrentDictionary<string, OCPPMessage> PendingRequests { get; } = new ConcurrentDictionary<string, OCPPMessage>();
+
+        /// <summary>
         /// Requested OCPP 2.x reports (key = requestId) that wait for NotifyReport messages
         /// </summary>
         [JsonIgnore]

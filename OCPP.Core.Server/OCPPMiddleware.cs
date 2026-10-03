@@ -64,9 +64,6 @@ namespace OCPP.Core.Server
         // Dictionary with status objects for each charge point
         private static readonly ConcurrentDictionary<string, ChargePointStatus> _chargePointStatusDict = new ConcurrentDictionary<string, ChargePointStatus>();
 
-        // Dictionary for processing asynchronous API calls
-        private readonly ConcurrentDictionary<string, OCPPMessage> _requestQueue = new ConcurrentDictionary<string, OCPPMessage>();
-
         public OCPPMiddleware(RequestDelegate next, ILoggerFactory logFactory, IConfiguration configuration)
         {
             _next = next;
@@ -838,10 +835,16 @@ namespace OCPP.Core.Server
 
         /// <summary>
         /// Sends a request to the chargepoint and waits (asynchronously) for the answer.
-        /// Returns the result of the answer processing in the controller or null (=timeout or API caller aborted)
+        /// Returns the result of the answer processing in the controller or null (=timeout, disconnect or API caller aborted)
         /// </summary>
         private async Task<string> SendRequestAndWait(ChargePointStatus chargePointStatus, string action, object request, ILogger logger, CancellationToken cancellationToken)
         {
+            if (chargePointStatus.WebSocket?.State != WebSocketState.Open)
+            {
+                logger.LogInformation("OCPPMiddleware => {0}: Chargepoint disconnected (ChargePoint='{1}')", action, chargePointStatus.Id);
+                return null;
+            }
+
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
             msgOut.Action = action;
@@ -852,17 +855,32 @@ namespace OCPP.Core.Server
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             // store message with MsgId for later answer processing (=> send answer to API caller)
-            _requestQueue.TryAdd(msgOut.UniqueId, msgOut);
+            chargePointStatus.PendingRequests.TryAdd(msgOut.UniqueId, msgOut);
             try
             {
-                // Send OCPP message with optional logging/dump
-                await SendOcppMessage(msgOut, logger, chargePointStatus);
+                try
+                {
+                    // Send OCPP message with optional logging/dump
+                    await SendOcppMessage(msgOut, logger, chargePointStatus);
+                }
+                catch (Exception exp) when (exp is WebSocketException || exp is ObjectDisposedException)
+                {
+                    // connection closed in the meantime
+                    logger.LogInformation("OCPPMiddleware => {0}: Sending failed - chargepoint disconnected (ChargePoint='{1}'): {2}", action, chargePointStatus.Id, exp.Message);
+                    return null;
+                }
 
                 // Wait for asynchronous chargepoint response and processing
                 Task completedTask = await Task.WhenAny(msgOut.TaskCompletionSource.Task, Task.Delay(TimoutWaitForCharger, cancellationToken));
                 if (completedTask == msgOut.TaskCompletionSource.Task)
                 {
-                    return await msgOut.TaskCompletionSource.Task;
+                    string result = await msgOut.TaskCompletionSource.Task;
+                    if (result == null)
+                    {
+                        // completed by AbortPendingRequests
+                        logger.LogInformation("OCPPMiddleware => {0}: Chargepoint disconnected while waiting for the answer (ChargePoint='{1}')", action, chargePointStatus.Id);
+                    }
+                    return result;
                 }
 
                 if (cancellationToken.IsCancellationRequested)
@@ -878,7 +896,54 @@ namespace OCPP.Core.Server
             finally
             {
                 // late answers are only logged
-                _requestQueue.TryRemove(msgOut.UniqueId, out _);
+                chargePointStatus.PendingRequests.TryRemove(msgOut.UniqueId, out _);
+            }
+        }
+
+        /// <summary>
+        /// API result status when the chargepoint didn't answer: "Disconnected" or "Timeout"
+        /// </summary>
+        private static string NoAnswerStatus(ChargePointStatus chargePointStatus)
+        {
+            return (chargePointStatus.WebSocket?.State == WebSocketState.Open) ? ApiVariableStatus.Timeout : ApiVariableStatus.Disconnected;
+        }
+
+        /// <summary>
+        /// API result JSON when the chargepoint didn't answer
+        /// </summary>
+        private static string NoAnswerResult(ChargePointStatus chargePointStatus)
+        {
+            return "{\"status\": " + JsonConvert.ToString(NoAnswerStatus(chargePointStatus)) + "}";
+        }
+
+        /// <summary>
+        /// Ends all requests and reports of a chargepoint that wait for an answer (after disconnect)
+        /// </summary>
+        private static void AbortPendingRequests(ChargePointStatus chargePointStatus)
+        {
+            foreach (string uniqueId in chargePointStatus.PendingRequests.Keys)
+            {
+                if (chargePointStatus.PendingRequests.TryRemove(uniqueId, out OCPPMessage msg))
+                {
+                    msg.TaskCompletionSource?.TrySetResult(null);
+                }
+            }
+            AbortPendingReports(chargePointStatus, ApiReportStatus.Disconnected);
+        }
+
+        /// <summary>
+        /// Closes the output of the WebSocket (synchronized with other send operations)
+        /// </summary>
+        private static async Task CloseOutputAsync(ChargePointStatus chargePointStatus, WebSocketCloseStatus closeStatus)
+        {
+            await chargePointStatus.SendLock.WaitAsync();
+            try
+            {
+                await chargePointStatus.WebSocket.CloseOutputAsync(closeStatus, string.Empty, CancellationToken.None);
+            }
+            finally
+            {
+                chargePointStatus.SendLock.Release();
             }
         }
 

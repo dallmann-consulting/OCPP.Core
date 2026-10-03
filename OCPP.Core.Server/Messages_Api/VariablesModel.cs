@@ -37,6 +37,7 @@ namespace OCPP.Core.Server.Messages_Api
         public const string NotSupportedAttributeType = "NotSupportedAttributeType";
         public const string RebootRequired = "RebootRequired";
         public const string Timeout = "Timeout";
+        public const string Disconnected = "Disconnected";
     }
 
     /// <summary>
