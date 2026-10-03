@@ -218,7 +218,8 @@ namespace OCPP.Core.Server
                                 if (_chargePointStatusDict.TryGetValue(chargepointIdentifier, out ChargePointStatus existingStatus) &&
                                     existingStatus.WebSocket.State != WebSocketState.Open)
                                 {
-                                    _chargePointStatusDict.TryRemove(chargepointIdentifier, out _);
+                                    // only remove this stale entry (another connection may have replaced it in the meantime)
+                                    _chargePointStatusDict.TryRemove(new KeyValuePair<string, ChargePointStatus>(chargepointIdentifier, existingStatus));
                                 }
 
                                 // Try to add - fails if chargepoint is already connected with open WebSocket
@@ -287,7 +288,7 @@ namespace OCPP.Core.Server
                                         catch { }
                                     }
                                     // Remove chargepoint status
-                                    _chargePointStatusDict.TryRemove(chargePointStatus.Id, out _);
+                                    RemoveChargePointStatus(chargePointStatus);
                                 }
                             }
                         }
@@ -914,6 +915,23 @@ namespace OCPP.Core.Server
         private static string NoAnswerResult(ChargePointStatus chargePointStatus)
         {
             return "{\"status\": " + JsonConvert.ToString(NoAnswerStatus(chargePointStatus)) + "}";
+        }
+
+        /// <summary>
+        /// Removes the status object of a connection from the dictionary - but only this object:
+        /// after a reconnect the dictionary may already contain the status of the new connection.
+        /// Searches by object (not by key), because the key is the identifier from the URL.
+        /// </summary>
+        private static void RemoveChargePointStatus(ChargePointStatus chargePointStatus)
+        {
+            foreach (KeyValuePair<string, ChargePointStatus> entry in _chargePointStatusDict)
+            {
+                if (ReferenceEquals(entry.Value, chargePointStatus))
+                {
+                    // atomic: only removed if the key still has this value
+                    _chargePointStatusDict.TryRemove(entry);
+                }
+            }
         }
 
         /// <summary>
