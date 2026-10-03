@@ -146,6 +146,7 @@ namespace OCPP.Core.Server
             finally
             {
                 logger.LogInformation("OCPPMiddleware.Receive20 => Websocket closed: State={0} / CloseStatus={1}", chargePointStatus.WebSocket.State, chargePointStatus.WebSocket.CloseStatus);
+                AbortPendingReports(chargePointStatus, ApiReportStatus.Disconnected);
                 _chargePointStatusDict.TryRemove(chargePointStatus.Id, out _);
             }
         }
@@ -366,15 +367,84 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Sends a GetVariables-Request to the chargepoint
         /// </summary>
+        /// <summary>
+        /// Reads all variables via GetBaseReport and collects the NotifyReport messages
+        /// </summary>
+        private async Task GetReport20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, string reportBaseParam)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
+
+            ReportBaseEnumType reportBase = ReportBaseEnumType.ConfigurationInventory;
+            if (!string.IsNullOrEmpty(reportBaseParam) &&
+                (char.IsDigit(reportBaseParam[0]) || !Enum.TryParse<ReportBaseEnumType>(reportBaseParam, true, out reportBase)))
+            {
+                logger.LogError("OCPPMiddleware.OCPP20 => GetReport20: Invalid report base '{0}'", reportBaseParam);
+                apiCallerContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
+            }
+
+            // Register the report before sending the request => no early NotifyReport gets lost
+            int requestId = chargePointStatus.NewReportRequestId();
+            PendingReport pendingReport = new PendingReport(requestId, _configuration.GetValue<int>("ReportMaxItems", 10000));
+            chargePointStatus.PendingReports.TryAdd(requestId, pendingReport);
+            try
+            {
+                logger.LogInformation("OCPPMiddleware.OCPP20 => GetReport20: ChargePoint='{0}' / RequestId={1} / ReportBase={2}", chargePointStatus.Id, requestId, reportBase);
+
+                Messages_OCPP20.GetBaseReportRequest getBaseReportRequest = new Messages_OCPP20.GetBaseReportRequest();
+                getBaseReportRequest.RequestId = requestId;
+                getBaseReportRequest.ReportBase = reportBase;
+                getBaseReportRequest.CustomData = new CustomDataType();
+                getBaseReportRequest.CustomData.VendorId = ControllerOCPP20.VendorId;
+
+                ApiVariablesResponse apiResponse;
+                string ocppResult = await SendRequestAndWait(chargePointStatus, "GetBaseReport", getBaseReportRequest, logger, apiCallerContext.RequestAborted);
+                if (ocppResult == null)
+                {
+                    apiResponse = new ApiVariablesResponse() { Status = ApiReportStatus.Timeout };
+                }
+                else
+                {
+                    Messages_OCPP20.GetBaseReportResponse getBaseReportResponse = JsonConvert.DeserializeObject<Messages_OCPP20.GetBaseReportResponse>(ocppResult);
+                    switch (getBaseReportResponse.Status)
+                    {
+                        case GenericDeviceModelStatusEnumType.Accepted:
+                            string abortStatus = await WaitForReport(pendingReport, chargePointStatus, logger, apiCallerContext.RequestAborted);
+                            apiResponse = pendingReport.CreateResponse(abortStatus);
+                            break;
+                        case GenericDeviceModelStatusEnumType.EmptyResultSet:
+                            apiResponse = new ApiVariablesResponse();
+                            break;
+                        default:
+                            apiResponse = new ApiVariablesResponse()
+                            {
+                                Status = getBaseReportResponse.Status.ToString(),
+                                StatusInfo = ToApiStatusInfo20(getBaseReportResponse.StatusInfo)
+                            };
+                            break;
+                    }
+                }
+                logger.LogInformation("OCPPMiddleware.OCPP20 => GetReport20: ChargePoint='{0}' / RequestId={1} => Status={2} / Variables={3}", chargePointStatus.Id, requestId, apiResponse.Status ?? "Complete", apiResponse.Variables.Count);
+
+                string apiResult = JsonConvert.SerializeObject(apiResponse);
+                apiCallerContext.Response.StatusCode = 200;
+                apiCallerContext.Response.ContentType = "application/json";
+                await apiCallerContext.Response.WriteAsync(apiResult);
+            }
+            finally
+            {
+                chargePointStatus.PendingReports.TryRemove(requestId, out _);
+            }
+        }
+
         private async Task GetVariables20(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext, ApiVariablesRequest apiRequest)
         {
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
 
             if (apiRequest.Variables.Count == 0)
             {
-                // A complete list requires GetBaseReport + NotifyReport
-                logger.LogWarning("OCPPMiddleware.OCPP20 => GetVariables20: Reading all variables is not implemented yet");
-                apiCallerContext.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
+                // No variables => read all variables (report)
+                await GetReport20(chargePointStatus, apiCallerContext, apiRequest.ReportBase);
                 return;
             }
 

@@ -99,6 +99,9 @@ namespace OCPP.Core.Server
                     case "NotifyEVChargingSchedule":
                         errorCode = HandleNotifyEVChargingSchedule(msgIn, msgOut);
                         break;
+                    case "NotifyReport":
+                        errorCode = HandleNotifyReport(msgIn, msgOut);
+                        break;
                     default:
                         errorCode = ErrorCodes.NotSupported;
                         WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
@@ -153,6 +156,9 @@ namespace OCPP.Core.Server
                     break;
                 case "SetVariables":
                     HandleSetVariables(msgIn, msgOut);
+                    break;
+                case "GetBaseReport":
+                    HandleGetBaseReport(msgIn, msgOut);
                     break;
 
                 default:

@@ -154,8 +154,8 @@ POST /API/SetVariables/station42
 
 `component.instance`, `component.evse` (`id`, `connectorId`), `variable.instance`
 and `attributeType` (Actual (default), Target, MinSet, MaxSet) are optional.
-`value` is required for SetVariables and ignored for GetVariables. An empty body
-on GetVariables requests all values.
+`value` is required for SetVariables and ignored for GetVariables. GetVariables
+without variables (short form without key or empty body) requests all values.
 
 The answer contains one result per variable:
 
@@ -176,8 +176,43 @@ The answer contains one result per variable:
 `status` is one of the OCPP 2.x values: Accepted, Rejected, UnknownComponent,
 UnknownVariable, NotSupportedAttributeType, RebootRequired (SetVariables only) -
 or "Timeout" if the charge point didn't answer. `statusInfo` contains optional
-details. `value` is only returned by GetVariables, `mutability` (ReadOnly/ReadWrite)
-only with OCPP 1.6.
+details. `value` is only returned by GetVariables. `mutability` (ReadOnly, WriteOnly,
+ReadWrite) is returned when reading all values; with OCPP 1.6 always.
+
+#### Reading all values
+
+```
+/API/GetVariables/station42
+/API/GetVariables/station42?reportBase=FullInventory
+POST /API/GetVariables/station42   { "reportBase": "FullInventory" }
+```
+
+OCPP 1.6 returns all configuration keys (GetConfiguration without key).
+
+OCPP 2.x sends a GetBaseReport and collects the report parts (NotifyReport messages)
+the charge point sends afterwards. `reportBase` is ConfigurationInventory (default),
+FullInventory or SummaryInventory. The results additionally contain the
+characteristics of the variables (`dataType`, `unit`, `minLimit`, `maxLimit`, `valuesList`).
+
+If the result is not complete, the answer contains a top level `status` (and the
+values received so far):
+* "Timeout" - the charge point didn't answer or sent no report part
+* "Incomplete" - report parts are missing (`missingSeqNo`) or the last part didn't arrive
+* "Disconnected" - the charge point disconnected while sending the report
+* "TooLarge" - the report exceeds `ReportMaxItems`
+* "Rejected" / "NotSupported" - the charge point declined the report (`statusInfo`)
+
+```
+{
+  "status": "Incomplete",
+  "missingSeqNo": [ 1 ],
+  "variables": [ ... ]
+}
+```
+
+The server waits until the last part arrives, but at most `ReportIdleTimeout`
+seconds without a new part (default 30) and `ReportMaxDuration` seconds in total
+(default 300) - see appsettings.json.
 
 Mapping for OCPP 1.6:
 * Entries with a component, a variable instance or an attribute type other than
@@ -188,13 +223,10 @@ Mapping for OCPP 1.6:
 * ChangeConfiguration only supports a single key. SetVariables therefore sends one
   request per entry. After a timeout the remaining entries are not sent and get the
   status "Timeout".
-* GetVariables without entries returns all configuration keys. If the charge point
-  doesn't answer, the result is {"status": "Timeout"}.
+* `reportBase` is ignored.
 
 Mapping for OCPP 2.x:
 * Entries without a component get the status UnknownComponent (OCPP 2.x requires a component).
-* Reading all values (GetVariables without entries) requires GetBaseReport/NotifyReport
-  and is not implemented yet (http code 501).
 
 ### In general
 These commands means that the server send a request to the charger and the charger needs to answer in a reasonable period

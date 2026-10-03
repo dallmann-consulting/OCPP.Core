@@ -147,6 +147,8 @@ namespace OCPP.Core.Test
                 CallVariablesApi("GetVariables", _chargePointId,
                     "{\"variables\":[{\"component\":{\"name\":\"OCPPCommCtrlr\"},\"variable\":{\"name\":\"HeartbeatInterval\"}},{\"variable\":{\"name\":\"HeartbeatInterval\"}},{\"component\":{\"name\":\"OCPPCommCtrlr\"},\"variable\":{\"name\":\"Unknown\"}}]}",
                     "\"status\":\"UnknownComponent\"");
+                CallVariablesApi("GetVariables", _chargePointId, null, "\"name\":\"AvailabilityState\"");
+                CallVariablesApi("GetVariables", $"{_chargePointId}?reportBase=SummaryInventory", null, "\"status\":\"Incomplete\"");
 
                 /* 11.  Remote Start/Stop Transaction  */
                 if (RemoteStartTransaction(_chargePointId, 1, "fail_" + _chargeTagId))
@@ -643,6 +645,35 @@ namespace OCPP.Core.Test
             Console.WriteLine();
         }
 
+        private static async Task SendReportParts(int requestId, bool skipPart)
+        {
+            JObject[] reportData =
+            {
+                JObject.Parse("{\"component\":{\"name\":\"OCPPCommCtrlr\"},\"variable\":{\"name\":\"HeartbeatInterval\"},\"variableAttribute\":[{\"type\":\"Actual\",\"value\":\"300\",\"mutability\":\"ReadWrite\"}],\"variableCharacteristics\":{\"dataType\":\"integer\",\"unit\":\"s\",\"supportsMonitoring\":false}}"),
+                JObject.Parse("{\"component\":{\"name\":\"SampledDataCtrlr\"},\"variable\":{\"name\":\"TxUpdatedInterval\"},\"variableAttribute\":[{\"value\":\"60\"}],\"variableCharacteristics\":{\"dataType\":\"integer\",\"supportsMonitoring\":false}}"),
+                JObject.Parse("{\"component\":{\"name\":\"EVSE\",\"evse\":{\"id\":1}},\"variable\":{\"name\":\"AvailabilityState\"},\"variableAttribute\":[{\"value\":\"Available\",\"mutability\":\"ReadOnly\"}],\"variableCharacteristics\":{\"dataType\":\"OptionList\",\"valuesList\":\"Available,Occupied,Reserved,Unavailable,Faulted\",\"supportsMonitoring\":true}}")
+            };
+            try
+            {
+                for (int seqNo = 0; seqNo < reportData.Length; seqNo++)
+                {
+                    if (skipPart && seqNo == 1) continue;
+                    await SendMessage("NotifyReport", new JObject
+                    {
+                        ["requestId"] = requestId,
+                        ["generatedAt"] = DateTime.UtcNow.ToString("o"),
+                        ["seqNo"] = seqNo,
+                        ["tbc"] = seqNo < reportData.Length - 1,
+                        ["reportData"] = new JArray(reportData[seqNo])
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending NotifyReport: {ex.Message}");
+            }
+        }
+
         private static bool IsSimulatedVariable(JObject data)
         {
             return string.Equals(data["component"]?["name"]?.ToString(), "OCPPCommCtrlr", StringComparison.OrdinalIgnoreCase) &&
@@ -897,6 +928,16 @@ namespace OCPP.Core.Test
                                             });
                                         }
                                         await SendCallResult(uniqueId, new JObject { ["setVariableResult"] = results });
+                                    }
+                                    break;
+                                case "GetBaseReport":
+                                    {
+                                        await SendCallResult(uniqueId, new { status = "Accepted" });
+                                        int requestId = message[3]["requestId"]!.Value<int>();
+                                        // SummaryInventory simulates a lost part (seqNo 1) => incomplete report
+                                        bool skipPart = message[3]["reportBase"]?.ToString() == "SummaryInventory";
+                                        // Send report parts in background (receive loop must continue for the responses)
+                                        _ = Task.Run(() => SendReportParts(requestId, skipPart));
                                     }
                                     break;
                                 default:

@@ -39,6 +39,19 @@ namespace OCPP.Core.Server.Messages_Api
         public const string Timeout = "Timeout";
     }
 
+    /// <summary>
+    /// Overall status of a GetVariables response for all variables (report)
+    /// </summary>
+    public static class ApiReportStatus
+    {
+        public const string Incomplete = "Incomplete";
+        public const string Timeout = "Timeout";
+        public const string Disconnected = "Disconnected";
+        public const string TooLarge = "TooLarge";
+        public const string Rejected = "Rejected";
+        public const string NotSupported = "NotSupported";
+    }
+
     public static class ApiAttributeType
     {
         public const string Actual = "Actual";
@@ -175,6 +188,12 @@ namespace OCPP.Core.Server.Messages_Api
     {
         [JsonProperty("variables")]
         public List<ApiVariableData> Variables { get; set; } = new List<ApiVariableData>();
+
+        /// <summary>
+        /// OCPP 2.x: report base for reading all variables (ConfigurationInventory (default), FullInventory, SummaryInventory)
+        /// </summary>
+        [JsonProperty("reportBase", NullValueHandling = NullValueHandling.Ignore)]
+        public string ReportBase { get; set; }
     }
 
     /// <summary>
@@ -208,6 +227,24 @@ namespace OCPP.Core.Server.Messages_Api
         /// </summary>
         [JsonProperty("mutability", NullValueHandling = NullValueHandling.Ignore)]
         public string Mutability { get; set; }
+
+        /// <summary>
+        /// Characteristics (only OCPP 2.x reports)
+        /// </summary>
+        [JsonProperty("dataType", NullValueHandling = NullValueHandling.Ignore)]
+        public string DataType { get; set; }
+
+        [JsonProperty("unit", NullValueHandling = NullValueHandling.Ignore)]
+        public string Unit { get; set; }
+
+        [JsonProperty("minLimit", NullValueHandling = NullValueHandling.Ignore)]
+        public double? MinLimit { get; set; }
+
+        [JsonProperty("maxLimit", NullValueHandling = NullValueHandling.Ignore)]
+        public double? MaxLimit { get; set; }
+
+        [JsonProperty("valuesList", NullValueHandling = NullValueHandling.Ignore)]
+        public string ValuesList { get; set; }
     }
 
     /// <summary>
@@ -215,6 +252,21 @@ namespace OCPP.Core.Server.Messages_Api
     /// </summary>
     public class ApiVariablesResponse
     {
+        /// <summary>
+        /// Only set for reports (all variables) that are not complete => see ApiReportStatus
+        /// </summary>
+        [JsonProperty("status", NullValueHandling = NullValueHandling.Ignore)]
+        public string Status { get; set; }
+
+        [JsonProperty("statusInfo", NullValueHandling = NullValueHandling.Ignore)]
+        public string StatusInfo { get; set; }
+
+        /// <summary>
+        /// Sequence numbers of missing report parts (status "Incomplete")
+        /// </summary>
+        [JsonProperty("missingSeqNo", NullValueHandling = NullValueHandling.Ignore)]
+        public List<int> MissingSeqNo { get; set; }
+
         [JsonProperty("variables")]
         public List<ApiVariableResult> Variables { get; set; } = new List<ApiVariableResult>();
     }

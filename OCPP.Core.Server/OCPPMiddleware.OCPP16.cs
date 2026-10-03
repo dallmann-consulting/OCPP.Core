@@ -243,7 +243,7 @@ namespace OCPP.Core.Server
             string apiResult;
             if (fullList && timeout)
             {
-                apiResult = "{\"status\": \"Timeout\"}";
+                apiResult = JsonConvert.SerializeObject(new ApiVariablesResponse() { Status = ApiReportStatus.Timeout });
             }
             else
             {

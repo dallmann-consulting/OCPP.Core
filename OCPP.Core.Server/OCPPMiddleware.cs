@@ -440,6 +440,10 @@ namespace OCPP.Core.Server
                                         apiRequest.Variables.Add(ApiVariableData.FromKey(urlConnectorId, urlParam));
                                     }
                                 }
+                                if (apiRequest != null && string.IsNullOrEmpty(apiRequest.ReportBase))
+                                {
+                                    apiRequest.ReportBase = context.Request.Query["reportBase"].FirstOrDefault();
+                                }
                             }
                             catch (JsonException exp)
                             {
@@ -875,6 +879,55 @@ namespace OCPP.Core.Server
             {
                 // late answers are only logged
                 _requestQueue.TryRemove(msgOut.UniqueId, out _);
+            }
+        }
+
+        /// <summary>
+        /// Waits (asynchronously) until all parts of a report are received.
+        /// Ends after an idle timeout (no new part) or the max. duration.
+        /// Returns null (complete or timeout => see PendingReport.CreateResponse) or an abort status (ApiReportStatus)
+        /// </summary>
+        private async Task<string> WaitForReport(PendingReport report, ChargePointStatus chargePointStatus, ILogger logger, CancellationToken cancellationToken)
+        {
+            TimeSpan idleTimeout = TimeSpan.FromSeconds(_configuration.GetValue<int>("ReportIdleTimeout", 30));
+            TimeSpan maxDuration = TimeSpan.FromSeconds(_configuration.GetValue<int>("ReportMaxDuration", 300));
+            DateTime started = DateTime.UtcNow;
+
+            while (true)
+            {
+                // the idle time starts at the earliest when waiting starts (=> after the GetBaseReport response)
+                DateTime lastActivity = (report.LastActivity > started) ? report.LastActivity : started;
+                DateTime now = DateTime.UtcNow;
+                TimeSpan idleWait = lastActivity + idleTimeout - now;
+                TimeSpan totalWait = started + maxDuration - now;
+                TimeSpan wait = (idleWait < totalWait) ? idleWait : totalWait;
+                if (wait <= TimeSpan.Zero)
+                {
+                    logger.LogInformation("OCPPMiddleware => Report {0}: {1} timeout (ChargePoint='{2}')", report.RequestId, (idleWait <= TimeSpan.Zero) ? "idle" : "max. duration", chargePointStatus.Id);
+                    return null;
+                }
+
+                Task completedTask = await Task.WhenAny(report.Completed.Task, Task.Delay(wait, cancellationToken));
+                if (completedTask == report.Completed.Task)
+                {
+                    return await report.Completed.Task;
+                }
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    logger.LogInformation("OCPPMiddleware => Report {0}: API caller aborted (ChargePoint='{1}')", report.RequestId, chargePointStatus.Id);
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Aborts all pending reports of a chargepoint (e.g. after disconnect)
+        /// </summary>
+        private static void AbortPendingReports(ChargePointStatus chargePointStatus, string status)
+        {
+            foreach (PendingReport report in chargePointStatus.PendingReports.Values)
+            {
+                report.Abort(status);
             }
         }
 
