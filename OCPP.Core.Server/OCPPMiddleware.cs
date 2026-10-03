@@ -23,6 +23,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
+using OCPP.Core.Server.Messages_Api;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -413,84 +414,96 @@ namespace OCPP.Core.Server
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
                     }
-                    else if (cmd == "GetConfiguration")
+                    else if (cmd == "GetVariables" || cmd == "SetVariables")
                     {
+                        // format: GET  /API/GetVariables/<chargepointId>[/<[Component.]Variable>]
+                        //         GET  /API/SetVariables/<chargepointId>/<[Component.]Variable>/<value>
+                        //         POST /API/GetVariables|SetVariables/<chargepointId> with JSON body (see Server-API.md)
+                        bool isSet = (cmd == "SetVariables");
                         if (!string.IsNullOrEmpty(urlChargePointId))
                         {
+                            ApiVariablesRequest apiRequest = null;
                             try
                             {
-                                ChargePointStatus status = null;
-                                if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
+                                if (HttpMethods.IsPost(context.Request.Method))
                                 {
-                                    if (status.Protocol == Protocol_OCPP16 || string.IsNullOrEmpty(status.Protocol))
-                                    {
-                                        // OCPP V1.6 (optional single key via urlConnectorId slot)
-                                        await GetConfiguration16(status, context, dbContext, urlConnectorId);
-                                    }
-                                    else
-                                    {
-                                        _logger.LogError("OCPPMiddleware GetConfiguration => only OCPP1.6 implemented");
-                                        context.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
-                                    }
+                                    using StreamReader reader = new StreamReader(context.Request.Body);
+                                    string body = await reader.ReadToEndAsync();
+                                    apiRequest = string.IsNullOrWhiteSpace(body) ? new ApiVariablesRequest() : JsonConvert.DeserializeObject<ApiVariablesRequest>(body);
+                                    if (apiRequest != null && apiRequest.Variables == null) apiRequest.Variables = new List<ApiVariableData>();
                                 }
                                 else
                                 {
-                                    // Chargepoint offline
-                                    _logger.LogError("OCPPMiddleware GetConfiguration => Chargepoint offline: {0}", urlChargePointId);
-                                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                                    apiRequest = new ApiVariablesRequest();
+                                    if (!string.IsNullOrEmpty(urlConnectorId))
+                                    {
+                                        apiRequest.Variables.Add(ApiVariableData.FromKey(urlConnectorId, urlParam));
+                                    }
                                 }
                             }
-                            catch (Exception exp)
+                            catch (JsonException exp)
                             {
-                                _logger.LogError(exp, "OCPPMiddleware GetConfiguration => Error: {0}", exp.Message);
-                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                                _logger.LogError("OCPPMiddleware {0} => Invalid JSON body: {1}", cmd, exp.Message);
+                            }
+
+                            bool validRequest = (apiRequest != null) &&
+                                                (!isSet || apiRequest.Variables.Count > 0) &&
+                                                apiRequest.Variables.All(v => v != null && !string.IsNullOrWhiteSpace(v.Variable?.Name) && (!isSet || v.Value != null));
+                            if (validRequest)
+                            {
+                                try
+                                {
+                                    ChargePointStatus status = null;
+                                    if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
+                                    {
+                                        // Send message to chargepoint
+                                        if (status.Protocol == Protocol_OCPP21)
+                                        {
+                                            // OCPP V2.1
+                                            if (isSet)
+                                                await SetVariables21(status, context, dbContext, apiRequest);
+                                            else
+                                                await GetVariables21(status, context, dbContext, apiRequest);
+                                        }
+                                        else if (status.Protocol == Protocol_OCPP201)
+                                        {
+                                            // OCPP V2.0
+                                            if (isSet)
+                                                await SetVariables20(status, context, dbContext, apiRequest);
+                                            else
+                                                await GetVariables20(status, context, dbContext, apiRequest);
+                                        }
+                                        else
+                                        {
+                                            // OCPP V1.6
+                                            if (isSet)
+                                                await SetVariables16(status, context, dbContext, apiRequest);
+                                            else
+                                                await GetVariables16(status, context, dbContext, apiRequest);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // Chargepoint offline
+                                        _logger.LogError("OCPPMiddleware {0} => Chargepoint offline: {1}", cmd, urlChargePointId);
+                                        context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                                    }
+                                }
+                                catch (Exception exp)
+                                {
+                                    _logger.LogError(exp, "OCPPMiddleware {0} => Error: {1}", cmd, exp.Message);
+                                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                                }
+                            }
+                            else
+                            {
+                                _logger.LogError("OCPPMiddleware {0} => Missing or invalid variables", cmd);
+                                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                             }
                         }
                         else
                         {
-                            _logger.LogError("OCPPMiddleware GetConfiguration => Missing chargepoint ID");
-                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                        }
-                    }
-                    else if (cmd == "ChangeConfiguration")
-                    {
-                        // format: /API/ChangeConfiguration/<chargepointId>/<key>/<value>
-                        // key   = urlConnectorId slot (3rd segment)
-                        // value = urlParam slot       (4th segment)
-                        if (!string.IsNullOrEmpty(urlChargePointId) && !string.IsNullOrEmpty(urlConnectorId) && !string.IsNullOrEmpty(urlParam))
-                        {
-                            try
-                            {
-                                ChargePointStatus status = null;
-                                if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
-                                {
-                                    if (status.Protocol == Protocol_OCPP16 || string.IsNullOrEmpty(status.Protocol))
-                                    {
-                                        // OCPP V1.6 (key = urlConnectorId slot, value = urlParam slot)
-                                        await ChangeConfiguration16(status, context, dbContext, urlConnectorId, urlParam);
-                                    }
-                                    else
-                                    {
-                                        _logger.LogError("OCPPMiddleware ChangeConfiguration => only OCPP1.6 implemented");
-                                        context.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
-                                    }
-                                }
-                                else
-                                {
-                                    // Chargepoint offline
-                                    _logger.LogError("OCPPMiddleware ChangeConfiguration => Chargepoint offline: {0}", urlChargePointId);
-                                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                                }
-                            }
-                            catch (Exception exp)
-                            {
-                                _logger.LogError(exp, "OCPPMiddleware ChangeConfiguration => Error: {0}", exp.Message);
-                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogError("OCPPMiddleware ChangeConfiguration => Missing chargepoint ID, key or value");
+                            _logger.LogError("OCPPMiddleware {0} => Missing chargepoint ID", cmd);
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
                     }

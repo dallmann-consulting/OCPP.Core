@@ -148,6 +148,12 @@ namespace OCPP.Core.Server
                 case "RequestStopTransaction":
                     HandleRequestStopTransaction(msgIn, msgOut);
                     break;
+                case "GetVariables":
+                    HandleGetVariables(msgIn, msgOut);
+                    break;
+                case "SetVariables":
+                    HandleSetVariables(msgIn, msgOut);
+                    break;
 
                 default:
                     WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");

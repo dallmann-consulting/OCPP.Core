@@ -30,6 +30,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using OCPP.Core.Server.Messages_OCPP16;
+using OCPP.Core.Server.Messages_Api;
 using OCPP.Core.Database;
 
 namespace OCPP.Core.Server
@@ -216,47 +217,102 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
-        /// Sends a GetConfiguration-Request to the chargepoint
+        /// Reads variables (=configuration keys) from the chargepoint via GetConfiguration.
+        /// OCPP 1.6 has no components => only entries without component are sent to the chargepoint.
+        /// No entries => the chargepoint returns all configuration keys.
         /// </summary>
-        private async Task GetConfiguration16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext, string urlParam)
+        private async Task GetVariables16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext, ApiVariablesRequest apiRequest)
         {
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
-            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus, dbContext);
 
-            logger.LogTrace("OCPPMiddleware.OCPP16 => GetConfiguration16: ChargePoint='{0}' / Key='{1}'", chargePointStatus.Id, urlParam);
-
-            Messages_OCPP16.GetConfigurationRequest getConfigurationRequest = new Messages_OCPP16.GetConfigurationRequest();
-            if (!string.IsNullOrWhiteSpace(urlParam))
+            bool fullList = (apiRequest.Variables.Count == 0);
+            Dictionary<ApiVariableData, ApiVariableResult> localResults = new Dictionary<ApiVariableData, ApiVariableResult>();
+            List<string> keys = new List<string>();
+            foreach (ApiVariableData data in apiRequest.Variables)
             {
-                // Optional single key requested
-                getConfigurationRequest.Key = new System.Collections.Generic.List<string>() { urlParam };
+                ApiVariableResult localResult = CheckVariable16(data);
+                if (localResult != null)
+                {
+                    localResults.Add(data, localResult);
+                }
+                else
+                {
+                    keys.Add(data.Variable.Name);
+                }
             }
-            // else: no key => charger returns ALL configuration keys
+            logger.LogTrace("OCPPMiddleware.OCPP16 => GetVariables16: ChargePoint='{0}' / Keys='{1}'", chargePointStatus.Id, string.Join(",", keys));
 
-            string jsonRequest = JsonConvert.SerializeObject(getConfigurationRequest);
-
-            OCPPMessage msgOut = new OCPPMessage();
-            msgOut.MessageType = "2";
-            msgOut.Action = "GetConfiguration";
-            msgOut.UniqueId = Guid.NewGuid().ToString("N");
-            msgOut.JsonPayload = jsonRequest;
-            msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
-
-            // store HttpContext with MsgId for later answer processing (=> send answer to API caller)
-            _requestQueue.Add(msgOut.UniqueId, msgOut);
-
-            // Send OCPP message with optional logging/dump
-            await SendOcpp16Message(msgOut, logger, chargePointStatus);
-
-            // Wait for asynchronous chargepoint response and processing
-            string apiResult = "{\"status\": \"Timeout\"}";
-            if (msgOut.TaskCompletionSource.Task.Wait(TimoutWaitForCharger))
+            GetConfigurationResponse getConfigurationResponse = null;
+            bool timeout = false;
+            if (fullList || keys.Count > 0)
             {
-                apiResult = msgOut.TaskCompletionSource.Task.Result;
+                Messages_OCPP16.GetConfigurationRequest getConfigurationRequest = new Messages_OCPP16.GetConfigurationRequest();
+                if (keys.Count > 0)
+                {
+                    getConfigurationRequest.Key = keys;
+                }
+                // else: no key => charger returns ALL configuration keys
+
+                string ocppResult = await SendRequestAndWait16(chargePointStatus, "GetConfiguration", getConfigurationRequest, logger);
+                if (ocppResult != null)
+                {
+                    getConfigurationResponse = JsonConvert.DeserializeObject<GetConfigurationResponse>(ocppResult);
+                }
+                else
+                {
+                    timeout = true;
+                }
+            }
+
+            string apiResult;
+            if (fullList && timeout)
+            {
+                apiResult = "{\"status\": \"Timeout\"}";
             }
             else
             {
-                logger.LogInformation("OCPPMiddleware.OCPP16 => GetConfiguration16: Timeout (ChargePoint='{0}')", chargePointStatus.Id);
+                Dictionary<string, ConfigurationKey> configKeys = new Dictionary<string, ConfigurationKey>(StringComparer.OrdinalIgnoreCase);
+                if (getConfigurationResponse?.ConfigurationKey != null)
+                {
+                    foreach (ConfigurationKey configKey in getConfigurationResponse.ConfigurationKey)
+                    {
+                        configKeys[configKey.Key] = configKey;
+                    }
+                }
+
+                ApiVariablesResponse apiResponse = new ApiVariablesResponse();
+                if (fullList)
+                {
+                    foreach (ConfigurationKey configKey in configKeys.Values)
+                    {
+                        apiResponse.Variables.Add(CreateResult16(configKey));
+                    }
+                }
+                else
+                {
+                    // results in the order of the request
+                    foreach (ApiVariableData data in apiRequest.Variables)
+                    {
+                        if (localResults.TryGetValue(data, out ApiVariableResult localResult))
+                        {
+                            apiResponse.Variables.Add(localResult);
+                        }
+                        else if (timeout)
+                        {
+                            apiResponse.Variables.Add(data.CreateResult(ApiVariableStatus.Timeout));
+                        }
+                        else if (configKeys.TryGetValue(data.Variable.Name, out ConfigurationKey configKey))
+                        {
+                            apiResponse.Variables.Add(CreateResult16(configKey));
+                        }
+                        else
+                        {
+                            // listed in "unknownKey" (or missing in the response)
+                            apiResponse.Variables.Add(data.CreateResult(ApiVariableStatus.UnknownVariable));
+                        }
+                    }
+                }
+                apiResult = JsonConvert.SerializeObject(apiResponse);
             }
 
             apiCallerContext.Response.StatusCode = 200;
@@ -265,26 +321,108 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
-        /// Sends a ChangeConfiguration-Request to the chargepoint
+        /// Sets variables (=configuration keys) on the chargepoint.
+        /// OCPP 1.6 only allows one key per ChangeConfiguration => one message per entry.
         /// </summary>
-        private async Task ChangeConfiguration16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext, string configKey, string configValue)
+        private async Task SetVariables16(ChargePointStatus chargePointStatus, HttpContext apiCallerContext, OCPPCoreContext dbContext, ApiVariablesRequest apiRequest)
         {
             ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
-            ControllerOCPP16 controller16 = new ControllerOCPP16(_configuration, _logFactory, chargePointStatus, dbContext);
 
-            logger.LogInformation("OCPPMiddleware.OCPP16 => ChangeConfiguration16: ChargePoint='{0}' / Key='{1}' / Value='{2}'", chargePointStatus.Id, configKey, configValue);
+            ApiVariablesResponse apiResponse = new ApiVariablesResponse();
+            bool timeout = false;
+            foreach (ApiVariableData data in apiRequest.Variables)
+            {
+                ApiVariableResult result = CheckVariable16(data);
+                if (result == null)
+                {
+                    if (timeout)
+                    {
+                        // Chargepoint didn't answer the previous request => don't send more requests
+                        result = data.CreateResult(ApiVariableStatus.Timeout);
+                    }
+                    else
+                    {
+                        logger.LogInformation("OCPPMiddleware.OCPP16 => SetVariables16: ChargePoint='{0}' / Key='{1}' / Value='{2}'", chargePointStatus.Id, data.Variable.Name, data.Value);
 
-            Messages_OCPP16.ChangeConfigurationRequest changeConfigurationRequest = new Messages_OCPP16.ChangeConfigurationRequest();
-            changeConfigurationRequest.Key = configKey;
-            changeConfigurationRequest.Value = configValue;
+                        Messages_OCPP16.ChangeConfigurationRequest changeConfigurationRequest = new Messages_OCPP16.ChangeConfigurationRequest();
+                        changeConfigurationRequest.Key = data.Variable.Name;
+                        changeConfigurationRequest.Value = data.Value;
 
-            string jsonRequest = JsonConvert.SerializeObject(changeConfigurationRequest);
+                        string ocppResult = await SendRequestAndWait16(chargePointStatus, "ChangeConfiguration", changeConfigurationRequest, logger);
+                        if (ocppResult != null)
+                        {
+                            ChangeConfigurationResponse changeConfigurationResponse = JsonConvert.DeserializeObject<ChangeConfigurationResponse>(ocppResult);
+                            string status = changeConfigurationResponse.Status switch
+                            {
+                                ChangeConfigurationResponseStatus.Accepted => ApiVariableStatus.Accepted,
+                                ChangeConfigurationResponseStatus.RebootRequired => ApiVariableStatus.RebootRequired,
+                                ChangeConfigurationResponseStatus.NotSupported => ApiVariableStatus.UnknownVariable,
+                                _ => ApiVariableStatus.Rejected
+                            };
+                            result = data.CreateResult(status);
+                        }
+                        else
+                        {
+                            timeout = true;
+                            result = data.CreateResult(ApiVariableStatus.Timeout);
+                        }
+                    }
+                }
+                apiResponse.Variables.Add(result);
+            }
 
+            string apiResult = JsonConvert.SerializeObject(apiResponse);
+            apiCallerContext.Response.StatusCode = 200;
+            apiCallerContext.Response.ContentType = "application/json";
+            await apiCallerContext.Response.WriteAsync(apiResult);
+        }
+
+        /// <summary>
+        /// Checks if a variable can be mapped to an OCPP 1.6 configuration key.
+        /// Returns a (negative) result if not - otherwise null.
+        /// </summary>
+        private static ApiVariableResult CheckVariable16(ApiVariableData data)
+        {
+            if (data.HasComponent)
+            {
+                return data.CreateResult(ApiVariableStatus.UnknownComponent, "OCPP 1.6 has no components");
+            }
+            if (!string.IsNullOrEmpty(data.Variable.Instance))
+            {
+                return data.CreateResult(ApiVariableStatus.UnknownVariable, "OCPP 1.6 has no variable instances");
+            }
+            if (!data.IsActualAttribute)
+            {
+                return data.CreateResult(ApiVariableStatus.NotSupportedAttributeType, "OCPP 1.6 only supports attribute type 'Actual'");
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Creates an API result from an OCPP 1.6 configuration key
+        /// </summary>
+        private static ApiVariableResult CreateResult16(ConfigurationKey configKey)
+        {
+            return new ApiVariableResult()
+            {
+                Variable = new ApiVariable() { Name = configKey.Key },
+                Value = configKey.Value,
+                Status = ApiVariableStatus.Accepted,
+                Mutability = configKey.Readonly ? ApiMutability.ReadOnly : ApiMutability.ReadWrite
+            };
+        }
+
+        /// <summary>
+        /// Sends a request to the chargepoint and waits for the answer.
+        /// Returns the result of the answer processing in the controller or null (=timeout)
+        /// </summary>
+        private async Task<string> SendRequestAndWait16(ChargePointStatus chargePointStatus, string action, object request, ILogger logger)
+        {
             OCPPMessage msgOut = new OCPPMessage();
             msgOut.MessageType = "2";
-            msgOut.Action = "ChangeConfiguration";
+            msgOut.Action = action;
             msgOut.UniqueId = Guid.NewGuid().ToString("N");
-            msgOut.JsonPayload = jsonRequest;
+            msgOut.JsonPayload = JsonConvert.SerializeObject(request);
             msgOut.TaskCompletionSource = new TaskCompletionSource<string>();
 
             // store HttpContext with MsgId for later answer processing (=> send answer to API caller)
@@ -294,19 +432,13 @@ namespace OCPP.Core.Server
             await SendOcpp16Message(msgOut, logger, chargePointStatus);
 
             // Wait for asynchronous chargepoint response and processing
-            string apiResult = "{\"status\": \"Timeout\"}";
             if (msgOut.TaskCompletionSource.Task.Wait(TimoutWaitForCharger))
             {
-                apiResult = msgOut.TaskCompletionSource.Task.Result;
-            }
-            else
-            {
-                logger.LogInformation("OCPPMiddleware.OCPP16 => ChangeConfiguration16: Timeout (ChargePoint='{0}')", chargePointStatus.Id);
+                return msgOut.TaskCompletionSource.Task.Result;
             }
 
-            apiCallerContext.Response.StatusCode = 200;
-            apiCallerContext.Response.ContentType = "application/json";
-            await apiCallerContext.Response.WriteAsync(apiResult);
+            logger.LogInformation("OCPPMiddleware.OCPP16 => {0}: Timeout (ChargePoint='{1}')", action, chargePointStatus.Id);
+            return null;
         }
 
         /// <summary>
