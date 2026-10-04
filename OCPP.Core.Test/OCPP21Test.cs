@@ -141,6 +141,15 @@ namespace OCPP.Core.Test
                 SetChargingLimit(_chargePointId, 1, "1000W");
                 ClearChargingLimit(_chargePointId, 1);
 
+                /* 10a. Variables (device model) */
+                CallVariablesApi("GetVariables", $"{_chargePointId}/OCPPCommCtrlr.HeartbeatInterval", null, "\"value\":\"300\"");
+                CallVariablesApi("SetVariables", $"{_chargePointId}/OCPPCommCtrlr.HeartbeatInterval/240", null, "\"status\":\"Accepted\"");
+                CallVariablesApi("GetVariables", _chargePointId,
+                    "{\"variables\":[{\"component\":{\"name\":\"OCPPCommCtrlr\"},\"variable\":{\"name\":\"HeartbeatInterval\"}},{\"variable\":{\"name\":\"HeartbeatInterval\"}},{\"component\":{\"name\":\"OCPPCommCtrlr\"},\"variable\":{\"name\":\"Unknown\"}}]}",
+                    "\"status\":\"UnknownComponent\"");
+                CallVariablesApi("GetVariables", _chargePointId, null, "\"name\":\"AvailabilityState\"");
+                CallVariablesApi("GetVariables", $"{_chargePointId}?reportBase=SummaryInventory", null, "\"status\":\"Incomplete\"");
+
                 /* 11.  Remote Start/Stop Transaction  */
                 if (RemoteStartTransaction(_chargePointId, 1, "fail_" + _chargeTagId))
                 {
@@ -600,6 +609,77 @@ namespace OCPP.Core.Test
             Console.WriteLine();
         }
 
+        private static void CallVariablesApi(string function, string urlPath, string? jsonBody, string expected)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+                Uri uri = new Uri($"{_serverUrl}/API/{function}/{urlPath}");
+                HttpResponseMessage response = (jsonBody == null) ?
+                    httpClient.GetAsync(uri).Result :
+                    httpClient.PostAsync(uri, new StringContent(jsonBody, Encoding.UTF8, "application/json")).Result;
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string result = response.Content.ReadAsStringAsync().Result;
+                    if (result.Contains(expected))
+                    {
+                        Console.BackgroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"Success: API {function} result JSON: {result}");
+                        Console.BackgroundColor = ConsoleColor.Black;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: API {function} result JSON: {result}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"{function} API request failed: httpStatus={response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{function} API request failed: {ex.ToString()}");
+            }
+            Console.WriteLine();
+        }
+
+        private static async Task SendReportParts(int requestId, bool skipPart)
+        {
+            JObject[] reportData =
+            {
+                JObject.Parse("{\"component\":{\"name\":\"OCPPCommCtrlr\"},\"variable\":{\"name\":\"HeartbeatInterval\"},\"variableAttribute\":[{\"type\":\"Actual\",\"value\":\"300\",\"mutability\":\"ReadWrite\"}],\"variableCharacteristics\":{\"dataType\":\"integer\",\"unit\":\"s\",\"supportsMonitoring\":false}}"),
+                JObject.Parse("{\"component\":{\"name\":\"SampledDataCtrlr\"},\"variable\":{\"name\":\"TxUpdatedInterval\"},\"variableAttribute\":[{\"value\":\"60\"}],\"variableCharacteristics\":{\"dataType\":\"integer\",\"supportsMonitoring\":false}}"),
+                JObject.Parse("{\"component\":{\"name\":\"EVSE\",\"evse\":{\"id\":1}},\"variable\":{\"name\":\"AvailabilityState\"},\"variableAttribute\":[{\"value\":\"Available\",\"mutability\":\"ReadOnly\"}],\"variableCharacteristics\":{\"dataType\":\"OptionList\",\"valuesList\":\"Available,Occupied,Reserved,Unavailable,Faulted\",\"supportsMonitoring\":true}}")
+            };
+            try
+            {
+                for (int seqNo = 0; seqNo < reportData.Length; seqNo++)
+                {
+                    if (skipPart && seqNo == 1) continue;
+                    await SendMessage("NotifyReport", new JObject
+                    {
+                        ["requestId"] = requestId,
+                        ["generatedAt"] = DateTime.UtcNow.ToString("o"),
+                        ["seqNo"] = seqNo,
+                        ["tbc"] = seqNo < reportData.Length - 1,
+                        ["reportData"] = new JArray(reportData[seqNo])
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending NotifyReport: {ex.Message}");
+            }
+        }
+
+        private static bool IsSimulatedVariable(JObject data)
+        {
+            return string.Equals(data["component"]?["name"]?.ToString(), "OCPPCommCtrlr", StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(data["variable"]?["name"]?.ToString(), "HeartbeatInterval", StringComparison.OrdinalIgnoreCase);
+        }
+
         private static void ClearChargingLimit(string chargePointId, int connectorId)
         {
             try
@@ -815,6 +895,50 @@ namespace OCPP.Core.Test
                                     break;
                                 case "RequestStopTransaction":
                                     await SendCallResult(uniqueId, new { status = "Accepted" });
+                                    break;
+                                case "GetVariables":
+                                    {
+                                        // Simulated device model: only OCPPCommCtrlr.HeartbeatInterval exists
+                                        JArray results = new JArray();
+                                        foreach (JObject data in message[3]["getVariableData"]!)
+                                        {
+                                            bool known = IsSimulatedVariable(data);
+                                            JObject varResult = new JObject
+                                            {
+                                                ["attributeStatus"] = known ? "Accepted" : "UnknownVariable",
+                                                ["component"] = data["component"],
+                                                ["variable"] = data["variable"]
+                                            };
+                                            if (known) varResult["attributeValue"] = "300";
+                                            results.Add(varResult);
+                                        }
+                                        await SendCallResult(uniqueId, new JObject { ["getVariableResult"] = results });
+                                    }
+                                    break;
+                                case "SetVariables":
+                                    {
+                                        JArray results = new JArray();
+                                        foreach (JObject data in message[3]["setVariableData"]!)
+                                        {
+                                            results.Add(new JObject
+                                            {
+                                                ["attributeStatus"] = IsSimulatedVariable(data) ? "Accepted" : "UnknownVariable",
+                                                ["component"] = data["component"],
+                                                ["variable"] = data["variable"]
+                                            });
+                                        }
+                                        await SendCallResult(uniqueId, new JObject { ["setVariableResult"] = results });
+                                    }
+                                    break;
+                                case "GetBaseReport":
+                                    {
+                                        await SendCallResult(uniqueId, new { status = "Accepted" });
+                                        int requestId = message[3]["requestId"]!.Value<int>();
+                                        // SummaryInventory simulates a lost part (seqNo 1) => incomplete report
+                                        bool skipPart = message[3]["reportBase"]?.ToString() == "SummaryInventory";
+                                        // Send report parts in background (receive loop must continue for the responses)
+                                        _ = Task.Run(() => SendReportParts(requestId, skipPart));
+                                    }
                                     break;
                                 default:
                                     Console.WriteLine($"Error: Unknown incoming message: {action}");

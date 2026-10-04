@@ -18,8 +18,10 @@
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.WebSockets;
+using System.Threading;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 
@@ -84,6 +86,36 @@ namespace OCPP.Core.Server
         /// </summary>
         [JsonIgnore]
         public WebSocket WebSocket { get; set; }
+
+        /// <summary>
+        /// Only one send operation at a time is allowed on a WebSocket
+        /// (receive loop answers and API requests are sent concurrently)
+        /// </summary>
+        [JsonIgnore]
+        public SemaphoreSlim SendLock { get; } = new SemaphoreSlim(1, 1);
+
+        /// <summary>
+        /// Requests sent to the chargepoint that wait for an answer (key = unique id)
+        /// </summary>
+        [JsonIgnore]
+        public ConcurrentDictionary<string, OCPPMessage> PendingRequests { get; } = new ConcurrentDictionary<string, OCPPMessage>();
+
+        /// <summary>
+        /// Requested OCPP 2.x reports (key = requestId) that wait for NotifyReport messages
+        /// </summary>
+        [JsonIgnore]
+        public ConcurrentDictionary<int, PendingReport> PendingReports { get; } = new ConcurrentDictionary<int, PendingReport>();
+
+        // random start value => late reports of a previous connection don't match
+        private int _lastReportRequestId = Random.Shared.Next(1, 1000000);
+
+        /// <summary>
+        /// Returns a new request ID for a report request
+        /// </summary>
+        public int NewReportRequestId()
+        {
+            return Interlocked.Increment(ref _lastReportRequestId);
+        }
     }
 
     /// <summary>

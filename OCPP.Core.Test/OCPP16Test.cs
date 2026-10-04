@@ -132,6 +132,13 @@ namespace OCPP.Core.Test
                 SetChargingLimit(_chargePointId, 1, "1000W");
                 ClearChargingLimit(_chargePointId, 1);
 
+                /* 10a. Variables (= configuration keys) */
+                CallVariablesApi("GetVariables", $"{_chargePointId}/HeartbeatInterval", null, "\"value\":\"300\"");
+                CallVariablesApi("GetVariables", _chargePointId, null, "\"mutability\":\"ReadWrite\"");
+                CallVariablesApi("SetVariables", _chargePointId,
+                    "{\"variables\":[{\"variable\":{\"name\":\"HeartbeatInterval\"},\"value\":\"240\"},{\"component\":{\"name\":\"OCPPCommCtrlr\"},\"variable\":{\"name\":\"HeartbeatInterval\"},\"value\":\"240\"},{\"variable\":{\"name\":\"Unknown\"},\"value\":\"1\"}]}",
+                    "\"status\":\"UnknownComponent\"");
+
                 /* 11.  Remote Start/Stop Transaction  */
                 if (RemoteStartTransaction(_chargePointId, 1, "fail_" + _chargeTagId))
                 {
@@ -491,6 +498,42 @@ namespace OCPP.Core.Test
             Console.WriteLine();
         }
 
+        private static void CallVariablesApi(string function, string urlPath, string? jsonBody, string expected)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("X-API-Key", _apiKey);
+                Uri uri = new Uri($"{_serverUrl}/API/{function}/{urlPath}");
+                HttpResponseMessage response = (jsonBody == null) ?
+                    httpClient.GetAsync(uri).Result :
+                    httpClient.PostAsync(uri, new StringContent(jsonBody, Encoding.UTF8, "application/json")).Result;
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string result = response.Content.ReadAsStringAsync().Result;
+                    if (result.Contains(expected))
+                    {
+                        Console.BackgroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"Success: API {function} result JSON: {result}");
+                        Console.BackgroundColor = ConsoleColor.Black;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: API {function} result JSON: {result}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"{function} API request failed: httpStatus={response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{function} API request failed: {ex.ToString()}");
+            }
+            Console.WriteLine();
+        }
+
         private static void ClearChargingLimit(string chargePointId, int connectorId)
         {
             try
@@ -715,6 +758,35 @@ namespace OCPP.Core.Test
                                     break;
                                 case "RemoteStopTransaction":
                                     await SendCallResult(uniqueId, new { status = "Accepted" });
+                                    break;
+                                case "GetConfiguration":
+                                    {
+                                        // Simulated configuration: only HeartbeatInterval exists
+                                        JArray configKeys = new JArray();
+                                        JArray unknownKeys = new JArray();
+                                        JArray? keys = message[3]["key"] as JArray;
+                                        if (keys == null || keys.Count == 0)
+                                        {
+                                            configKeys.Add(new JObject { ["key"] = "HeartbeatInterval", ["readonly"] = false, ["value"] = "300" });
+                                        }
+                                        else
+                                        {
+                                            foreach (JToken key in keys)
+                                            {
+                                                if (string.Equals(key.ToString(), "HeartbeatInterval", StringComparison.OrdinalIgnoreCase))
+                                                    configKeys.Add(new JObject { ["key"] = "HeartbeatInterval", ["readonly"] = false, ["value"] = "300" });
+                                                else
+                                                    unknownKeys.Add(key.ToString());
+                                            }
+                                        }
+                                        await SendCallResult(uniqueId, new JObject { ["configurationKey"] = configKeys, ["unknownKey"] = unknownKeys });
+                                    }
+                                    break;
+                                case "ChangeConfiguration":
+                                    {
+                                        bool known = string.Equals(message[3]["key"]?.ToString(), "HeartbeatInterval", StringComparison.OrdinalIgnoreCase);
+                                        await SendCallResult(uniqueId, new { status = known ? "Accepted" : "NotSupported" });
+                                    }
                                     break;
                                 default:
                                     Console.WriteLine($"Error: Unknown incoming message: {action}");

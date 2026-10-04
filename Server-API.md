@@ -110,42 +110,127 @@ The answer should be:
 The server checks the last transaction for the specified connector and return the http code 424 (FailedDependency) when no open transaction was found.
 
 
-### GetConfiguration
+### GetVariables / SetVariables
 
-Reads the configuration keys of a charge point. With no key, the charge point
-returns all keys; with a key, only that one.
+Reads or changes configuration values of a charge point. The API follows the
+OCPP 2.x device model: a value is addressed by a **component** and a **variable**
+(both with an optional instance, the component optionally with an EVSE).
+
+OCPP 1.6 has no device model and is mapped as a special case: the component is
+left out and the variable name is the 1.6 configuration key. The server translates
+the request into GetConfiguration/ChangeConfiguration (1.6) or
+GetVariables/SetVariables (2.0.1/2.1).
+
+Short form (GET), key = `[Component.]Variable`:
 
 ```
-/API/GetConfiguration/station42
-/API/GetConfiguration/station42/HeartBeatInterval
+/API/GetVariables/station42/OCPPCommCtrlr.HeartbeatInterval      (OCPP 2.x)
+/API/GetVariables/station42/HeartbeatInterval                    (OCPP 1.6)
+/API/GetVariables/station42                                      (OCPP 1.6: all keys)
+/API/SetVariables/station42/OCPPCommCtrlr.HeartbeatInterval/240  (OCPP 2.x)
+/API/SetVariables/station42/HeartbeatInterval/240                (OCPP 1.6)
 ```
 
-The answer is the raw OCPP GetConfiguration payload, e.g.:
+Full form (POST with JSON body), e.g. for several values at once, instances,
+EVSEs, attribute types or values containing "/":
 
 ```
+POST /API/SetVariables/station42
 {
-  "configurationKey": [
-    { "key": "HeartBeatInterval", "readonly": false, "value": "300" }
-  ],
-  "unknownKey": []
+  "variables": [
+    {
+      "component": { "name": "SampledDataCtrlr" },
+      "variable": { "name": "TxUpdatedInterval" },
+      "value": "60"
+    },
+    {
+      "component": { "name": "OCPPCommCtrlr" },
+      "variable": { "name": "HeartbeatInterval" },
+      "value": "240"
+    }
+  ]
 }
 ```
 
-### ChangeConfiguration
+`component.instance`, `component.evse` (`id`, `connectorId`), `variable.instance`
+and `attributeType` (Actual (default), Target, MinSet, MaxSet) are optional.
+`value` is required for SetVariables and ignored for GetVariables. GetVariables
+without variables (short form without key or empty body) requests all values.
 
-Sets a single configuration key to a new value.
+The answer contains one result per variable:
 
 ```
-/API/ChangeConfiguration/station42/HeartBeatInterval/240
+{
+  "variables": [
+    {
+      "component": { "name": "OCPPCommCtrlr" },
+      "variable": { "name": "HeartbeatInterval" },
+      "value": "300",
+      "status": "Accepted",
+      "mutability": "ReadWrite"
+    }
+  ]
+}
 ```
 
-The answer should be:
-{"status"="Accepted"} or {"status"="Rejected"} or
-{"status"="RebootRequired"} or OCPP1.6 {"status"="NotSupported"}
+`status` is one of the OCPP 2.x values: Accepted, Rejected, UnknownComponent,
+UnknownVariable, NotSupportedAttributeType, RebootRequired (SetVariables only) -
+or "Timeout"/"Disconnected" if the charge point didn't answer. `statusInfo` contains optional
+details. `value` is only returned by GetVariables. `mutability` (ReadOnly, WriteOnly,
+ReadWrite) is returned when reading all values; with OCPP 1.6 always.
 
+#### Reading all values
 
+```
+/API/GetVariables/station42
+/API/GetVariables/station42?reportBase=FullInventory
+POST /API/GetVariables/station42   { "reportBase": "FullInventory" }
+```
+
+OCPP 1.6 returns all configuration keys (GetConfiguration without key).
+
+OCPP 2.x sends a GetBaseReport and collects the report parts (NotifyReport messages)
+the charge point sends afterwards. `reportBase` is ConfigurationInventory (default),
+FullInventory or SummaryInventory. The results additionally contain the
+characteristics of the variables (`dataType`, `unit`, `minLimit`, `maxLimit`, `valuesList`).
+
+If the result is not complete, the answer contains a top level `status` (and the
+values received so far):
+* "Timeout" - the charge point didn't answer or sent no report part
+* "Incomplete" - report parts are missing (`missingSeqNo`) or the last part didn't arrive
+* "Disconnected" - the charge point disconnected while sending the report
+* "TooLarge" - the report exceeds `ReportMaxItems`
+* "Rejected" / "NotSupported" - the charge point declined the report (`statusInfo`)
+
+```
+{
+  "status": "Incomplete",
+  "missingSeqNo": [ 1 ],
+  "variables": [ ... ]
+}
+```
+
+The server waits until the last part arrives, but at most `ReportIdleTimeout`
+seconds without a new part (default 30) and `ReportMaxDuration` seconds in total
+(default 300) - see appsettings.json.
+
+Mapping for OCPP 1.6:
+* Entries with a component, a variable instance or an attribute type other than
+  "Actual" are not sent to the charge point and get the status UnknownComponent,
+  UnknownVariable or NotSupportedAttributeType.
+* Keys listed in "unknownKey" and the ChangeConfiguration status "NotSupported"
+  are returned as UnknownVariable.
+* ChangeConfiguration only supports a single key. SetVariables therefore sends one
+  request per entry. After a timeout the remaining entries are not sent and get the
+  status "Timeout".
+* `reportBase` is ignored.
+
+Mapping for OCPP 2.x:
+* Entries without a component get the status UnknownComponent (OCPP 2.x requires a component).
 
 ### In general
 These commands means that the server send a request to the charger and the charger needs to answer in a reasonable period
 of time. The server can not wait indefinitely and the OCPP server waits for 60 seconds.
-After that the API caller will geht the response {"status"="Timeout"}.
+After that the API caller will get the response {"status"="Timeout"}.
+If the charger disconnects while the server waits for the answer, the API caller immediately gets
+the response {"status"="Disconnected"}.
