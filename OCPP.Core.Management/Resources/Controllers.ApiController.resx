@@ -165,4 +165,7 @@
   <data name="StartTransactionError" xml:space="preserve">
     <value>An error has occurred.</value>
   </data>
+  <data name="VariablesError" xml:space="preserve">
+    <value>An error occurred while reading or changing configuration values.</value>
+  </data>
 </root>

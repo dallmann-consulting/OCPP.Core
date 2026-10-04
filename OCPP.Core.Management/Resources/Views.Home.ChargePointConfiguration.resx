@@ -117,55 +117,154 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ResetAccepted" xml:space="preserve">
-    <value>Die Ladestation wird neu gestartet.</value>
+  <data name="Title" xml:space="preserve">
+    <value>Configuration</value>
   </data>
-  <data name="ResetError" xml:space="preserve">
-    <value>Es ist ein Fehler aufgetreten.</value>
+  <data name="Heading" xml:space="preserve">
+    <value>Configuration of charge point</value>
   </data>
-  <data name="ChargerOffline" xml:space="preserve">
-    <value>Die Ladestation ist Offline und kann nicht erreicht werden.</value>
+  <data name="Load" xml:space="preserve">
+    <value>Read values</value>
   </data>
-  <data name="ResetRejected" xml:space="preserve">
-    <value>Die Ladestation hat die Anfrage abgelehnt.</value>
+  <data name="ReportBaseLabel" xml:space="preserve">
+    <value>Scope (OCPP 2.x only)</value>
   </data>
-  <data name="ResetScheduled" xml:space="preserve">
-    <value>Die Ladestation wird später neu gestartet.</value>
+  <data name="ReportBaseConfiguration" xml:space="preserve">
+    <value>Configuration values</value>
   </data>
-  <data name="ResetUnknownStatus" xml:space="preserve">
-    <value>Die Ladestation lieferte ein unerwartetes Ergebnis: '{0}'</value>
+  <data name="ReportBaseFull" xml:space="preserve">
+    <value>All values</value>
   </data>
-  <data name="StartTransactionAccepted" xml:space="preserve">
-    <value>Die Ladestation hat die Anfrage akzeptiert.</value>
+  <data name="ReportBaseSummary" xml:space="preserve">
+    <value>Summary</value>
   </data>
-  <data name="StartTransactionRejected" xml:space="preserve">
-    <value>Die Ladestation hat die Anfrage abgelehnt.</value>
+  <data name="FilterLabel" xml:space="preserve">
+    <value>Filter</value>
   </data>
-  <data name="Timeout" xml:space="preserve">
-    <value>Die max. Wartezeit wurde überschritten (Timeout)</value>
+  <data name="FilterPlaceholder" xml:space="preserve">
+    <value>Search component, variable or value</value>
   </data>
-  <data name="UnknownChargepoint" xml:space="preserve">
-    <value>Die Ladestation wurde nicht gefunden.</value>
+  <data name="Back" xml:space="preserve">
+    <value>Back</value>
   </data>
-  <data name="UnlockConnectorAccepted" xml:space="preserve">
-    <value>Die Ladestation wurde entsperrt.</value>
+  <data name="Component" xml:space="preserve">
+    <value>Component</value>
   </data>
-  <data name="UnlockConnectorError" xml:space="preserve">
-    <value>Es ist ein Fehler aufgetreten.</value>
+  <data name="Variable" xml:space="preserve">
+    <value>Variable</value>
   </data>
-  <data name="UnlockConnectorFailed" xml:space="preserve">
-    <value>Die Ladestation konnte nicht entsperrt werden.</value>
+  <data name="Value" xml:space="preserve">
+    <value>Value</value>
   </data>
-  <data name="UnlockConnectorNotSupported" xml:space="preserve">
-    <value>Die Ladestation unterstützt keine Entsperrung.</value>
+  <data name="Mutability" xml:space="preserve">
+    <value>Access</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="ReadOnly" xml:space="preserve">
+    <value>read only</value>
+  </data>
+  <data name="ReadWrite" xml:space="preserve">
+    <value>read/write</value>
+  </data>
+  <data name="WriteOnly" xml:space="preserve">
+    <value>write only</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Change value</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="NewValueLabel" xml:space="preserve">
+    <value>New value</value>
+  </data>
+  <data name="DataTypeLabel" xml:space="preserve">
+    <value>Data type</value>
+  </data>
+  <data name="UnitLabel" xml:space="preserve">
+    <value>Unit</value>
+  </data>
+  <data name="MinLabel" xml:space="preserve">
+    <value>Minimum</value>
+  </data>
+  <data name="MaxLabel" xml:space="preserve">
+    <value>Maximum</value>
+  </data>
+  <data name="ValuesListLabel" xml:space="preserve">
+    <value>Allowed values</value>
+  </data>
+  <data name="RebootBadge" xml:space="preserve">
+    <value>Reboot required</value>
   </data>
   <data name="UnknownStatus" xml:space="preserve">
-    <value>Die Ladestation lieferte ein unerwartetes Ergebnis: '{0}'</value>
+    <value>Unknown status: {0}</value>
   </data>
-  <data name="StartTransactionError" xml:space="preserve">
-    <value>Es ist ein Fehler aufgetreten.</value>
+  <data name="Loading" xml:space="preserve">
+    <value>Reading values from the charge point. With OCPP 2.x this may take a few minutes...</value>
   </data>
-  <data name="VariablesError" xml:space="preserve">
-    <value>Beim Abfragen oder Ändern von Konfigurationswerten ist ein Fehler aufgetreten.</value>
+  <data name="Loaded" xml:space="preserve">
+    <value>{0} values read.</value>
+  </data>
+  <data name="NoValues" xml:space="preserve">
+    <value>The charge point didn't return any values.</value>
+  </data>
+  <data name="ErrorLoad" xml:space="preserve">
+    <value>Error reading the values.</value>
+  </data>
+  <data name="ErrorSave" xml:space="preserve">
+    <value>Error changing the value.</value>
+  </data>
+  <data name="Saving" xml:space="preserve">
+    <value>Sending the value to the charge point...</value>
+  </data>
+  <data name="StatusAccepted" xml:space="preserve">
+    <value>The value has been accepted.</value>
+  </data>
+  <data name="StatusRebootRequired" xml:space="preserve">
+    <value>The value has been accepted and becomes effective after a reboot of the charge point.</value>
+  </data>
+  <data name="StatusRejected" xml:space="preserve">
+    <value>The charge point rejected the value.</value>
+  </data>
+  <data name="StatusUnknownComponent" xml:space="preserve">
+    <value>The charge point doesn't know the component.</value>
+  </data>
+  <data name="StatusUnknownVariable" xml:space="preserve">
+    <value>The charge point doesn't know the variable.</value>
+  </data>
+  <data name="StatusNotSupportedAttributeType" xml:space="preserve">
+    <value>The charge point doesn't support the attribute type.</value>
+  </data>
+  <data name="StatusTimeout" xml:space="preserve">
+    <value>The charge point didn't answer (timeout).</value>
+  </data>
+  <data name="StatusDisconnected" xml:space="preserve">
+    <value>The charge point disconnected.</value>
+  </data>
+  <data name="ReportIncomplete" xml:space="preserve">
+    <value>The values are incomplete because parts of the report are missing. The values received so far are shown.</value>
+  </data>
+  <data name="ReportTimeout" xml:space="preserve">
+    <value>The charge point didn't answer completely (timeout). The values received so far are shown.</value>
+  </data>
+  <data name="ReportDisconnected" xml:space="preserve">
+    <value>The charge point disconnected while sending the values. The values received so far are shown.</value>
+  </data>
+  <data name="ReportTooLarge" xml:space="preserve">
+    <value>The report is too large (see setting 'ReportMaxItems' of the OCPP server).</value>
+  </data>
+  <data name="ReportRejected" xml:space="preserve">
+    <value>The charge point rejected the request.</value>
+  </data>
+  <data name="ReportNotSupported" xml:space="preserve">
+    <value>The charge point doesn't support this scope.</value>
   </data>
 </root>

@@ -159,6 +159,12 @@
                     <div class="col-sm-2">
                         <button type="button" class="btn btn-info" id="btnReset" title="@Localizer["TitleReset"]" onclick="ResetChargepoint()"><i class="fas fa-redo"></i> @Localizer["TitleReset"]</button>
                     </div>
+                    @if (Model.CurrentId != "@")
+                    {
+                        <div class="col-sm-2">
+                            <a class="btn btn-info" id="btnConfiguration" title="@Localizer["TitleConfiguration"]" href="@Url.Action("ChargePointConfiguration", Constants.HomeController, new { id = Model.ChargePointId })"><i class="fas fa-sliders-h"></i> @Localizer["TitleConfiguration"]</a>
+                        </div>
+                    }
                 </div>
             }
         </div>

@@ -1,0 +1,324 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using System.Linq
+@model ChargePointViewModel
+@inject IViewLocalizer Localizer
+@{
+    ViewData["Title"] = @Localizer["Title"];
+}
+<br />
+
+@if (Model != null)
+{
+    @Html.AntiForgeryToken()
+
+    <h4>@Localizer["Heading"]: @Model.Name (@Model.ChargePointId)</h4>
+    <br />
+    <div class="form-row align-items-end">
+        <div class="col-auto mb-2">
+            <button type="button" class="btn btn-primary" id="btnLoad" onclick="LoadVariables()"><i class="fas fa-download"></i>&nbsp;@Localizer["Load"]</button>
+        </div>
+        <div class="col-auto mb-2">
+            <label for="selReportBase">@Localizer["ReportBaseLabel"]</label>
+            <select class="form-control" id="selReportBase">
+                <option value="ConfigurationInventory">@Localizer["ReportBaseConfiguration"]</option>
+                <option value="FullInventory">@Localizer["ReportBaseFull"]</option>
+                <option value="SummaryInventory">@Localizer["ReportBaseSummary"]</option>
+            </select>
+        </div>
+        <div class="col mb-2">
+            <label for="txtFilter">@Localizer["FilterLabel"]</label>
+            <input type="text" class="form-control" id="txtFilter" placeholder="@Localizer["FilterPlaceholder"]" />
+        </div>
+        <div class="col-auto mb-2">
+            <a class="btn btn-secondary" href="@Url.Action("ChargePoint", Constants.HomeController, new { id = Model.ChargePointId })">@Localizer["Back"]</a>
+        </div>
+    </div>
+
+    <div id="divMessage" class="mt-2"></div>
+
+    <table id="tblVariables" class="table table-striped table-bordered table-sm mt-2" cellspacing="0" width="100%" style="display: none;">
+        <thead>
+            <tr>
+                <th class="th-sm colComponent">@Localizer["Component"]</th>
+                <th class="th-sm">@Localizer["Variable"]</th>
+                <th class="th-sm">@Localizer["Value"]</th>
+                <th class="th-sm">@Localizer["Mutability"]</th>
+                <th class="th-sm">@Localizer["Actions"]</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    @section scripts {
+        @{
+            string[] jsTextKeys = new string[] {
+                "Loading", "Loaded", "NoValues", "ErrorLoad", "ErrorSave", "Saving",
+                "Edit", "Save", "Cancel", "Close", "NewValueLabel",
+                "DataTypeLabel", "UnitLabel", "MinLabel", "MaxLabel", "ValuesListLabel", "RebootBadge", "UnknownStatus",
+                "ReadOnly", "ReadWrite", "WriteOnly",
+                "StatusAccepted", "StatusRebootRequired", "StatusRejected", "StatusUnknownComponent", "StatusUnknownVariable",
+                "StatusNotSupportedAttributeType", "StatusTimeout", "StatusDisconnected",
+                "ReportIncomplete", "ReportTimeout", "ReportDisconnected", "ReportTooLarge", "ReportRejected", "ReportNotSupported"
+            };
+            var jsTexts = jsTextKeys.ToDictionary(k => k, k => Localizer[k].Value);
+        }
+        <script>
+            var texts = @Json.Serialize(jsTexts);
+            var getVariablesUrl = @Json.Serialize(Url.Content("~/API/GetVariables/" + Uri.EscapeDataString(Model.ChargePointId)));
+            var setVariablesUrl = @Json.Serialize(Url.Content("~/API/SetVariables/" + Uri.EscapeDataString(Model.ChargePointId)));
+
+            // Results of the last GetVariables request (see Server-API.md)
+            var variables = [];
+
+            $(document).ready(function () {
+                $('#txtFilter').on('input', ApplyFilter);
+            });
+
+            function ShowMessage(cssClass, text, spinner) {
+                var $alert = $('<div class="alert"></div>').addClass('alert-' + cssClass);
+                if (spinner) {
+                    $alert.append($('<i class="fa fa-spinner fa-spin fa-fw"></i>')).append(' ');
+                }
+                $alert.append(document.createTextNode(text));
+                $('#divMessage').empty().append($alert);
+            }
+
+            function ComponentText(v) {
+                var c = v.component;
+                if (!c || !c.name) return '';
+                var text = c.name;
+                if (c.instance) text += ' [' + c.instance + ']';
+                if (c.evse) {
+                    text += ' (EVSE ' + c.evse.id + ((c.evse.connectorId != null) ? '/' + c.evse.connectorId : '') + ')';
+                }
+                return text;
+            }
+
+            function VariableText(v) {
+                if (!v.variable) return '';
+                var text = v.variable.name;
+                if (v.variable.instance) text += ' [' + v.variable.instance + ']';
+                if (v.attributeType && v.attributeType !== 'Actual') text += ' (' + v.attributeType + ')';
+                return text;
+            }
+
+            function SortKey(v) {
+                return (ComponentText(v) + '\u0000' + VariableText(v)).toLowerCase();
+            }
+
+            function LoadVariables() {
+                $('#btnLoad').prop('disabled', true);
+                ShowMessage('info', texts.Loading, true);
+
+                $.ajax({
+                    url: getVariablesUrl,
+                    data: { reportBase: $('#selReportBase').val() },
+                    dataType: 'json',
+                    cache: false
+                }).done(function (data) {
+                    if (data.error) {
+                        ShowMessage('danger', data.error);
+                        return;
+                    }
+
+                    variables = data.variables || [];
+                    variables.sort(function (a, b) {
+                        var ka = SortKey(a), kb = SortKey(b);
+                        return (ka < kb) ? -1 : (ka > kb) ? 1 : 0;
+                    });
+                    RenderTable();
+
+                    if (data.status) {
+                        // Report not complete => show the values received so far with a warning
+                        var msg = texts['Report' + data.status] || texts.UnknownStatus.replace('{0}', data.status);
+                        if (data.statusInfo) msg += ' (' + data.statusInfo + ')';
+                        ShowMessage('warning', msg);
+                    }
+                    else if (variables.length == 0) {
+                        ShowMessage('warning', texts.NoValues);
+                    }
+                    else {
+                        ShowMessage('success', texts.Loaded.replace('{0}', variables.length));
+                    }
+                }).fail(function () {
+                    ShowMessage('danger', texts.ErrorLoad);
+                }).always(function () {
+                    $('#btnLoad').prop('disabled', false);
+                });
+            }
+
+            function RenderTable() {
+                // OCPP 1.6 has no components => hide the column
+                var hasComponents = variables.some(function (v) { return v.component && v.component.name; });
+                $('#tblVariables .colComponent').toggle(hasComponents);
+
+                var $tbody = $('#tblVariables tbody').empty();
+                $.each(variables, function (index, v) {
+                    var $tr = $('<tr></tr>').attr('data-index', index);
+                    if (hasComponents) {
+                        $tr.append($('<td></td>').text(ComponentText(v)));
+                    }
+                    $tr.append($('<td></td>').text(VariableText(v)));
+                    var $value = $('<td class="cellValue"></td>');
+                    FillValueCell($value, v);
+                    $tr.append($value);
+                    $tr.append($('<td></td>').text(texts[v.mutability] || '-'));
+
+                    var $actions = $('<td></td>');
+                    if (v.mutability !== 'ReadOnly' && (!v.status || v.status === 'Accepted')) {
+                        $('<button type="button" class="btn btn-sm btn-info"><i class="fas fa-edit"></i></button>')
+                            .attr('title', texts.Edit)
+                            .on('click', function () { EditVariable(index); })
+                            .appendTo($actions);
+                    }
+                    $tr.append($actions);
+                    $tbody.append($tr);
+                });
+
+                ApplyFilter();
+                $('#tblVariables').show();
+            }
+
+            function FillValueCell($cell, v) {
+                $cell.empty();
+                if (v.status && v.status !== 'Accepted') {
+                    $cell.append($('<span class="badge badge-secondary"></span>').text(v.status));
+                    return;
+                }
+                $cell.append($('<span></span>').text((v.value != null) ? v.value : ''));
+                if (v.unit) {
+                    $cell.append(' ').append($('<small class="text-muted"></small>').text(v.unit));
+                }
+                if (v.rebootRequired) {
+                    $cell.append(' ').append($('<span class="badge badge-warning"></span>').text(texts.RebootBadge));
+                }
+            }
+
+            function ApplyFilter() {
+                var filter = $('#txtFilter').val().toLowerCase();
+                $('#tblVariables tbody tr').each(function () {
+                    $(this).toggle(filter.length == 0 || $(this).text().toLowerCase().indexOf(filter) >= 0);
+                });
+            }
+
+            function EditVariable(index) {
+                var v = variables[index];
+                var componentText = ComponentText(v);
+
+                var $body = $('<div></div>');
+                $body.append($('<p></p>').append($('<strong></strong>').text((componentText ? componentText + ' / ' : '') + VariableText(v))));
+
+                // Characteristics (only known from OCPP 2.x reports)
+                var hints = [];
+                if (v.dataType) hints.push(texts.DataTypeLabel + ': ' + v.dataType);
+                if (v.unit) hints.push(texts.UnitLabel + ': ' + v.unit);
+                if (v.minLimit != null) hints.push(texts.MinLabel + ': ' + v.minLimit);
+                if (v.maxLimit != null) hints.push(texts.MaxLabel + ': ' + v.maxLimit);
+                if (v.valuesList && v.dataType !== 'OptionList') hints.push(texts.ValuesListLabel + ': ' + v.valuesList);
+                if (hints.length > 0) {
+                    $body.append($('<p class="text-muted small"></p>').text(hints.join(' | ')));
+                }
+
+                var options = null;
+                if (v.dataType === 'OptionList' && v.valuesList) {
+                    options = v.valuesList.split(',').map(function (o) { return o.trim(); });
+                }
+                else if (v.dataType === 'boolean') {
+                    options = ['true', 'false'];
+                }
+
+                var $input;
+                if (options) {
+                    $input = $('<select class="form-control"></select>');
+                    $.each(options, function (i, o) {
+                        $input.append($('<option></option>').val(o).text(o));
+                    });
+                    if (v.value != null && options.indexOf(v.value) < 0) {
+                        $input.prepend($('<option></option>').val(v.value).text(v.value));
+                    }
+                }
+                else {
+                    $input = $('<input type="text" class="form-control" />');
+                }
+                $input.attr('id', 'txtNewValue').val((v.value != null) ? v.value : '');
+                $body.append($('<div class="form-group"></div>')
+                    .append($('<label for="txtNewValue"></label>').text(texts.NewValueLabel))
+                    .append($input));
+
+                var dialog = new BootstrapDialog({
+                    title: texts.Edit,
+                    message: $body,
+                    spinicon: 'fa fa-spinner fa-fw',
+                    buttons: [{
+                        id: 'btnDialogSave',
+                        label: texts.Save,
+                        icon: 'fas fa-save',
+                        autospin: true,
+                        action: function (dialogRef) {
+                            dialogRef.enableButtons(false);
+                            dialogRef.setClosable(false);
+                            var newValue = $input.val();
+                            dialogRef.getModalBody().empty().append($('<div></div>').text(texts.Saving));
+
+                            var request = {
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val(),
+                                variable: v.variable.name,
+                                value: newValue
+                            };
+                            if (v.variable.instance) request.variableInstance = v.variable.instance;
+                            if (v.attributeType) request.attributeType = v.attributeType;
+                            if (v.component && v.component.name) {
+                                request.component = v.component.name;
+                                if (v.component.instance) request.componentInstance = v.component.instance;
+                                if (v.component.evse) {
+                                    request.evseId = v.component.evse.id;
+                                    if (v.component.evse.connectorId != null) request.evseConnectorId = v.component.evse.connectorId;
+                                }
+                            }
+
+                            $.ajax({
+                                type: 'POST',
+                                url: setVariablesUrl,
+                                data: request,
+                                dataType: 'json'
+                            }).done(function (data) {
+                                var cssClass = 'danger';
+                                var msg;
+                                if (data.error) {
+                                    msg = data.error;
+                                }
+                                else {
+                                    var result = (data.variables && data.variables.length > 0) ? data.variables[0] : {};
+                                    msg = texts['Status' + result.status] || texts.UnknownStatus.replace('{0}', result.status);
+                                    if (result.statusInfo) msg += ' (' + result.statusInfo + ')';
+                                    if (result.status === 'Accepted' || result.status === 'RebootRequired') {
+                                        cssClass = (result.status === 'Accepted') ? 'success' : 'warning';
+                                        v.value = newValue;
+                                        v.rebootRequired = (result.status === 'RebootRequired');
+                                        FillValueCell($('#tblVariables tbody tr[data-index="' + index + '"] .cellValue'), v);
+                                    }
+                                }
+                                dialogRef.getModalBody().empty().append($('<div class="alert"></div>').addClass('alert-' + cssClass).text(msg));
+                            }).fail(function () {
+                                dialogRef.getModalBody().empty().append($('<div class="alert alert-danger"></div>').text(texts.ErrorSave));
+                            }).always(function () {
+                                dialogRef.setClosable(true);
+                                dialogRef.enableButtons(true);
+                                dialog.getButton('btnDialogSave').hide();
+                                dialog.getButton('btnDialogCancel').text(texts.Close);
+                            });
+                        }
+                    }, {
+                        id: 'btnDialogCancel',
+                        label: texts.Cancel,
+                        action: function (dialogRef) {
+                            dialogRef.close();
+                        }
+                    }]
+                });
+                dialog.open();
+            }
+        </script>
+    }
+}
