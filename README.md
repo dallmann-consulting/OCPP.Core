@@ -25,6 +25,8 @@ OCPP V1.6:
 * UnlockConnector
 * SetChargingProfile
 * ClearChargingProfile
+* GetConfiguration
+* ChangeConfiguration
 
 OCPP V2.0 and V2.1:
 * BootNotification
@@ -45,6 +47,9 @@ OCPP V2.0 and V2.1:
 * UnlockConnector
 * SetChargingProfile
 * ClearChargingProfile
+* GetVariables
+* GetBaseReport
+* SetVariables
 
 ## Management Web-UI
 The Web-UI is **localized in English and German**. It has an overview page with all charge stations and their availabilty.
