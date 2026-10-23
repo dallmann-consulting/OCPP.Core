@@ -21,9 +21,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Schema;
+using NJsonSchema;
+using NJsonSchema.Validation;
 using OCPP.Core.Database;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -77,56 +79,59 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// Parsed JSON schemas (key = schema file path, value = null if the file doesn't exist)
+        /// => every schema file is loaded and parsed only once
+        /// </summary>
+        private static readonly ConcurrentDictionary<string, JsonSchema> _schemaCache = new ConcurrentDictionary<string, JsonSchema>();
+
+        /// <summary>
         /// Deserialize and validate JSON message (if schema file exists)
         /// </summary>
         protected T DeserializeMessage<T>(OCPPMessage msg)
         {
-            string path = Assembly.GetExecutingAssembly().Location;
-            string codeBase = Path.GetDirectoryName(path);
-
             bool validateMessages = Configuration.GetValue<bool>("ValidateMessages", false);
-
-            string schemaJson = null;
-            if (validateMessages && 
-                !string.IsNullOrEmpty(codeBase) && 
-                Directory.Exists(codeBase))
+            if (validateMessages)
             {
-                string msgTypeName = typeof(T).Name;
-                string filename = Path.Combine(codeBase, $"Schema{ProtocolVersion}", $"{msgTypeName}.json");
-                if (File.Exists(filename))
+                JsonSchema schema = GetSchema(typeof(T).Name);
+                if (schema != null)
                 {
-                    Logger.LogTrace("DeserializeMessage => Using schema file: {0}", filename);
-                    schemaJson = File.ReadAllText(filename);
-                }
-            }
-
-            JsonTextReader reader = new JsonTextReader(new StringReader(msg.JsonPayload));
-            JsonSerializer serializer = new JsonSerializer();
-
-            if (!string.IsNullOrEmpty(schemaJson))
-            {
-                JSchemaValidatingReader validatingReader = new JSchemaValidatingReader(reader);
-                validatingReader.Schema = JSchema.Parse(schemaJson);
-
-                IList<string> messages = new List<string>();
-                validatingReader.ValidationEventHandler += (o, a) => messages.Add(a.Message);
-                T obj = serializer.Deserialize<T>(validatingReader);
-                if (messages.Count > 0)
-                {
-                    foreach (string err in messages)
+                    ICollection<ValidationError> errors = schema.Validate(msg.JsonPayload);
+                    if (errors.Count > 0)
                     {
-                        Logger.LogWarning("DeserializeMessage {0} => Validation error: {1}", msg.Action, err);
+                        foreach (ValidationError err in errors)
+                        {
+                            Logger.LogWarning("DeserializeMessage {0} => Validation error: {1}", msg.Action, err);
+                        }
+                        throw new FormatException("Message validation failed");
                     }
-                    throw new FormatException("Message validation failed");
                 }
-                return obj;
             }
             else
             {
-                // Deserialization WITHOUT schema validation
                 Logger.LogTrace("DeserializeMessage => Deserialization without schema validation");
-                return serializer.Deserialize<T>(reader);
             }
+
+            using JsonTextReader reader = new JsonTextReader(new StringReader(msg.JsonPayload));
+            JsonSerializer serializer = new JsonSerializer();
+            return serializer.Deserialize<T>(reader);
+        }
+
+        /// <summary>
+        /// Returns the (cached) JSON schema for a message type of this protocol version or null if no schema file exists
+        /// </summary>
+        private JsonSchema GetSchema(string msgTypeName)
+        {
+            string codeBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (string.IsNullOrEmpty(codeBase)) return null;
+
+            string filename = Path.Combine(codeBase, $"Schema{ProtocolVersion}", $"{msgTypeName}.json");
+            return _schemaCache.GetOrAdd(filename, file =>
+            {
+                if (!File.Exists(file)) return null;
+
+                Logger.LogTrace("DeserializeMessage => Loading schema file: {0}", file);
+                return JsonSchema.FromJsonAsync(File.ReadAllText(file)).GetAwaiter().GetResult();
+            });
         }
 
 

@@ -18,6 +18,9 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <!-- Overrides the vulnerable transitive version 9.0.11 from Microsoft.Data.SqlClient (CVE-2026-84008, CVE-2026-70162).
+         Can be removed when Microsoft.Data.SqlClient references a patched version. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
 
 </Project>

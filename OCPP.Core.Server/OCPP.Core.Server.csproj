@@ -41,7 +41,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.2" />
+    <PackageReference Include="NJsonSchema" Version="11.6.1" />
   </ItemGroup>
 
   <ItemGroup>

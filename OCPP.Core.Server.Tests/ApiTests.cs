@@ -25,10 +25,10 @@ namespace OCPP.Core.Server.Tests
         {
             await using ChargePointSimulator cp = await _factory.ConnectAsync(_factory.AddChargePoint(), OcppProtocols.Ocpp201);
 
-            HttpResponseMessage response = await _client.GetAsync("/API/Status");
+            HttpResponseMessage response = await _client.GetAsync("/API/Status", TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            JArray status = JArray.Parse(await response.Content.ReadAsStringAsync());
+            JArray status = JArray.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
             JToken? entry = status.FirstOrDefault(s => s["id"]?.Value<string>() == cp.ChargePointId);
             Assert.NotNull(entry);
             Assert.Equal(OcppProtocols.Ocpp201, entry["protocol"]!.Value<string>());
@@ -37,7 +37,7 @@ namespace OCPP.Core.Server.Tests
         [Fact]
         public async Task UnknownCommand_ReturnsNotFound()
         {
-            HttpResponseMessage response = await _client.GetAsync("/API/FooBar");
+            HttpResponseMessage response = await _client.GetAsync("/API/FooBar", TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -48,10 +48,10 @@ namespace OCPP.Core.Server.Tests
         {
             await using ChargePointSimulator cp = await _factory.ConnectAsync(_factory.AddChargePoint(), protocol);
 
-            HttpResponseMessage response = await _client.GetAsync($"/API/Reset/{cp.ChargePointId}");
+            HttpResponseMessage response = await _client.GetAsync($"/API/Reset/{cp.ChargePointId}", TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            JObject result = JObject.Parse(await response.Content.ReadAsStringAsync());
+            JObject result = JObject.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
             Assert.Equal("Accepted", result["status"]!.Value<string>());
             Assert.Contains(cp.ReceivedCalls, c => c.Action == "Reset");
         }
@@ -61,7 +61,7 @@ namespace OCPP.Core.Server.Tests
         {
             string chargePointId = _factory.AddChargePoint();
 
-            HttpResponseMessage response = await _client.GetAsync($"/API/Reset/{chargePointId}");
+            HttpResponseMessage response = await _client.GetAsync($"/API/Reset/{chargePointId}", TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -73,7 +73,7 @@ namespace OCPP.Core.Server.Tests
             await using ChargePointSimulator cp = await _factory.ConnectAsync(_factory.AddChargePoint(), protocol);
             cp.ServerCallHandler = call => new { status = "Unlocked" };
 
-            HttpResponseMessage response = await _client.GetAsync($"/API/UnlockConnector/{cp.ChargePointId}/1");
+            HttpResponseMessage response = await _client.GetAsync($"/API/UnlockConnector/{cp.ChargePointId}/1", TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             ServerCall call = await cp.WaitForServerCallAsync("UnlockConnector");
@@ -88,10 +88,10 @@ namespace OCPP.Core.Server.Tests
             string tagId = _factory.AddChargeTag();
             await using ChargePointSimulator cp = await _factory.ConnectAsync(_factory.AddChargePoint(), protocol);
 
-            HttpResponseMessage response = await _client.GetAsync($"/API/StartTransaction/{cp.ChargePointId}/1/{tagId}");
+            HttpResponseMessage response = await _client.GetAsync($"/API/StartTransaction/{cp.ChargePointId}/1/{tagId}", TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            JObject result = JObject.Parse(await response.Content.ReadAsStringAsync());
+            JObject result = JObject.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
             Assert.Equal("Accepted", result["status"]!.Value<string>());
             ServerCall call = await cp.WaitForServerCallAsync(StartTransactionAction(protocol));
             string sentTag = (protocol == OcppProtocols.Ocpp16) ? call.Payload["idTag"]!.Value<string>()! : call.Payload["idToken"]!["idToken"]!.Value<string>()!;
@@ -104,10 +104,10 @@ namespace OCPP.Core.Server.Tests
         {
             await using ChargePointSimulator cp = await _factory.ConnectAsync(_factory.AddChargePoint(), protocol);
 
-            HttpResponseMessage response = await _client.GetAsync($"/API/StartTransaction/{cp.ChargePointId}/1/UNKNOWNTAG");
+            HttpResponseMessage response = await _client.GetAsync($"/API/StartTransaction/{cp.ChargePointId}/1/UNKNOWNTAG", TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            JObject result = JObject.Parse(await response.Content.ReadAsStringAsync());
+            JObject result = JObject.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
             Assert.Equal("Rejected", result["status"]!.Value<string>());
             Assert.DoesNotContain(cp.ReceivedCalls, c => c.Action == StartTransactionAction(protocol));
         }
@@ -117,7 +117,7 @@ namespace OCPP.Core.Server.Tests
         {
             await using ChargePointSimulator cp = await _factory.ConnectAsync(_factory.AddChargePoint(), OcppProtocols.Ocpp16);
 
-            HttpResponseMessage response = await _client.GetAsync($"/API/StopTransaction/{cp.ChargePointId}/1");
+            HttpResponseMessage response = await _client.GetAsync($"/API/StopTransaction/{cp.ChargePointId}/1", TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.FailedDependency, response.StatusCode);
         }
@@ -130,7 +130,7 @@ namespace OCPP.Core.Server.Tests
             OcppResult start = await cp.CallAsync("StartTransaction", new { connectorId = 1, idTag = tagId, meterStart = 0, timestamp = DateTimeOffset.UtcNow });
             int transactionId = start.Payload!["transactionId"]!.Value<int>();
 
-            HttpResponseMessage response = await _client.GetAsync($"/API/StopTransaction/{cp.ChargePointId}/1");
+            HttpResponseMessage response = await _client.GetAsync($"/API/StopTransaction/{cp.ChargePointId}/1", TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             ServerCall call = await cp.WaitForServerCallAsync("RemoteStopTransaction");
@@ -166,7 +166,7 @@ namespace OCPP.Core.Server.Tests
         [Fact]
         public async Task WithoutApiKey_IsUnauthorized()
         {
-            HttpResponseMessage response = await _client.GetAsync("/API/Status");
+            HttpResponseMessage response = await _client.GetAsync("/API/Status", TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -177,7 +177,7 @@ namespace OCPP.Core.Server.Tests
             using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "/API/Status");
             request.Headers.Add("X-API-Key", "wrong-key");
 
-            HttpResponseMessage response = await _client.SendAsync(request);
+            HttpResponseMessage response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -188,7 +188,7 @@ namespace OCPP.Core.Server.Tests
             using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "/API/Status");
             request.Headers.Add("X-API-Key", ApiKeyServerFactory.ApiKey);
 
-            HttpResponseMessage response = await _client.SendAsync(request);
+            HttpResponseMessage response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
