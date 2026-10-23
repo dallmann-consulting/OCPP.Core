@@ -1,6 +1,6 @@
 /*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2026 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,6 +21,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -94,6 +95,8 @@ namespace OCPP.Core.Server
                 dbContext.EnsureMigrated(logger);
             }
 
+            LogSecurityWarnings(logger, dbContext);
+
             // Set WebSocketsOptions
             var webSocketOptions = new WebSocketOptions() 
             {
@@ -104,6 +107,45 @@ namespace OCPP.Core.Server
 
             // Integrate custom OCPP middleware for message processing
             app.UseOCPPMiddleware();
+        }
+
+        /// <summary>
+        /// Logs warnings at startup for an insecure configuration (API without key, chargepoints without authentication)
+        /// </summary>
+        private void LogSecurityWarnings(ILogger logger, OCPPCoreContext dbContext)
+        {
+            if (string.IsNullOrWhiteSpace(Configuration.GetValue<string>("ApiKey")))
+            {
+                if (Configuration.GetValue<bool>("AllowUnauthenticatedApi", false))
+                {
+                    logger.LogWarning("Startup => No 'ApiKey' configured and 'AllowUnauthenticatedApi' is active: the API is open for EVERY caller in the network!");
+                }
+                else
+                {
+                    logger.LogWarning("Startup => No 'ApiKey' configured: the API only accepts local requests. Configure an 'ApiKey' (identical in server and management).");
+                }
+            }
+
+            try
+            {
+                int unsecuredChargePoints = dbContext.ChargePoints
+                    .Count(cp => (cp.Username == null || cp.Username == "") && (cp.ClientCertThumb == null || cp.ClientCertThumb == ""));
+                if (unsecuredChargePoints > 0)
+                {
+                    if (Configuration.GetValue<bool>("RequireChargePointAuthentication", false))
+                    {
+                        logger.LogWarning("Startup => {0} chargepoint(s) without username/password or certificate will be rejected ('RequireChargePointAuthentication' is active)", unsecuredChargePoints);
+                    }
+                    else
+                    {
+                        logger.LogWarning("Startup => {0} chargepoint(s) can connect without authentication. Configure username/password or a certificate for them.", unsecuredChargePoints);
+                    }
+                }
+            }
+            catch (Exception exp)
+            {
+                logger.LogError(exp, "Startup => Error checking chargepoint authentication: {0}", exp.Message);
+            }
         }
     }
 }

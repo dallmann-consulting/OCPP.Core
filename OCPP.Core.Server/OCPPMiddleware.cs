@@ -1,6 +1,6 @@
 /*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2024 dallmann consulting GmbH.
+ * Copyright (C) 2020-2026 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -31,7 +31,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -164,6 +166,13 @@ namespace OCPP.Core.Server
                                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                                 return;
                             }
+                        }
+                        else if (_configuration.GetValue<bool>("RequireChargePointAuthentication", false))
+                        {
+                            // Authentication required but nothing configured for this chargepoint => reject
+                            _logger.LogWarning("OCPPMiddleware => FAILURE: No authentication for chargepoint '{0}' configured but 'RequireChargePointAuthentication' is active", chargePoint.ChargePointId);
+                            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                            return;
                         }
                         else
                         {
@@ -310,28 +319,10 @@ namespace OCPP.Core.Server
             else if (context.Request.Path.StartsWithSegments("/API"))
             {
                 // Check authentication (X-API-Key)
-                string apiKeyConfig = _configuration.GetValue<string>("ApiKey");
-                if (!string.IsNullOrWhiteSpace(apiKeyConfig))
+                if (!IsApiRequestAuthorized(context))
                 {
-                    // ApiKey specified => check request
-                    string apiKeyCaller = context.Request.Headers["X-API-Key"].FirstOrDefault();
-                    if (apiKeyConfig == apiKeyCaller)
-                    {
-                        // API-Key matches
-                        _logger.LogInformation("OCPPMiddleware => Success: X-API-Key matches");
-                    }
-                    else
-                    {
-                        // API-Key does NOT matches => authentication failure!!!
-                        _logger.LogWarning("OCPPMiddleware => Failure: Wrong X-API-Key! Caller='{0}'", apiKeyCaller);
-                        context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                        return;
-                    }
-                }
-                else
-                {
-                    // No API-Key configured => no authenticatiuon
-                    _logger.LogWarning("OCPPMiddleware => No X-API-Key configured!");
+                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    return;
                 }
 
                 // format: /API/<command>[/chargepointId[/connectorId[/parameter]]]
@@ -832,6 +823,71 @@ namespace OCPP.Core.Server
                 _logger.LogWarning("OCPPMiddleware => Bad path request");
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
             }
+        }
+
+        /// <summary>
+        /// Checks the authorization of an API request:
+        /// - ApiKey configured => the caller must send the matching "X-API-Key" header
+        /// - no ApiKey configured => only local requests are allowed (unless "AllowUnauthenticatedApi" is set)
+        /// </summary>
+        private bool IsApiRequestAuthorized(HttpContext context)
+        {
+            string apiKeyConfig = _configuration.GetValue<string>("ApiKey");
+            if (!string.IsNullOrWhiteSpace(apiKeyConfig))
+            {
+                string apiKeyCaller = context.Request.Headers["X-API-Key"].FirstOrDefault();
+                if (FixedTimeEquals(apiKeyConfig, apiKeyCaller))
+                {
+                    _logger.LogTrace("OCPPMiddleware => Success: X-API-Key matches");
+                    return true;
+                }
+
+                // the key of the caller is not logged (could be a mistyped real key)
+                _logger.LogWarning("OCPPMiddleware => Failure: Missing or wrong X-API-Key from '{0}'", context.Connection.RemoteIpAddress);
+                return false;
+            }
+
+            if (_configuration.GetValue<bool>("AllowUnauthenticatedApi", false))
+            {
+                _logger.LogTrace("OCPPMiddleware => No X-API-Key configured and 'AllowUnauthenticatedApi' is active => request allowed");
+                return true;
+            }
+
+            if (IsLocalRequest(context))
+            {
+                _logger.LogTrace("OCPPMiddleware => No X-API-Key configured => local request allowed");
+                return true;
+            }
+
+            _logger.LogWarning("OCPPMiddleware => Failure: No X-API-Key configured => API request from '{0}' rejected (only local requests are allowed)", context.Connection.RemoteIpAddress);
+            return false;
+        }
+
+        /// <summary>
+        /// True if the request comes from the local computer (loopback) and not via a reverse proxy
+        /// </summary>
+        private static bool IsLocalRequest(HttpContext context)
+        {
+            // A reverse proxy on the same computer connects via loopback => forwarded requests are never local
+            if (context.Request.Headers.ContainsKey("X-Forwarded-For") ||
+                context.Request.Headers.ContainsKey("Forwarded"))
+            {
+                return false;
+            }
+
+            IPAddress remoteIp = context.Connection.RemoteIpAddress;
+            if (remoteIp == null) return false;
+            if (remoteIp.IsIPv4MappedToIPv6) remoteIp = remoteIp.MapToIPv4();
+            return IPAddress.IsLoopback(remoteIp);
+        }
+
+        /// <summary>
+        /// Compares two secrets in constant time (no timing attacks on the key)
+        /// </summary>
+        private static bool FixedTimeEquals(string expected, string actual)
+        {
+            if (actual == null) return false;
+            return CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(actual));
         }
 
         /// <summary>

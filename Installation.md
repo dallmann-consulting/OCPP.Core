@@ -51,6 +51,19 @@ The Management-UI needs the URL to the OCPP server for internal communication.  
 "ApiKey": "....",
 ```
 
+## Security
+The OCPP server and its REST-API run on the same port. The API can unlock connectors, start/stop transactions and change charger configurations. Therefore:
+
+- **API key:** Configure a long random `ApiKey` (identical in server and Management-UI). Without an API key the server only accepts API requests from the local computer (e.g. the Management-UI on the same machine or in the same Docker container). Requests from the network or via a reverse proxy (`X-Forwarded-For`/`Forwarded` header) are rejected. Only if you really need the old behavior (API open for everyone without a key) you can set `"AllowUnauthenticatedApi": true` in the server configuration - this is NOT recommended.
+- **Chargepoint authentication:** Configure username/password (basic authentication) or a client certificate thumbprint for every chargepoint in the Management-UI. With `"RequireChargePointAuthentication": true` the server rejects all chargepoints without authentication data. The server logs a warning at startup if chargepoints without authentication exist.
+- **Encryption:** By default the server uses unencrypted connections (ws:// and http://). Basic authentication then transmits passwords in clear text. In production use TLS (wss:// and https://), e.g. via a reverse proxy, or at least a trusted network/VPN.
+
+```
+"ApiKey": "....",
+"AllowUnauthenticatedApi": false,
+"RequireChargePointAuthentication": false,
+```
+
 
 
 ## Quick run with published release

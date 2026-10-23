@@ -17,7 +17,10 @@ services:
     environment:
       # --- Required changes for production ---
       # Set a long random string; must match on server and management side
+      # (without a key the server API only accepts requests from inside the container)
       ApiKey: ""
+      # Reject chargepoints without username/password or certificate
+      #RequireChargePointAuthentication: "true"
       # --- Optional overrides (defaults are set in the image) ---
       #ConnectionStrings__SQLite: "Filename=/db/OCPP.Core.sqlite;"
       #ConnectionStrings__SqlServer: ""

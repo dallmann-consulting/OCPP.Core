@@ -17,6 +17,7 @@ The REST-API uses the following format:
 
 For authentication/authorization purposes the API uses an API-key (like a password). This key must be send as an http header "X-API-Key" - see [here](https://swagger.io/docs/specification/authentication/api-keys/).
 The allowed key is configured in the appsettings.json.
+Without a configured key the API only accepts requests from the local computer (requests from the network or via a reverse proxy are rejected with 401). The setting `"AllowUnauthenticatedApi": true` opens the API for every caller without a key (not recommended).
 
 
 ## Functions

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using OCPP.Core.Database;
 
 namespace OCPP.Core.Server.Tests.Infrastructure
@@ -50,6 +51,11 @@ namespace OCPP.Core.Server.Tests.Infrastructure
             builder.ConfigureAppConfiguration((context, config) =>
             {
                 config.AddInMemoryCollection(settings);
+            });
+
+            builder.ConfigureServices(services =>
+            {
+                services.AddTransient<IStartupFilter, RemoteIpStartupFilter>();
             });
         }
 
