@@ -108,8 +108,11 @@ namespace OCPP.Core.Server
                             }
 
                             // check current tag against start tag => same tag or identical group?
+                            // (only if the stop message contains a tag - without tag the EV/charge point has stopped)
                             bool valid = true;
-                            if (!transaction.StartTagId.Equals(idTag, StringComparison.InvariantCultureIgnoreCase))
+                            if (!string.IsNullOrWhiteSpace(idTag) &&
+                                !string.IsNullOrEmpty(transaction.StartTagId) &&
+                                !transaction.StartTagId.Equals(idTag, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 // tags are different => identical group?
                                 ChargeTag startTag = DbContext.Find<ChargeTag>(transaction.StartTagId);

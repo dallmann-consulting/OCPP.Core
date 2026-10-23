@@ -79,103 +79,128 @@ namespace OCPP.Core.Server
                     {
                         #region Start Transaction
                         bool denyConcurrentTx = Configuration.GetValue<bool>("DenyConcurrentTx", false);
-                        transactionEventResponse.IdTokenInfo = new IdTokenInfoType();
 
-                        bool? externalAuthResult = null;
-                        try
+                        // A transaction can start without token (e.g. cable plugged in first => token follows in an "Updated" event)
+                        string startResult = null;
+                        if (!string.IsNullOrWhiteSpace(idTag))
                         {
-                            externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.StartTransaction, idTag, ChargePointStatus.Id, connectorId, string.Empty, string.Empty);
-                        }
-                        catch (Exception exp)
-                        {
-                            Logger.LogError(exp, "StartTransaction => Exception from external authorization: {0}", exp.Message);
-                        }
+                            transactionEventResponse.IdTokenInfo = new IdTokenInfoType();
 
-                        if (externalAuthResult.HasValue)
-                        {
-                            if (externalAuthResult.Value)
+                            bool? externalAuthResult = null;
+                            try
                             {
-                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
+                                externalAuthResult = ocppMiddleware.ProcessExternalAuthorizations(AuthAction.StartTransaction, idTag, ChargePointStatus.Id, connectorId, string.Empty, string.Empty);
                             }
-                            else
+                            catch (Exception exp)
                             {
-                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                                Logger.LogError(exp, "StartTransaction => Exception from external authorization: {0}", exp.Message);
                             }
-                            Logger.LogInformation("StartTransaction => Extension auth. : Charge tag='{0}' => Status: {1}", idTag, transactionEventResponse.IdTokenInfo.Status);
-                        }
-                        else
-                        {
-                            ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
-                            if (ct != null)
+
+                            if (externalAuthResult.HasValue)
                             {
-                                if (ct.Blocked.HasValue && ct.Blocked.Value)
-                                {
-                                    transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Blocked;
-                                }
-                                else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
-                                {
-                                    transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Expired;
-                                }
-                                else
+                                if (externalAuthResult.Value)
                                 {
                                     transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
                                 }
+                                else
+                                {
+                                    transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                                }
+                                Logger.LogInformation("StartTransaction => Extension auth. : Charge tag='{0}' => Status: {1}", idTag, transactionEventResponse.IdTokenInfo.Status);
                             }
                             else
                             {
-                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Unknown;
+                                ChargeTag ct = DbContext.Find<ChargeTag>(idTag);
+                                if (ct != null)
+                                {
+                                    if (ct.Blocked.HasValue && ct.Blocked.Value)
+                                    {
+                                        transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Blocked;
+                                    }
+                                    else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                                    {
+                                        transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Expired;
+                                    }
+                                    else
+                                    {
+                                        transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
+                                    }
+                                }
+                                else
+                                {
+                                    transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Unknown;
+                                }
                             }
+
+                            if (transactionEventResponse.IdTokenInfo.Status == AuthorizationStatusEnumType.Accepted &&
+                                denyConcurrentTx)
+                            {
+                                // Check that no open transaction with this idTag exists
+                                Transaction tx = DbContext.Transactions
+                                    .Where(t => !t.StopTime.HasValue && t.StartTagId == idTag)
+                                    .OrderByDescending(t => t.TransactionId)
+                                    .FirstOrDefault();
+
+                                if (tx != null)
+                                {
+                                    transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.ConcurrentTx;
+                                }
+                            }
+                            startResult = transactionEventResponse.IdTokenInfo.Status.ToString();
+                        }
+                        else
+                        {
+                            // idTokenInfo is only allowed in the response when the request contains an idToken
+                            transactionEventResponse.IdTokenInfo = null;
                         }
 
-                        if (transactionEventResponse.IdTokenInfo.Status == AuthorizationStatusEnumType.Accepted &&
-                            denyConcurrentTx)
-                        {
-                            // Check that no open transaction with this idTag exists
-                            Transaction tx = DbContext.Transactions
-                                .Where(t => !t.StopTime.HasValue && t.StartTagId == idTag)
-                                .OrderByDescending(t => t.TransactionId)
-                                .FirstOrDefault();
+                        Logger.LogInformation("StartTransaction => Charge tag='{0}' => Status: {1}", idTag, startResult ?? "(no token)");
 
-                            if (tx != null)
+                        // The transaction has already started at the charging station
+                        // => always record it. The authorization result is stored in "StartResult" and returned to the charging station.
+                        UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), meterTime, null, null);
+
+                        try
+                        {
+                            Logger.LogInformation("StartTransaction => Meter='{0}' (kWh)", meterKWH);
+
+                            bool exists = DbContext.Transactions.Any(t => t.Uid == transactionEventRequest.TransactionInfo.TransactionId && t.ChargePointId == ChargePointStatus.Id);
+                            if (exists)
                             {
-                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.ConcurrentTx;
+                                // repeated message (e.g. response got lost) => don't create the transaction twice
+                                Logger.LogWarning("StartTransaction => Transaction '{0}' already exists => ignored", transactionEventRequest.TransactionInfo.TransactionId);
                             }
-                        }
-
-                        Logger.LogInformation("StartTransaction => Charge tag='{0}' => Status: {1}", idTag, transactionEventResponse.IdTokenInfo.Status);
-
-                        if (transactionEventResponse.IdTokenInfo.Status == AuthorizationStatusEnumType.Accepted)
-                        {
-                            UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), meterTime, null, null);
-
-                            try
+                            else
                             {
-                                Logger.LogInformation("StartTransaction => Meter='{0}' (kWh)", meterKWH);
+                                CloseSupersededTransactions(connectorId, transactionEventRequest.Timestamp.UtcDateTime, meterKWH);
 
                                 Transaction transaction = new Transaction();
                                 transaction.Uid = transactionEventRequest.TransactionInfo.TransactionId;
                                 transaction.ChargePointId = ChargePointStatus?.Id;
                                 transaction.ConnectorId = connectorId;
-                                transaction.StartTagId = idTag;
+                                transaction.StartTagId = string.IsNullOrWhiteSpace(idTag) ? null : idTag;
                                 transaction.StartTime = transactionEventRequest.Timestamp.UtcDateTime;
                                 transaction.MeterStart = meterKWH;
-                                transaction.StartResult = transactionEventRequest.TriggerReason.ToString();
+                                transaction.StartResult = startResult;
                                 DbContext.Add<Transaction>(transaction);
 
                                 DbContext.SaveChanges();
                             }
-                            catch (Exception exp)
-                            {
-                                Logger.LogError(exp, "StartTransaction => Exception writing transaction: chargepoint={0} / tag={1}", ChargePointStatus?.Id, idTag);
-                                errorCode = ErrorCodes.InternalError;
-                            }
+                        }
+                        catch (Exception exp)
+                        {
+                            Logger.LogError(exp, "StartTransaction => Exception writing transaction: chargepoint={0} / tag={1}", ChargePointStatus?.Id, idTag);
+                            errorCode = ErrorCodes.InternalError;
                         }
                         #endregion
                     }
                     catch (Exception exp)
                     {
                         Logger.LogError(exp, "StartTransaction => Exception: {0}", exp.Message);
-                        transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                        if (transactionEventResponse.IdTokenInfo != null)
+                        {
+                            transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                        }
                     }
 
                     msgLogText = $"StartTx => {transactionEventResponse.IdTokenInfo?.Status} | {msgLogText}";
@@ -194,6 +219,25 @@ namespace OCPP.Core.Server
                             transaction.ChargePointId == ChargePointStatus.Id &&
                             !transaction.StopTime.HasValue)
                         {
+                            if (!string.IsNullOrWhiteSpace(idTag))
+                            {
+                                // Token in "Updated" (e.g. cable plugged in first, then authorized) => authorize and answer with idTokenInfo
+                                transactionEventResponse.IdTokenInfo = InternalAuthorize(idTag, ocppMiddleware);
+                                if (string.IsNullOrEmpty(transaction.StartTagId))
+                                {
+                                    // transaction started without token => store the token as start tag
+                                    Logger.LogInformation("UpdateTransaction => Start tag='{0}' => Status: {1}", idTag, transactionEventResponse.IdTokenInfo.Status);
+                                    transaction.StartTagId = idTag;
+                                    transaction.StartResult = transactionEventResponse.IdTokenInfo.Status.ToString();
+                                    DbContext.SaveChanges();
+                                }
+                            }
+                            else
+                            {
+                                // idTokenInfo is only allowed in the response when the request contains an idToken
+                                transactionEventResponse.IdTokenInfo = null;
+                            }
+
                             // write current meter value in "stop" value
                             if (meterKWH >= 0)
                             {
@@ -342,8 +386,11 @@ namespace OCPP.Core.Server
                                     !transaction.StopTime.HasValue)
                                 {
                                     // check current tag against start tag
+                                    // (only if the stop message contains a tag - without tag the EV/charging station has stopped)
                                     bool valid = true;
-                                    if (!transaction.StartTagId.Equals(idTag, StringComparison.InvariantCultureIgnoreCase))
+                                    if (!string.IsNullOrWhiteSpace(idTag) &&
+                                        !string.IsNullOrEmpty(transaction.StartTagId) &&
+                                        !transaction.StartTagId.Equals(idTag, StringComparison.InvariantCultureIgnoreCase))
                                     {
                                         // tags are different => same group?
                                         ChargeTag startTag = DbContext.Find<ChargeTag>(transaction.StartTagId);

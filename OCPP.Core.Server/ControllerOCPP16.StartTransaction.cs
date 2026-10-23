@@ -55,28 +55,29 @@ namespace OCPP.Core.Server
                     UpdateMemoryConnectorStatus(connectorId, (double)startTransactionRequest.MeterStart / 1000, startTransactionRequest.Timestamp, null, null);
                 }
 
-                if (startTransactionResponse.IdTagInfo.Status == IdTagInfoStatus.Accepted)
+                // The transaction has already started at the charge point (e.g. authorized offline)
+                // => always record it. The authorization result is stored in "StartResult" and returned to the charge point.
+                try
                 {
-                    try
-                    {
-                        Transaction transaction = new Transaction();
-                        transaction.ChargePointId = ChargePointStatus?.Id;
-                        transaction.ConnectorId = startTransactionRequest.ConnectorId;
-                        transaction.StartTagId = idTag;
-                        transaction.StartTime = startTransactionRequest.Timestamp.UtcDateTime;
-                        transaction.MeterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh
-                        transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();
-                        DbContext.Add<Transaction>(transaction);
-                        DbContext.SaveChanges();
+                    CloseSupersededTransactions(startTransactionRequest.ConnectorId, startTransactionRequest.Timestamp.UtcDateTime, (double)startTransactionRequest.MeterStart / 1000);
 
-                        // Return DB-ID as transaction ID
-                        startTransactionResponse.TransactionId = transaction.TransactionId;
-                    }
-                    catch (Exception exp)
-                    {
-                        Logger.LogError(exp, "StartTransaction => Exception writing transaction: chargepoint={0} / tag={1}", ChargePointStatus?.Id, idTag);
-                        errorCode = ErrorCodes.InternalError;
-                    }
+                    Transaction transaction = new Transaction();
+                    transaction.ChargePointId = ChargePointStatus?.Id;
+                    transaction.ConnectorId = startTransactionRequest.ConnectorId;
+                    transaction.StartTagId = idTag;
+                    transaction.StartTime = startTransactionRequest.Timestamp.UtcDateTime;
+                    transaction.MeterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh
+                    transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();
+                    DbContext.Add<Transaction>(transaction);
+                    DbContext.SaveChanges();
+
+                    // Return DB-ID as transaction ID
+                    startTransactionResponse.TransactionId = transaction.TransactionId;
+                }
+                catch (Exception exp)
+                {
+                    Logger.LogError(exp, "StartTransaction => Exception writing transaction: chargepoint={0} / tag={1}", ChargePointStatus?.Id, idTag);
+                    errorCode = ErrorCodes.InternalError;
                 }
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(startTransactionResponse);

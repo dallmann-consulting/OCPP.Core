@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Mvc.Localization
 @model TransactionListViewModel
 @inject IViewLocalizer Localizer
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> SharedLocalizer
 @{
     ViewData["Title"] = @Localizer["Title"];
 }
@@ -146,10 +147,10 @@
                     <tr>
                         <td>@currentConnectorName</td>
                         <td>@string.Format("{0} {1}", t.StartTime.ToLocalTime().ToShortDateString(), t.StartTime.ToLocalTime().ToShortTimeString())</td>
-                        <td>@(string.IsNullOrEmpty(t.StartTagName) ? t.StartTagId : t.StartTagName)</td>
+                        <td>@TransactionDisplay.StartTag(t.StartTagId, t.StartTagName, t.StartResult, SharedLocalizer)</td>
                         <td>@string.Format("{0:0.0##}", t.MeterStart)</td>
                         <td>@((t.StopTime != null) ? string.Format("{0} {1}", t.StopTime.Value.ToLocalTime().ToShortDateString(), t.StopTime.Value.ToLocalTime().ToShortTimeString()) : string.Empty)</td>
-                        <td>@(string.IsNullOrEmpty(t.StopTagName) ? t.StopTagId : t.StopTagName)</td>
+                        <td>@TransactionDisplay.StopTag(t.StopTagId, t.StopTagName, t.StopReason, SharedLocalizer)</td>
                         <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", t.MeterStop) : string.Empty)</td>
                         <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", (t.MeterStop - t.MeterStart)) : string.Empty)</td>
                     </tr>

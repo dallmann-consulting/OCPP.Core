@@ -175,7 +175,7 @@ namespace OCPP.Core.Management.Controllers
                     csv.Append(DefaultCSVSeparator);
                     csv.Append(EscapeCsvValue(ft.t.StartTagId, DefaultCSVSeparator));
                     csv.Append(DefaultCSVSeparator);
-                    csv.Append(EscapeCsvValue(ft.t.StartTagName, DefaultCSVSeparator));
+                    csv.Append(EscapeCsvValue(TransactionDisplay.StartTag(ft.t.StartTagId, ft.t.StartTagName, ft.t.StartResult, _sharedLocalizer), DefaultCSVSeparator));
                     csv.Append(DefaultCSVSeparator);
                     csv.Append(EscapeCsvValue(ft.t.StartTagParentId, DefaultCSVSeparator));
                     csv.Append(DefaultCSVSeparator);
@@ -185,7 +185,7 @@ namespace OCPP.Core.Management.Controllers
                     csv.Append(DefaultCSVSeparator);
                     csv.Append(EscapeCsvValue(ft.t.StopTagId, DefaultCSVSeparator));
                     csv.Append(DefaultCSVSeparator);
-                    csv.Append(EscapeCsvValue(ft.t.StopTagName, DefaultCSVSeparator));
+                    csv.Append(EscapeCsvValue(TransactionDisplay.StopTag(ft.t.StopTagId, ft.t.StopTagName, ft.t.StopReason, _sharedLocalizer), DefaultCSVSeparator));
                     csv.Append(DefaultCSVSeparator);
                     csv.Append(ft.t.StopTime?.ToLocalTime());
                     csv.Append(DefaultCSVSeparator);
@@ -247,15 +247,15 @@ namespace OCPP.Core.Management.Controllers
                     worksheet.Cell(row, 2).Value = (string.IsNullOrEmpty(ft.cs?.ChargePoint?.Name)) ? ft.t.ChargePointId : ft.cs.ChargePoint.Name;
                     worksheet.Cell(row, 3).Value = (string.IsNullOrEmpty(ft.cs?.ConnectorName)) ? ft.t.ConnectorId : ft.cs. ConnectorName;
                     worksheet.Cell(row, 4).Value = ft.t.StartTagId;
-                    worksheet.Cell(row, 5).Value = ft.t.StartTagName;
+                    worksheet.Cell(row, 5).Value = TransactionDisplay.StartTag(ft.t.StartTagId, ft.t.StartTagName, ft.t.StartResult, _sharedLocalizer);
                     worksheet.Cell(row, 6).Value = ft.t.StartTagParentId;
                     worksheet.Cell(row, 7).SetValue(ft.t.StartTime.ToLocalTime());
                     worksheet.Cell(row, 8).SetValue(ft.t.MeterStart);
                     if (ft.t.StopTagId != null)
                     {
                         worksheet.Cell(row, 9).Value = ft.t.StopTagId;
-                        worksheet.Cell(row, 10).Value = ft.t.StopTagName;
                     }
+                    worksheet.Cell(row, 10).Value = TransactionDisplay.StopTag(ft.t.StopTagId, ft.t.StopTagName, ft.t.StopReason, _sharedLocalizer);
                     if (ft.t.StopTime.HasValue)
                         worksheet.Cell(row, 11).SetValue(ft.t.StopTime.Value.ToLocalTime());
                     if (ft.t.MeterStop.HasValue)
@@ -328,17 +328,19 @@ namespace OCPP.Core.Management.Controllers
                                    .ToList();
 
             // generate and return grouped data
+            // (transactions without tag and without energy are irrelevant for the report, e.g. cable plugged in but never authorized)
             return new ChargeReportViewModel
             {
                 StartDate = startDate.Value,
                 StopDate = stopDate.Value,
                 Groups = transactions
+                    .Where(t => !TransactionDisplay.IsEmptyTransactionWithoutTag(t))
                     .GroupBy(t => t.StartTagParentId)
                     .OrderBy(g => g.Key) // Order groups by name
                     .Select(g => new GroupReport
                     {
                         GroupName = g.Key,
-                        Tags = g.GroupBy(t => (string.IsNullOrEmpty(t.StartTagName) ? t.StartTagId : t.StartTagName))
+                        Tags = g.GroupBy(t => TransactionDisplay.StartTag(t.StartTagId, t.StartTagName, t.StartResult, _sharedLocalizer))
                                 .OrderBy(tg => tg.Key) // Order tags by name
                                 .Select(tg => new TagReport
                                 {
@@ -348,11 +350,11 @@ namespace OCPP.Core.Management.Controllers
                                         TransactionId = t.TransactionId,
                                         ChargePointId = t.ChargePointId,
                                         ConnectorId = t.ConnectorId,
-                                        StartTagId = string.IsNullOrEmpty(t.StartTagName) ? t.StartTagId : t.StartTagName,
+                                        StartTagId = TransactionDisplay.StartTag(t.StartTagId, t.StartTagName, t.StartResult, _sharedLocalizer),
                                         StartTime = t.StartTime,
                                         MeterStart = t.MeterStart,
                                         StartResult = t.StartResult,
-                                        StopTagId = string.IsNullOrEmpty(t.StopTagName) ? t.StopTagId : t.StopTagName,
+                                        StopTagId = TransactionDisplay.StopTag(t.StopTagId, t.StopTagName, t.StopReason, _sharedLocalizer),
                                         StopTime = t.StopTime,
                                         MeterStop = t.MeterStop,
                                         StopReason = t.StopReason

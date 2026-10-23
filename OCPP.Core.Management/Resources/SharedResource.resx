@@ -126,4 +126,13 @@
   <data name="FieldMinLength" xml:space="preserve">
     <value>The {0} field must be at least {1} characters long.</value>
   </data>
+  <data name="TransactionNoAuthorization" xml:space="preserve">
+    <value>No authorization</value>
+  </data>
+  <data name="TransactionTagNotAuthorized" xml:space="preserve">
+    <value>{0} (not authorized)</value>
+  </data>
+  <data name="TransactionClosedAutomatically" xml:space="preserve">
+    <value>Closed automatically</value>
+  </data>
 </root>

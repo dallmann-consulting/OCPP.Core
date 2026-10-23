@@ -169,8 +169,12 @@ namespace OCPP.Core.Server.Tests
             Assert.Equal(12.5, status.LastMeter);
         }
 
+        /// <summary>
+        /// The transaction has already started at the charge point (e.g. authorized offline)
+        /// => it is recorded with the authorization result
+        /// </summary>
         [Fact]
-        public async Task StartTransaction_UnknownTag_CreatesNoTransaction()
+        public async Task StartTransaction_UnknownTag_IsRecordedWithResult()
         {
             await using ChargePointSimulator cp = await ConnectNewChargePointAsync();
 
@@ -178,8 +182,13 @@ namespace OCPP.Core.Server.Tests
 
             Assert.False(result.IsError);
             Assert.Equal("Invalid", result.Payload!["idTagInfo"]!["status"]!.Value<string>());
+            int transactionId = result.Payload["transactionId"]!.Value<int>();
+            Assert.True(transactionId > 0);
             using OCPPCoreContext db = _factory.CreateDbContext();
-            Assert.Empty(db.Transactions.Where(t => t.ChargePointId == cp.ChargePointId));
+            Transaction? transaction = db.Transactions.Find(transactionId);
+            Assert.NotNull(transaction);
+            Assert.Equal("UNKNOWN1", transaction.StartTagId);
+            Assert.Equal("Invalid", transaction.StartResult);
         }
 
         [Fact]

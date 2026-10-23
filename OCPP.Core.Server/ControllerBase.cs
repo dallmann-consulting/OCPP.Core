@@ -240,6 +240,38 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// Closes open transactions on a connector when a new transaction starts there.
+        /// A connector can only have one transaction at a time => the stop message of the old one got lost.
+        /// Stop time and meter are estimated from the new transaction (marked with StopReason "Superseded").
+        /// </summary>
+        protected void CloseSupersededTransactions(int connectorId, DateTime newStartTime, double newMeterStart)
+        {
+            List<Transaction> openTransactions = DbContext.Transactions
+                .Where(t => t.ChargePointId == ChargePointStatus.Id &&
+                            t.ConnectorId == connectorId &&
+                            !t.StopTime.HasValue &&
+                            t.StartTime <= newStartTime)
+                .ToList();
+
+            foreach (Transaction transaction in openTransactions)
+            {
+                Logger.LogWarning("CloseSupersededTransactions => Closing open transaction {0} on chargepoint '{1}' / connector {2}: new transaction started (stop message lost?)", transaction.TransactionId, ChargePointStatus.Id, connectorId);
+                transaction.StopTime = newStartTime;
+                transaction.StopReason = TransactionStatus.StopReasonSuperseded;
+                // last meter value from the transaction or the meter at the start of the new transaction
+                if (newMeterStart >= 0 && (!transaction.MeterStop.HasValue || transaction.MeterStop < transaction.MeterStart))
+                {
+                    transaction.MeterStop = newMeterStart;
+                }
+            }
+
+            if (openTransactions.Count > 0)
+            {
+                DbContext.SaveChanges();
+            }
+        }
+
+        /// <summary>
         /// Clean charge tag Id from possible suffix ("..._abc")
         /// </summary>
         protected static string CleanChargeTagId(string rawChargeTagId, ILogger logger)

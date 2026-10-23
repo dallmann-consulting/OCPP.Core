@@ -185,11 +185,11 @@ namespace OCPP.Core.Management.Controllers
                 {
                     worksheet.Cell(row, 1).Value = tlvm.CurrentConnectorName;
                     worksheet.Cell(row, 2).SetValue(t.StartTime.ToLocalTime());
-                    worksheet.Cell(row, 3).Value = string.IsNullOrEmpty(t.StartTagName) ? t.StartTagId : t.StartTagName;
+                    worksheet.Cell(row, 3).Value = TransactionDisplay.StartTag(t.StartTagId, t.StartTagName, t.StartResult, _sharedLocalizer);
                     worksheet.Cell(row, 4).SetValue(t.MeterStart);
                     if (t.StopTime.HasValue)
                         worksheet.Cell(row, 5).SetValue(t.StopTime?.ToLocalTime());
-                    worksheet.Cell(row, 6).Value = string.IsNullOrEmpty(t.StopTagName) ? t.StopTagId : t.StopTagName;
+                    worksheet.Cell(row, 6).Value = TransactionDisplay.StopTag(t.StopTagId, t.StopTagName, t.StopReason, _sharedLocalizer);
                     if (t.MeterStop.HasValue)
                     {
                         worksheet.Cell(row, 7).SetValue(t.MeterStop);
