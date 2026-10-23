@@ -63,7 +63,9 @@ namespace OCPP.Core.Server
         internal IdTagInfo InternalAuthorize(string idTag, OCPPMiddleware ocppMiddleware, int connectorId, AuthAction authAction, string transactionUid, string transactionStartId, bool denyConcurrentTx)
         {
             IdTagInfo idTagInfo = new IdTagInfo();
-            idTagInfo.ParentIdTag = string.Empty;
+            // No group => no "parentIdTag" in the message. An empty value could be interpreted by the
+            // charge point as "same group" for all tags without group => any tag could stop any transaction.
+            idTagInfo.ParentIdTag = null;
             idTagInfo.ExpiryDate = MaxExpiryDate;
 
             bool? externalAuthResult = null;
@@ -99,7 +101,7 @@ namespace OCPP.Core.Server
                         {
                             idTagInfo.ExpiryDate = ct.ExpiryDate.Value;
                         }
-                        idTagInfo.ParentIdTag = ct.ParentTagId;
+                        idTagInfo.ParentIdTag = string.IsNullOrWhiteSpace(ct.ParentTagId) ? null : ct.ParentTagId;
                         if (ct.Blocked.HasValue && ct.Blocked.Value)
                         {
                             idTagInfo.Status = IdTagInfoStatus.Blocked;

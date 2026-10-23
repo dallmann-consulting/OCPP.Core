@@ -135,4 +135,7 @@
   <data name="TransactionClosedAutomatically" xml:space="preserve">
     <value>Automatisch beendet</value>
   </data>
+  <data name="TransactionTagNotPermitted" xml:space="preserve">
+    <value>{0} (nicht berechtigt)</value>
+  </data>
 </root>

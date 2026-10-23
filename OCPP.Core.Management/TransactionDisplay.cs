@@ -17,6 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System;
 using Microsoft.Extensions.Localization;
 using OCPP.Core.Database;
 
@@ -50,15 +51,27 @@ namespace OCPP.Core.Management
 
         /// <summary>
         /// Stop tag: tag name (or ID) - or a text for transactions that were closed by the server
+        /// or that were stopped with a tag which is neither the start tag nor in its group
         /// </summary>
-        public static string StopTag(string stopTagId, string stopTagName, string stopReason, IStringLocalizer<SharedResource> localizer)
+        public static string StopTag(TransactionExtended transaction, IStringLocalizer<SharedResource> localizer)
         {
-            if (stopReason == TransactionStatus.StopReasonSuperseded)
+            if (transaction.StopReason == TransactionStatus.StopReasonSuperseded)
             {
                 // stop message lost => closed when the next transaction started (stop time and meter are estimated)
                 return localizer["TransactionClosedAutomatically"];
             }
-            return string.IsNullOrEmpty(stopTagName) ? stopTagId : stopTagName;
+
+            string tag = string.IsNullOrEmpty(transaction.StopTagName) ? transaction.StopTagId : transaction.StopTagName;
+            if (!string.IsNullOrWhiteSpace(transaction.StopTagId) &&
+                !string.IsNullOrWhiteSpace(transaction.StartTagId) &&
+                !string.Equals(transaction.StopTagId, transaction.StartTagId, StringComparison.InvariantCultureIgnoreCase) &&
+                !(!string.IsNullOrWhiteSpace(transaction.StartTagParentId) &&
+                  string.Equals(transaction.StartTagParentId, transaction.StopTagParentId, StringComparison.InvariantCultureIgnoreCase)))
+            {
+                // the charging station allowed a stop with a tag that is neither the start tag nor in its group
+                return string.Format(localizer["TransactionTagNotPermitted"], tag);
+            }
+            return tag;
         }
 
         /// <summary>

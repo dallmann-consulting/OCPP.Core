@@ -185,7 +185,7 @@ namespace OCPP.Core.Management.Controllers
                     csv.Append(DefaultCSVSeparator);
                     csv.Append(EscapeCsvValue(ft.t.StopTagId, DefaultCSVSeparator));
                     csv.Append(DefaultCSVSeparator);
-                    csv.Append(EscapeCsvValue(TransactionDisplay.StopTag(ft.t.StopTagId, ft.t.StopTagName, ft.t.StopReason, _sharedLocalizer), DefaultCSVSeparator));
+                    csv.Append(EscapeCsvValue(TransactionDisplay.StopTag(ft.t, _sharedLocalizer), DefaultCSVSeparator));
                     csv.Append(DefaultCSVSeparator);
                     csv.Append(ft.t.StopTime?.ToLocalTime());
                     csv.Append(DefaultCSVSeparator);
@@ -255,7 +255,7 @@ namespace OCPP.Core.Management.Controllers
                     {
                         worksheet.Cell(row, 9).Value = ft.t.StopTagId;
                     }
-                    worksheet.Cell(row, 10).Value = TransactionDisplay.StopTag(ft.t.StopTagId, ft.t.StopTagName, ft.t.StopReason, _sharedLocalizer);
+                    worksheet.Cell(row, 10).Value = TransactionDisplay.StopTag(ft.t, _sharedLocalizer);
                     if (ft.t.StopTime.HasValue)
                         worksheet.Cell(row, 11).SetValue(ft.t.StopTime.Value.ToLocalTime());
                     if (ft.t.MeterStop.HasValue)
@@ -354,7 +354,7 @@ namespace OCPP.Core.Management.Controllers
                                         StartTime = t.StartTime,
                                         MeterStart = t.MeterStart,
                                         StartResult = t.StartResult,
-                                        StopTagId = TransactionDisplay.StopTag(t.StopTagId, t.StopTagName, t.StopReason, _sharedLocalizer),
+                                        StopTagId = TransactionDisplay.StopTag(t, _sharedLocalizer),
                                         StopTime = t.StopTime,
                                         MeterStop = t.MeterStop,
                                         StopReason = t.StopReason

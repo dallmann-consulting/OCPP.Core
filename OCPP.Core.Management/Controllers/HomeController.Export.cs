@@ -189,7 +189,7 @@ namespace OCPP.Core.Management.Controllers
                     worksheet.Cell(row, 4).SetValue(t.MeterStart);
                     if (t.StopTime.HasValue)
                         worksheet.Cell(row, 5).SetValue(t.StopTime?.ToLocalTime());
-                    worksheet.Cell(row, 6).Value = TransactionDisplay.StopTag(t.StopTagId, t.StopTagName, t.StopReason, _sharedLocalizer);
+                    worksheet.Cell(row, 6).Value = TransactionDisplay.StopTag(t, _sharedLocalizer);
                     if (t.MeterStop.HasValue)
                     {
                         worksheet.Cell(row, 7).SetValue(t.MeterStop);

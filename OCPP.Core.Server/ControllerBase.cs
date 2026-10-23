@@ -272,6 +272,35 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// Checks the tag that stopped a transaction: same tag as the start tag or a tag of the same group.
+        /// Only for the log: the charging station decides about the stop (with Authorize and the group of the tag)
+        /// and the CSMS cannot prevent a transaction from stopping.
+        /// </summary>
+        protected void CheckStopTag(Transaction transaction, string stopTagId, string stopTagGroup)
+        {
+            if (string.IsNullOrWhiteSpace(stopTagId) || string.IsNullOrEmpty(transaction.StartTagId))
+            {
+                // stopped without tag (EV/charging station) or transaction started without tag
+                return;
+            }
+            if (transaction.StartTagId.Equals(stopTagId, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return;
+            }
+
+            string startTagGroup = DbContext.Find<ChargeTag>(transaction.StartTagId)?.ParentTagId;
+            if (!string.IsNullOrWhiteSpace(startTagGroup) &&
+                string.Equals(startTagGroup, stopTagGroup, StringComparison.InvariantCultureIgnoreCase))
+            {
+                Logger.LogInformation("CheckStopTag => Transaction {0}: different tags but same group ('{1}')", transaction.TransactionId, startTagGroup);
+                return;
+            }
+
+            Logger.LogWarning("CheckStopTag => Transaction {0} on chargepoint '{1}' was stopped with tag '{2}' which is neither the start tag '{3}' nor in its group => the charging station allowed the stop (configuration?)",
+                transaction.TransactionId, ChargePointStatus.Id, stopTagId, transaction.StartTagId);
+        }
+
+        /// <summary>
         /// Clean charge tag Id from possible suffix ("..._abc")
         /// </summary>
         protected static string CleanChargeTagId(string rawChargeTagId, ILogger logger)

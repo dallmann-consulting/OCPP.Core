@@ -82,6 +82,8 @@ namespace OCPP.Core.Server
                             {
                                 authorizeResponse.IdTokenInfo.GroupIdToken = new IdTokenType();
                                 authorizeResponse.IdTokenInfo.GroupIdToken.IdToken = ct.ParentTagId;
+                                // "type" is required in OCPP 2.1 (string) => without it the response can't be serialized
+                                authorizeResponse.IdTokenInfo.GroupIdToken.Type = IdTokenEnumStringType.Central;
                             }
 
                             if (ct.Blocked.HasValue && ct.Blocked.Value)
@@ -163,6 +165,8 @@ namespace OCPP.Core.Server
                         {
                             idTagInfo.GroupIdToken = new IdTokenType();
                             idTagInfo.GroupIdToken.IdToken = ct.ParentTagId;
+                            // "type" is required in OCPP 2.1 (string) => without it the response can't be serialized
+                            idTagInfo.GroupIdToken.Type = IdTokenEnumStringType.Central;
                         }
 
                         if (ct.Blocked.HasValue && ct.Blocked.Value)

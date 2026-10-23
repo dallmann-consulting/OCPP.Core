@@ -150,7 +150,7 @@
                         <td>@TransactionDisplay.StartTag(t.StartTagId, t.StartTagName, t.StartResult, SharedLocalizer)</td>
                         <td>@string.Format("{0:0.0##}", t.MeterStart)</td>
                         <td>@((t.StopTime != null) ? string.Format("{0} {1}", t.StopTime.Value.ToLocalTime().ToShortDateString(), t.StopTime.Value.ToLocalTime().ToShortTimeString()) : string.Empty)</td>
-                        <td>@TransactionDisplay.StopTag(t.StopTagId, t.StopTagName, t.StopReason, SharedLocalizer)</td>
+                        <td>@TransactionDisplay.StopTag(t, SharedLocalizer)</td>
                         <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", t.MeterStop) : string.Empty)</td>
                         <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", (t.MeterStop - t.MeterStart)) : string.Empty)</td>
                     </tr>

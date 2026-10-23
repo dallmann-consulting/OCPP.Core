@@ -252,68 +252,32 @@ namespace OCPP.Core.Server
 
 
 
-                        // General authorization done. Now check the result and update the transaction
-                        if (transactionEventResponse.IdTokenInfo.Status == AuthorizationStatusEnumType.Accepted)
+                        // Authorization done (the response contains the real status of the tag => authorization cache of the charging station).
+                        // The transaction has already been stopped at the charging station and is always closed:
+                        // the charging station decides whether a tag may stop (same tag or same group, see Authorize/groupIdToken).
+                        try
                         {
-                            try
+                            if (transaction != null &&
+                                transaction.ChargePointId == ChargePointStatus.Id &&
+                                !transaction.StopTime.HasValue)
                             {
-                                if (transaction != null &&
-                                    transaction.ChargePointId == ChargePointStatus.Id &&
-                                    !transaction.StopTime.HasValue)
-                                {
-                                    // check current tag against start tag
-                                    // (only if the stop message contains a tag - without tag the EV/charging station has stopped)
-                                    bool valid = true;
-                                    if (!string.IsNullOrWhiteSpace(idTag) &&
-                                        !string.IsNullOrEmpty(transaction.StartTagId) &&
-                                        !transaction.StartTagId.Equals(idTag, StringComparison.InvariantCultureIgnoreCase))
-                                    {
-                                        // tags are different => same group?
-                                        ChargeTag startTag = DbContext.Find<ChargeTag>(transaction.StartTagId);
-                                        if (startTag != null)
-                                        {
-                                            if (!string.Equals(startTag.ParentTagId, transactionEventResponse.IdTokenInfo.GroupIdToken?.IdToken, StringComparison.InvariantCultureIgnoreCase))
-                                            {
-                                                Logger.LogInformation("EndTransaction => Start-Tag ('{0}') and End-Tag ('{1}') do not match: Invalid!", transaction.StartTagId, idTag);
-                                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
-                                                valid = false;
-                                            }
-                                            else
-                                            {
-                                                Logger.LogInformation("EndTransaction => Different RFID-Tags but matching group ('{0}')", transactionEventResponse.IdTokenInfo.GroupIdToken?.IdToken);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            Logger.LogError("EndTransaction => Start-Tag not found: '{0}'", transaction.StartTagId);
-                                            // assume "valid" and allow to end the transaction
-                                        }
-                                    }
+                                // stop tag = start tag or same group? (only logged)
+                                CheckStopTag(transaction, idTag, transactionEventResponse.IdTokenInfo.GroupIdToken?.IdToken);
 
-                                    if (valid)
-                                    {
-                                        // write current meter value in "stop" value
-                                        Logger.LogInformation("EndTransaction => Meter='{0}' (kWh)", meterKWH);
+                                // write current meter value in "stop" value
+                                Logger.LogInformation("EndTransaction => Meter='{0}' (kWh)", meterKWH);
 
-                                        transaction.StopTime = transactionEventRequest.Timestamp.UtcDateTime;
-                                        transaction.MeterStop = meterKWH;
-                                        transaction.StopTagId = idTag;
-                                        transaction.StopReason = transactionEventRequest.TriggerReason.ToString();
-                                        DbContext.SaveChanges();
-                                    }
-                                }
-                                else
-                                {
-                                    Logger.LogError("EndTransaction => Unknown or not matching transaction: uid='{0}' / chargepoint='{1}' / tag={2}", transactionEventRequest.TransactionInfo?.TransactionId, ChargePointStatus?.Id, idTag);
-                                    WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest.MeterValue)), errorCode);
-                                    errorCode = ErrorCodes.PropertyConstraintViolation;
-                                }
+                                transaction.StopTime = transactionEventRequest.Timestamp.UtcDateTime;
+                                transaction.MeterStop = meterKWH;
+                                transaction.StopTagId = idTag;
+                                transaction.StopReason = transactionEventRequest.TriggerReason.ToString();
+                                DbContext.SaveChanges();
                             }
-                            catch (Exception exp)
-                            {
-                                Logger.LogError(exp, "EndTransaction => Exception: {0}", exp.Message);
-                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
-                            }
+                        }
+                        catch (Exception exp)
+                        {
+                            Logger.LogError(exp, "EndTransaction => Exception: {0}", exp.Message);
+                            transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
                         }
                         #endregion
                     }
