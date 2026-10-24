@@ -203,26 +203,37 @@ namespace OCPP.Core.Server.Tests
             }
         }
 
-        [Fact]
-        public async Task TransactionEvent_UpdatedForUnknownTransaction_ReturnsCallError()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TransactionEvent_UpdatedForUnknownTransaction_CreatesTransaction(bool withMeterValue)
         {
             await using ChargePointSimulator cp = await ConnectNewChargePointAsync();
+            string transactionUid = Guid.NewGuid().ToString();
+            DateTimeOffset timestamp = DateTimeOffset.UtcNow.AddMinutes(-5);
 
-            OcppResult result = await cp.CallAsync("TransactionEvent", new
+            Dictionary<string, object> payload = new Dictionary<string, object>
             {
-                eventType = "Updated",
-                timestamp = DateTimeOffset.UtcNow,
-                triggerReason = "MeterValuePeriodic",
-                seqNo = 5,
-                transactionInfo = new { transactionId = Guid.NewGuid().ToString() },
-                evse = new { id = 1, connectorId = 1 },
-                // without meter value the server runs into a NullReferenceException and answers "Accepted" (see finding #44)
-                meterValue = EnergyMeterValue(DateTimeOffset.UtcNow, 1000)
-            });
+                ["eventType"] = "Updated",
+                ["timestamp"] = timestamp,
+                ["triggerReason"] = "MeterValuePeriodic",
+                ["seqNo"] = 5,
+                ["transactionInfo"] = new { transactionId = transactionUid },
+                ["evse"] = new { id = 1, connectorId = 1 }
+            };
+            if (withMeterValue) payload["meterValue"] = EnergyMeterValue(timestamp, 1000);
 
-            // current behavior (see finding #08)
-            Assert.True(result.IsError);
-            Assert.Equal("PropertyConstraintViolation", result.ErrorCode);
+            OcppResult result = await cp.CallAsync("TransactionEvent", payload);
+
+            // "Started" got lost => the transaction is created from the first "Updated"
+            Assert.False(result.IsError);
+            using OCPPCoreContext db = _factory.CreateDbContext();
+            Transaction transaction = db.Transactions.Single(t => t.Uid == transactionUid);
+            Assert.Equal(cp.ChargePointId, transaction.ChargePointId);
+            Assert.Equal(1, transaction.ConnectorId);
+            Assert.Equal(timestamp.UtcDateTime, transaction.StartTime, TimeSpan.FromSeconds(1));
+            Assert.Null(transaction.StopTime);
+            if (withMeterValue) Assert.Equal(1.0, transaction.MeterStart);
         }
 
         [Fact]

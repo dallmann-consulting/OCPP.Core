@@ -53,56 +53,66 @@ namespace OCPP.Core.Server
                     errorCode = ErrorCodes.InternalError;
                 }
 
-                if (transaction != null)
-                {
-                    // Transaction found => check charge tag (the start tag and the car itself can also stop the transaction)
+                // Transaction of this charge point?
+                bool ownTransaction = (transaction != null && transaction.ChargePointId == ChargePointStatus.Id);
 
-                    if (string.IsNullOrWhiteSpace(idTag))
-                    {
-                        // no RFID-Tag => accept stop request (can happen when the car stops the charging process)
-                        stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
-                        Logger.LogInformation("StopTransaction => no charge tag => Status: {0}", stopTransactionResponse.IdTagInfo.Status);
-                    }
-                    else
-                    {
-                        stopTransactionResponse.IdTagInfo = InternalAuthorize(idTag, ocppMiddleware, transaction.ConnectorId, AuthAction.StopTransaction, transaction?.Uid, transaction?.StartTagId, false);
-                    }
+                if (string.IsNullOrWhiteSpace(idTag))
+                {
+                    // no RFID-Tag => accept stop request (can happen when the car stops the charging process)
+                    stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
+                    Logger.LogInformation("StopTransaction => no charge tag => Status: {0}", stopTransactionResponse.IdTagInfo.Status);
                 }
                 else
                 {
-                    // Error unknown transaction id
-                    Logger.LogError("StopTransaction => Unknown or not matching transaction: id={0} / chargepoint={1} / tag={2}", stopTransactionRequest.TransactionId, ChargePointStatus?.Id, idTag);
-                    WriteMessageLog(ChargePointStatus?.Id, transaction?.ConnectorId, msgIn.Action, string.Format("UnknownTransaction:ID={0}/Meter={1}", stopTransactionRequest.TransactionId, stopTransactionRequest.MeterStop), errorCode);
-                    errorCode = ErrorCodes.PropertyConstraintViolation;
+                    stopTransactionResponse.IdTagInfo = InternalAuthorize(idTag, ocppMiddleware, ownTransaction ? transaction.ConnectorId : 0, AuthAction.StopTransaction, transaction?.Uid, transaction?.StartTagId, false);
                 }
-
 
                 // But...
                 // The charge tag which has started the transaction should always be able to stop the transaction.
                 // (The owner needs to release his car :-) and the car can always forcingly stop the transaction)
                 // => if status!=accepted check if it was the starting tag
                 if (stopTransactionResponse.IdTagInfo.Status != IdTagInfoStatus.Accepted &&
-                    transaction != null && !string.IsNullOrEmpty(transaction.StartTagId) &&
-                    transaction.StartTagId.Equals(idTag, StringComparison.InvariantCultureIgnoreCase)) 
+                    ownTransaction && !string.IsNullOrEmpty(transaction.StartTagId) &&
+                    transaction.StartTagId.Equals(idTag, StringComparison.InvariantCultureIgnoreCase))
                 {
                     // Override => allow the StartTagId to also stop the transaction
                     Logger.LogInformation("StopTransaction => RFID-tag='{0}' NOT accepted => override to ALLOWED because it is the start tag", idTag);
                     stopTransactionResponse.IdTagInfo.Status = IdTagInfoStatus.Accepted;
                 }
-                
 
                 // Authorization done (the response contains the real status of the tag => authorization cache of the charge point).
                 // The transaction has already been stopped at the charge point and is always closed:
                 // the charge point decides whether a tag may stop (same tag or same group, see Authorize/parentIdTag).
+                // Error responses only for errors that a repetition of the message can solve (e.g. database errors),
+                // otherwise the charge point repeats the message and finally discards it.
                 try
                 {
-                    if (transaction != null &&
-                        transaction.ChargePointId == ChargePointStatus.Id &&
-                        !transaction.StopTime.HasValue)
+                    if (errorCode != null)
                     {
-                        if (transaction.ConnectorId > 0)
+                        // error reading the transaction => charge point should repeat the message
+                    }
+                    else if (!ownTransaction)
+                    {
+                        // unknown transaction (or of another charge point) => repeating doesn't help => answer positively and log the data
+                        Logger.LogWarning("StopTransaction => Unknown transaction => ignored: id={0} / chargepoint={1} / tag={2} / meterStop={3} / timestamp={4} / reason={5}",
+                            stopTransactionRequest.TransactionId, ChargePointStatus?.Id, idTag, stopTransactionRequest.MeterStop, stopTransactionRequest.Timestamp, stopTransactionRequest.Reason);
+                        WriteMessageLog(ChargePointStatus?.Id, null, msgIn.Action, string.Format("UnknownTransaction:ID={0}/Meter={1}", stopTransactionRequest.TransactionId, stopTransactionRequest.MeterStop), null);
+                    }
+                    else if (transaction.StopTime.HasValue && transaction.StopReason != TransactionStatus.StopReasonSuperseded)
+                    {
+                        // already stopped (repeated message, e.g. the response got lost) => nothing to do
+                        Logger.LogInformation("StopTransaction => Transaction {0} is already stopped => repeated message ignored", transaction.TransactionId);
+                    }
+                    else
+                    {
+                        if (transaction.StopTime.HasValue)
                         {
-                            // Update meter value in db connector status
+                            // closed by the server when the next transaction started (stop message was late) => take over the real values
+                            Logger.LogInformation("StopTransaction => Transaction {0} was closed automatically => real stop values are taken over", transaction.TransactionId);
+                        }
+                        else if (transaction.ConnectorId > 0)
+                        {
+                            // Update meter value in db connector status (not for a late stop => the connector has a newer transaction)
                             UpdateConnectorStatus(transaction.ConnectorId, null, null, (double)stopTransactionRequest.MeterStop / 1000, stopTransactionRequest.Timestamp);
                             UpdateMemoryConnectorStatus(transaction.ConnectorId, (double)stopTransactionRequest.MeterStop / 1000, stopTransactionRequest.Timestamp, null, null);
                         }
@@ -115,12 +125,6 @@ namespace OCPP.Core.Server
                         transaction.StopReason = stopTransactionRequest.Reason.ToString();
                         transaction.StopTime = stopTransactionRequest.Timestamp.UtcDateTime;
                         DbContext.SaveChanges();
-                    }
-                    else if (transaction != null)
-                    {
-                        Logger.LogError("StopTransaction => Unknown or not matching transaction: id={0} / chargepoint={1} / tag={2}", stopTransactionRequest.TransactionId, ChargePointStatus?.Id, idTag);
-                        WriteMessageLog(ChargePointStatus?.Id, transaction?.ConnectorId, msgIn.Action, string.Format("UnknownTransaction:ID={0}/Meter={1}", stopTransactionRequest.TransactionId, stopTransactionRequest.MeterStop), errorCode);
-                        errorCode = ErrorCodes.PropertyConstraintViolation;
                     }
                 }
                 catch (Exception exp)

@@ -240,6 +240,18 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// Finds an OCPP 2.x transaction of this charging station by its transaction id
+        /// (the id is only unique per charging station - some stations simply count 1, 2, 3, ...)
+        /// </summary>
+        protected Transaction FindTransactionByUid(string uid)
+        {
+            return DbContext.Transactions
+                .Where(t => t.ChargePointId == ChargePointStatus.Id && t.Uid == uid)
+                .OrderByDescending(t => t.TransactionId)
+                .FirstOrDefault();
+        }
+
+        /// <summary>
         /// Closes open transactions on a connector when a new transaction starts there.
         /// A connector can only have one transaction at a time => the stop message of the old one got lost.
         /// Stop time and meter are estimated from the new transaction (marked with StopReason "Superseded").

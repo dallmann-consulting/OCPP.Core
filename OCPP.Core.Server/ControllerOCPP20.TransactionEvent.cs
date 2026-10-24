@@ -150,14 +150,33 @@ namespace OCPP.Core.Server
                     try
                     {
                         #region Update Transaction
-                        Transaction transaction = DbContext.Transactions
-                            .Where(t => t.Uid == transactionEventRequest.TransactionInfo.TransactionId)
-                            .OrderByDescending(t => t.TransactionId)
-                            .FirstOrDefault();
+                        Transaction transaction = FindTransactionByUid(transactionEventRequest.TransactionInfo.TransactionId);
 
-                        if (transaction != null &&
-                            transaction.ChargePointId == ChargePointStatus.Id &&
-                            !transaction.StopTime.HasValue)
+                        if (transaction == null)
+                        {
+                            // unknown transaction (e.g. the "Started" message got lost) => create it from this event
+                            // (start time and meter of this event => a part of the energy may be missing)
+                            Logger.LogWarning("UpdateTransaction => Unknown transaction uid='{0}' / chargepoint='{1}' => transaction is created from this event", transactionEventRequest.TransactionInfo.TransactionId, ChargePointStatus?.Id);
+                            CloseSupersededTransactions(connectorId, transactionEventRequest.Timestamp.UtcDateTime, meterKWH);
+
+                            transaction = new Transaction();
+                            transaction.Uid = transactionEventRequest.TransactionInfo.TransactionId;
+                            transaction.ChargePointId = ChargePointStatus.Id;
+                            transaction.ConnectorId = connectorId;
+                            transaction.StartTime = transactionEventRequest.Timestamp.UtcDateTime;
+                            transaction.MeterStart = meterKWH;
+                            DbContext.Add<Transaction>(transaction);
+                            DbContext.SaveChanges();
+                        }
+
+                        if (transaction.StopTime.HasValue)
+                        {
+                            // transaction already ended => nothing to update (repeating doesn't help => answer positively)
+                            Logger.LogInformation("UpdateTransaction => Transaction uid='{0}' is already ended => ignored", transaction.Uid);
+                            transactionEventResponse.IdTokenInfo = string.IsNullOrWhiteSpace(idTag) ? null :
+                                InternalAuthorize(idTag, ocppMiddleware, connectorId, AuthAction.StartTransaction, transaction.Uid, string.Empty, false);
+                        }
+                        else
                         {
                             if (!string.IsNullOrWhiteSpace(idTag))
                             {
@@ -186,17 +205,13 @@ namespace OCPP.Core.Server
                                 DbContext.SaveChanges();
                             }
                         }
-                        else
-                        {
-                            Logger.LogError("UpdateTransaction => Unknown or not matching transaction: uid='{0}' / chargepoint='{1}' / tag={2}", transactionEventRequest.TransactionInfo?.TransactionId, ChargePointStatus?.Id, idTag);
-                            WriteMessageLog(ChargePointStatus?.Id, null, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo?.TransactionId, GetMeterValue(transactionEventRequest.MeterValue)), errorCode);
-                            errorCode = ErrorCodes.PropertyConstraintViolation;
-                        }
                         #endregion
                     }
                     catch (Exception exp)
                     {
+                        // e.g. database error => charging station should repeat the message
                         Logger.LogError(exp, "UpdateTransaction => Exception: {0}", exp.Message);
+                        errorCode = ErrorCodes.InternalError;
                     }
 
                     msgLogText = $"UpdateTx => {msgLogText}";
@@ -207,35 +222,18 @@ namespace OCPP.Core.Server
                     {
                         #region End Transaction
 
-                        Transaction transaction = DbContext.Transactions
-                            .Where(t => t.Uid == transactionEventRequest.TransactionInfo.TransactionId)
-                            .OrderByDescending(t => t.TransactionId)
-                            .FirstOrDefault();
+                        Transaction transaction = FindTransactionByUid(transactionEventRequest.TransactionInfo.TransactionId);
 
-                        if (transaction != null &&
-                            transaction.ChargePointId == ChargePointStatus.Id &&
-                            !transaction.StopTime.HasValue)
+                        if (string.IsNullOrWhiteSpace(idTag))
                         {
-                            if (string.IsNullOrWhiteSpace(idTag))
-                            {
-                                // no RFID-Tag => accept stop request (can happen when the car stops the charging process)
-
-                                transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
-                                Logger.LogInformation("EndTransaction => no charge tag => accepted");
-                            }
-                            else
-                            {
-                                transactionEventResponse.IdTokenInfo = InternalAuthorize(idTag, ocppMiddleware, connectorId, AuthAction.StopTransaction, transactionEventRequest.TransactionInfo.TransactionId, transaction.StartTagId, false);
-                            }
+                            // no RFID-Tag => accept stop request (can happen when the car stops the charging process)
+                            transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
+                            Logger.LogInformation("EndTransaction => no charge tag => accepted");
                         }
                         else
                         {
-                            // Error unknown transaction id
-                            Logger.LogError("EndTransaction => Unknown or not matching transaction: id={0} / chargepoint={1} / tag={2}", transactionEventRequest.TransactionInfo.TransactionId, ChargePointStatus?.Id, idTag);
-                            WriteMessageLog(ChargePointStatus?.Id, transaction?.ConnectorId, msgIn.Action, string.Format("UnknownTransaction:ID={0}/Meter={1}", transactionEventRequest.TransactionInfo.TransactionId, transactionEventRequest.MeterValue), errorCode);
-                            errorCode = ErrorCodes.PropertyConstraintViolation;
+                            transactionEventResponse.IdTokenInfo = InternalAuthorize(idTag, ocppMiddleware, connectorId, AuthAction.StopTransaction, transactionEventRequest.TransactionInfo.TransactionId, transaction?.StartTagId, false);
                         }
-
 
                         // But...
                         // The charge tag which has started the transaction should always be able to stop the transaction.
@@ -250,17 +248,33 @@ namespace OCPP.Core.Server
                             transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Accepted;
                         }
 
-
-
                         // Authorization done (the response contains the real status of the tag => authorization cache of the charging station).
                         // The transaction has already been stopped at the charging station and is always closed:
                         // the charging station decides whether a tag may stop (same tag or same group, see Authorize/groupIdToken).
+                        // Error responses only for errors that a repetition of the message can solve (e.g. database errors),
+                        // otherwise the charging station repeats the message and finally discards it.
                         try
                         {
-                            if (transaction != null &&
-                                transaction.ChargePointId == ChargePointStatus.Id &&
-                                !transaction.StopTime.HasValue)
+                            if (transaction == null)
                             {
+                                // unknown transaction => repeating doesn't help => answer positively and log the data
+                                Logger.LogWarning("EndTransaction => Unknown transaction => ignored: uid='{0}' / chargepoint='{1}' / evse={2} / tag={3} / meter={4} / timestamp={5} / reason={6}",
+                                    transactionEventRequest.TransactionInfo.TransactionId, ChargePointStatus?.Id, connectorId, idTag, meterKWH, transactionEventRequest.Timestamp, transactionEventRequest.TriggerReason);
+                                WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, string.Format("UnknownTransaction:UID={0}/Meter={1}", transactionEventRequest.TransactionInfo.TransactionId, meterKWH), null);
+                            }
+                            else if (transaction.StopTime.HasValue && transaction.StopReason != TransactionStatus.StopReasonSuperseded)
+                            {
+                                // already ended (repeated message, e.g. the response got lost) => nothing to do
+                                Logger.LogInformation("EndTransaction => Transaction uid='{0}' is already ended => repeated message ignored", transaction.Uid);
+                            }
+                            else
+                            {
+                                if (transaction.StopTime.HasValue)
+                                {
+                                    // closed by the server when the next transaction started (message was late) => take over the real values
+                                    Logger.LogInformation("EndTransaction => Transaction uid='{0}' was closed automatically => real stop values are taken over", transaction.Uid);
+                                }
+
                                 // stop tag = start tag or same group? (only logged)
                                 CheckStopTag(transaction, idTag, transactionEventResponse.IdTokenInfo.GroupIdToken?.IdToken);
 
@@ -268,7 +282,11 @@ namespace OCPP.Core.Server
                                 Logger.LogInformation("EndTransaction => Meter='{0}' (kWh)", meterKWH);
 
                                 transaction.StopTime = transactionEventRequest.Timestamp.UtcDateTime;
-                                transaction.MeterStop = meterKWH;
+                                if (meterKWH >= 0)
+                                {
+                                    // without meter value in the message => keep the last value
+                                    transaction.MeterStop = meterKWH;
+                                }
                                 transaction.StopTagId = idTag;
                                 transaction.StopReason = transactionEventRequest.TriggerReason.ToString();
                                 DbContext.SaveChanges();
@@ -276,8 +294,9 @@ namespace OCPP.Core.Server
                         }
                         catch (Exception exp)
                         {
+                            // e.g. database error => charging station should repeat the message
                             Logger.LogError(exp, "EndTransaction => Exception: {0}", exp.Message);
-                            transactionEventResponse.IdTokenInfo.Status = AuthorizationStatusEnumType.Invalid;
+                            errorCode = ErrorCodes.InternalError;
                         }
                         #endregion
                     }

@@ -192,15 +192,15 @@ namespace OCPP.Core.Server.Tests
         }
 
         [Fact]
-        public async Task StopTransaction_UnknownTransaction_ReturnsCallError()
+        public async Task StopTransaction_UnknownTransaction_IsAnsweredPositively()
         {
             await using ChargePointSimulator cp = await ConnectNewChargePointAsync();
 
             OcppResult result = await cp.CallAsync("StopTransaction", new { transactionId = 999999, meterStop = 100, timestamp = DateTimeOffset.UtcNow });
 
-            // current behavior (see finding #08)
-            Assert.True(result.IsError);
-            Assert.Equal("PropertyConstraintViolation", result.ErrorCode);
+            // a repetition can't help => no CALLERROR, the data is logged
+            Assert.False(result.IsError);
+            Assert.Equal("Accepted", result.Payload!["idTagInfo"]!["status"]!.Value<string>());
         }
 
         [Fact]
