@@ -252,6 +252,24 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// Stores the current meter value of a transaction (OCPP 2.x "Updated"/"Ended").
+        /// Without meter value in the message (meterKWH &lt; 0) the last value is kept.
+        /// A transaction can start without meter value (MeterStart &lt; 0 = unknown)
+        /// => the first valid meter value is used as start value.
+        /// </summary>
+        protected void SetTransactionMeter(Transaction transaction, double meterKWH)
+        {
+            if (meterKWH < 0) return;
+
+            if (transaction.MeterStart < 0)
+            {
+                Logger.LogInformation("SetTransactionMeter => Transaction {0} started without meter value => start meter = {1} (kWh)", transaction.TransactionId, meterKWH);
+                transaction.MeterStart = meterKWH;
+            }
+            transaction.MeterStop = meterKWH;
+        }
+
+        /// <summary>
         /// Closes open transactions on a connector when a new transaction starts there.
         /// A connector can only have one transaction at a time => the stop message of the old one got lost.
         /// Stop time and meter are estimated from the new transaction (marked with StopReason "Superseded").
@@ -271,9 +289,9 @@ namespace OCPP.Core.Server
                 transaction.StopTime = newStartTime;
                 transaction.StopReason = TransactionStatus.StopReasonSuperseded;
                 // last meter value from the transaction or the meter at the start of the new transaction
-                if (newMeterStart >= 0 && (!transaction.MeterStop.HasValue || transaction.MeterStop < transaction.MeterStart))
+                if (!transaction.MeterStop.HasValue || transaction.MeterStop < transaction.MeterStart)
                 {
-                    transaction.MeterStop = newMeterStart;
+                    SetTransactionMeter(transaction, newMeterStart);
                 }
             }
 

@@ -201,7 +201,7 @@ namespace OCPP.Core.Server
                             if (meterKWH >= 0)
                             {
                                 Logger.LogInformation("UpdateTransaction => Meter='{0}' (kWh)", meterKWH);
-                                transaction.MeterStop = meterKWH;
+                                SetTransactionMeter(transaction, meterKWH);
                                 DbContext.SaveChanges();
                             }
                         }
@@ -282,11 +282,7 @@ namespace OCPP.Core.Server
                                 Logger.LogInformation("EndTransaction => Meter='{0}' (kWh)", meterKWH);
 
                                 transaction.StopTime = transactionEventRequest.Timestamp.UtcDateTime;
-                                if (meterKWH >= 0)
-                                {
-                                    // without meter value in the message => keep the last value
-                                    transaction.MeterStop = meterKWH;
-                                }
+                                SetTransactionMeter(transaction, meterKWH);
                                 transaction.StopTagId = idTag;
                                 transaction.StopReason = transactionEventRequest.TriggerReason.ToString();
                                 DbContext.SaveChanges();
