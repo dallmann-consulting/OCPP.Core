@@ -218,34 +218,14 @@ namespace OCPP.Core.Server
                         {
                             chargePointStatus.Protocol = subProtocol;
 
-                            bool statusSuccess = false;
-                            try
+                            bool replaceExistingConnection = _configuration.GetValue<bool>("ReplaceExistingConnection", true);
+                            if (!replaceExistingConnection && IsChargePointConnected(chargepointIdentifier))
                             {
-                                _logger.LogTrace("OCPPMiddleware => Store/Update status object");
-
-                                // Remove stale entry if WebSocket is no longer open
-                                if (_chargePointStatusDict.TryGetValue(chargepointIdentifier, out ChargePointStatus existingStatus) &&
-                                    existingStatus.WebSocket.State != WebSocketState.Open)
-                                {
-                                    // only remove this stale entry (another connection may have replaced it in the meantime)
-                                    _chargePointStatusDict.TryRemove(new KeyValuePair<string, ChargePointStatus>(chargepointIdentifier, existingStatus));
-                                }
-
-                                // Try to add - fails if chargepoint is already connected with open WebSocket
-                                if (!_chargePointStatusDict.TryAdd(chargepointIdentifier, chargePointStatus))
-                                {
-                                    throw new InvalidOperationException($"Chargepoint '{chargepointIdentifier}' is already connected with an open WebSocket.");
-                                }
-
-                                statusSuccess = true;
+                                // existing connection must not be replaced => refuse the new one
+                                _logger.LogWarning("OCPPMiddleware => Chargepoint '{0}' is already connected and 'ReplaceExistingConnection' is deactivated => refuse connection", chargepointIdentifier);
+                                context.Response.StatusCode = (int)HttpStatusCode.Conflict;
                             }
-                            catch (Exception exp)
-                            {
-                                _logger.LogError(exp, "OCPPMiddleware => Error storing status object in dictionary => refuse connection");
-                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                            }
-
-                            if (statusSuccess)
+                            else
                             {
                                 // Handle socket communication
                                 _logger.LogTrace("OCPPMiddleware => Waiting for message...");
@@ -256,6 +236,15 @@ namespace OCPP.Core.Server
                                     {
                                         _logger.LogTrace("OCPPMiddleware => WebSocket connection with charge point '{0}'", chargepointIdentifier);
                                         chargePointStatus.WebSocket = webSocket;
+
+                                        // Register the connection only after the handshake => every registered status has a WebSocket
+                                        if (!RegisterChargePointStatus(chargepointIdentifier, chargePointStatus, replaceExistingConnection))
+                                        {
+                                            // another connection was registered in the meantime and must not be replaced
+                                            _logger.LogWarning("OCPPMiddleware => Chargepoint '{0}' is already connected and 'ReplaceExistingConnection' is deactivated => close new connection", chargepointIdentifier);
+                                            await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Already connected", CancellationToken.None);
+                                            return;
+                                        }
 
                                         if (subProtocol == Protocol_OCPP21)
                                         {
@@ -276,10 +265,10 @@ namespace OCPP.Core.Server
                                 }
                                 catch (Exception exp)
                                 {
-                                    if ((exp is WebSocketException || exp is TaskCanceledException) &&
+                                    if ((exp is WebSocketException || exp is TaskCanceledException || exp is OperationCanceledException) &&
                                         chargePointStatus?.WebSocket?.State != WebSocketState.Open)
                                     {
-                                        _logger.LogInformation("OCPPMiddleware => WebSocket connection lost on charge point '{0}' with state '{1}' / close-status '{2}'", chargePointStatus.Id, chargePointStatus.WebSocket.State, chargePointStatus.WebSocket.CloseStatus);
+                                        _logger.LogInformation("OCPPMiddleware => WebSocket connection lost on charge point '{0}' with state '{1}' / close-status '{2}'", chargePointStatus.Id, chargePointStatus.WebSocket?.State, chargePointStatus.WebSocket?.CloseStatus);
                                     }
                                     else
                                     {
@@ -971,6 +960,65 @@ namespace OCPP.Core.Server
         private static string NoAnswerResult(ChargePointStatus chargePointStatus)
         {
             return "{\"status\": " + JsonConvert.ToString(NoAnswerStatus(chargePointStatus)) + "}";
+        }
+
+        /// <summary>
+        /// True if the chargepoint has a registered connection with an open WebSocket
+        /// </summary>
+        private static bool IsChargePointConnected(string chargepointIdentifier)
+        {
+            return _chargePointStatusDict.TryGetValue(chargepointIdentifier, out ChargePointStatus existingStatus) &&
+                   existingStatus.WebSocket?.State == WebSocketState.Open;
+        }
+
+        /// <summary>
+        /// Registers the status object of a new connection.
+        /// An existing open connection of the same chargepoint (e.g. a dead connection after a network failure
+        /// that still seems to be open) is replaced and aborted - or the new connection is refused (returns false)
+        /// if "ReplaceExistingConnection" is deactivated.
+        /// </summary>
+        private bool RegisterChargePointStatus(string chargepointIdentifier, ChargePointStatus newStatus, bool replaceExistingConnection)
+        {
+            while (true)
+            {
+                if (_chargePointStatusDict.TryAdd(chargepointIdentifier, newStatus))
+                {
+                    return true;
+                }
+
+                if (!_chargePointStatusDict.TryGetValue(chargepointIdentifier, out ChargePointStatus existingStatus))
+                {
+                    // removed in the meantime => try again
+                    continue;
+                }
+
+                bool existingIsOpen = existingStatus.WebSocket?.State == WebSocketState.Open;
+                if (existingIsOpen && !replaceExistingConnection)
+                {
+                    return false;
+                }
+
+                // atomic: only replaced if the existing entry is still the same object
+                if (_chargePointStatusDict.TryUpdate(chargepointIdentifier, newStatus, existingStatus))
+                {
+                    if (existingIsOpen)
+                    {
+                        _logger.LogWarning("OCPPMiddleware => Connection of chargepoint '{0}' is replaced by a new connection", chargepointIdentifier);
+                        try
+                        {
+                            // Abort (not close): a graceful close could hang on a dead TCP connection
+                            existingStatus.WebSocket.Abort();
+                        }
+                        catch (Exception exp)
+                        {
+                            _logger.LogTrace("OCPPMiddleware => Error aborting replaced connection: {0}", exp.Message);
+                        }
+                    }
+                    // pending API requests of the old connection end immediately ("Disconnected")
+                    AbortPendingRequests(existingStatus);
+                    return true;
+                }
+            }
         }
 
         /// <summary>

@@ -64,6 +64,18 @@ The OCPP server and its REST-API run on the same port. The API can unlock connec
 "RequireChargePointAuthentication": false,
 ```
 
+## Connections
+After a network failure the server may still consider the old connection of a chargepoint as open. Two settings handle this:
+
+- **ReplaceExistingConnection** (default `true`): a new connection of a chargepoint replaces its existing connection. The old connection is aborted and pending server commands to it end immediately. With `false` the new connection is refused (HTTP 409) as long as the old one seems to be open. If two devices are accidentally configured with the same chargepoint ID, they replace each other - see the warnings in the log.
+- **WebSocketPingInterval** / **WebSocketPingTimeout** (default `60` / `60` seconds): the server sends a WebSocket ping in this interval and aborts the connection if no pong arrives within the timeout. Dead connections are detected after about 2 minutes. `0` deactivates the ping (interval) or the check of the pong (timeout).
+
+```
+"ReplaceExistingConnection": true,
+"WebSocketPingInterval": 60,
+"WebSocketPingTimeout": 60,
+```
+
 
 
 ## Quick run with published release

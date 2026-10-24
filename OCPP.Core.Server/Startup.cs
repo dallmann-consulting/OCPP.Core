@@ -98,9 +98,20 @@ namespace OCPP.Core.Server
             LogSecurityWarnings(logger, dbContext);
 
             // Set WebSocketsOptions
-            var webSocketOptions = new WebSocketOptions() 
+            // Ping/Pong: the server sends a ping every "WebSocketPingInterval" seconds (0 = off)
+            // and aborts the connection if no pong arrives within "WebSocketPingTimeout" seconds (0 = no check)
+            // => dead connections (e.g. after a network failure) are detected
+            int pingInterval = Configuration.GetValue<int>("WebSocketPingInterval", 60);
+            int pingTimeout = Configuration.GetValue<int>("WebSocketPingTimeout", 60);
+            var webSocketOptions = new WebSocketOptions()
             {
+                KeepAliveInterval = (pingInterval > 0) ? TimeSpan.FromSeconds(pingInterval) : TimeSpan.Zero
             };
+            if (pingInterval > 0 && pingTimeout > 0)
+            {
+                webSocketOptions.KeepAliveTimeout = TimeSpan.FromSeconds(pingTimeout);
+            }
+            logger.LogInformation("Startup => WebSocket ping interval={0}s / timeout={1}s", pingInterval, (pingInterval > 0) ? pingTimeout : 0);
 
             // Accept WebSocket
             app.UseWebSockets(webSocketOptions);

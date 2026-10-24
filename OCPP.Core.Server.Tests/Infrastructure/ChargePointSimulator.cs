@@ -52,8 +52,13 @@ namespace OCPP.Core.Server.Tests.Infrastructure
         public ConcurrentQueue<ServerCall> ReceivedCalls { get; } = new ConcurrentQueue<ServerCall>();
 
         /// <summary>
+        /// Return value of <see cref="ServerCallHandler"/>: don't answer the CALL (e.g. dead connection)
+        /// </summary>
+        public static readonly object NoAnswer = new object();
+
+        /// <summary>
         /// Creates the answer payload for a CALL from the server.
-        /// Returning null sends a CALLERROR "NotImplemented".
+        /// Returning null sends a CALLERROR "NotImplemented", returning <see cref="NoAnswer"/> sends nothing.
         /// </summary>
         public Func<ServerCall, object?> ServerCallHandler { get; set; } = call => new { status = "Accepted" };
 
@@ -194,6 +199,7 @@ namespace OCPP.Core.Server.Tests.Infrastructure
                     ServerCall call = new ServerCall(uniqueId, frame[2].Value<string>()!, (JObject)frame[3]);
                     ReceivedCalls.Enqueue(call);
                     object? answer = ServerCallHandler(call);
+                    if (ReferenceEquals(answer, NoAnswer)) break;
                     string response = (answer != null)
                         ? JsonConvert.SerializeObject(new object[] { 3, uniqueId, answer })
                         : JsonConvert.SerializeObject(new object[] { 4, uniqueId, "NotImplemented", "", new { } });
