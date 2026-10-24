@@ -168,4 +168,7 @@
   <data name="VariablesError" xml:space="preserve">
     <value>An error occurred while reading or changing configuration values.</value>
   </data>
+  <data name="ChargerCallError" xml:space="preserve">
+    <value>The charge point rejected the command with an error ({0}).</value>
+  </data>
 </root>

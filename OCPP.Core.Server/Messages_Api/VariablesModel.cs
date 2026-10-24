@@ -38,6 +38,8 @@ namespace OCPP.Core.Server.Messages_Api
         public const string RebootRequired = "RebootRequired";
         public const string Timeout = "Timeout";
         public const string Disconnected = "Disconnected";
+        // the chargepoint answered with a CALLERROR
+        public const string CallError = "CallError";
     }
 
     /// <summary>

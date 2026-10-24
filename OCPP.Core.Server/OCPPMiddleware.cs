@@ -49,11 +49,6 @@ namespace OCPP.Core.Server
         private const string Protocol_OCPP21 = "ocpp2.1";
         private static readonly string[] SupportedProtocols = { Protocol_OCPP16, Protocol_OCPP201, Protocol_OCPP21 };
 
-        // RegExp for splitting ocpp message parts
-        // ^\[\s*(\d)\s*,\s*\"([^"]*)\"\s*,(?:\s*\"(\w*)\"\s*,)?\s*(.*)\s*\]$
-        // Third block is optional, because responses don't have an action
-        private static string MessageRegExp = "^\\[\\s*(\\d+)\\s*,\\s*\"([^\"]+)\"\\s*,\\s*(?:\\s*\"(\\w+)\"\\s*,)?\\s*(\\{[^}]+\\}|\\{[\\s\\S]*?\\})\\s*\\]$";
-
         // Timeout in ms for waiting for responses from charger (for communication scheme server => charger)
         private int TimoutWaitForCharger = 60 * 1000;   // 60 seconds
 
@@ -881,18 +876,19 @@ namespace OCPP.Core.Server
 
         /// <summary>
         /// Sends a request to the chargepoint and waits (asynchronously) for the answer.
-        /// Returns the result of the answer processing in the controller or null (=timeout, disconnect or API caller aborted)
+        /// Returns the result of the answer processing in the controller - or the reason without answer
+        /// (timeout, disconnect, API caller aborted or CALLERROR of the chargepoint)
         /// </summary>
-        private async Task<string> SendRequestAndWait(ChargePointStatus chargePointStatus, string action, object request, ILogger logger, CancellationToken cancellationToken)
+        private async Task<OcppRequestResult> SendRequestAndWait(ChargePointStatus chargePointStatus, string action, object request, ILogger logger, CancellationToken cancellationToken)
         {
             if (chargePointStatus.WebSocket?.State != WebSocketState.Open)
             {
                 logger.LogInformation("OCPPMiddleware => {0}: Chargepoint disconnected (ChargePoint='{1}')", action, chargePointStatus.Id);
-                return null;
+                return OcppRequestResult.FromNoAnswer(ApiVariableStatus.Disconnected);
             }
 
             OCPPMessage msgOut = new OCPPMessage();
-            msgOut.MessageType = "2";
+            msgOut.MessageType = OcppMessageType.Call;
             msgOut.Action = action;
             // OCPP 1.6: short id for firmware that truncates the echoed id
             msgOut.UniqueId = (chargePointStatus.Protocol == Protocol_OCPP21 || chargePointStatus.Protocol == Protocol_OCPP201) ? Guid.NewGuid().ToString("N") : NewShortUniqueId();
@@ -913,7 +909,7 @@ namespace OCPP.Core.Server
                 {
                     // connection closed in the meantime
                     logger.LogInformation("OCPPMiddleware => {0}: Sending failed - chargepoint disconnected (ChargePoint='{1}'): {2}", action, chargePointStatus.Id, exp.Message);
-                    return null;
+                    return OcppRequestResult.FromNoAnswer(ApiVariableStatus.Disconnected);
                 }
 
                 // Wait for asynchronous chargepoint response and processing
@@ -921,12 +917,18 @@ namespace OCPP.Core.Server
                 if (completedTask == msgOut.TaskCompletionSource.Task)
                 {
                     string result = await msgOut.TaskCompletionSource.Task;
-                    if (result == null)
+                    if (result != null)
                     {
-                        // completed by AbortPendingRequests
-                        logger.LogInformation("OCPPMiddleware => {0}: Chargepoint disconnected while waiting for the answer (ChargePoint='{1}')", action, chargePointStatus.Id);
+                        return OcppRequestResult.FromAnswer(result);
                     }
-                    return result;
+                    if (!string.IsNullOrEmpty(msgOut.ErrorCode))
+                    {
+                        // completed by a CALLERROR of the chargepoint
+                        return OcppRequestResult.FromCallError(msgOut.ErrorCode, msgOut.ErrorDescription);
+                    }
+                    // completed by AbortPendingRequests
+                    logger.LogInformation("OCPPMiddleware => {0}: Chargepoint disconnected while waiting for the answer (ChargePoint='{1}')", action, chargePointStatus.Id);
+                    return OcppRequestResult.FromNoAnswer(ApiVariableStatus.Disconnected);
                 }
 
                 if (cancellationToken.IsCancellationRequested)
@@ -937,7 +939,7 @@ namespace OCPP.Core.Server
                 {
                     logger.LogInformation("OCPPMiddleware => {0}: Timeout (ChargePoint='{1}')", action, chargePointStatus.Id);
                 }
-                return null;
+                return OcppRequestResult.FromNoAnswer(NoAnswerStatus(chargePointStatus));
             }
             finally
             {
@@ -955,11 +957,122 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
-        /// API result JSON when the chargepoint didn't answer
+        /// Processes a received OCPP-J frame (same for all OCPP versions):
+        /// requests are processed by the controller and answered, answers are assigned to the pending request.
         /// </summary>
-        private static string NoAnswerResult(ChargePointStatus chargePointStatus)
+        /// <param name="processRequest">Controller: processes a request and returns the answer</param>
+        /// <param name="processAnswer">Controller: processes an answer (incoming message, original request)</param>
+        /// <param name="invalidMessageErrorCode">Error code of the OCPP version for an invalid message</param>
+        private async Task ProcessIncomingMessage(ChargePointStatus chargePointStatus, string ocppMessage, ILogger logger,
+            Func<OCPPMessage, OCPPMessage> processRequest, Action<OCPPMessage, OCPPMessage> processAnswer, string invalidMessageErrorCode)
         {
-            return "{\"status\": " + JsonConvert.ToString(NoAnswerStatus(chargePointStatus)) + "}";
+            if (!OcppFrame.TryParse(ocppMessage, out OCPPMessage msgIn, out string parseError))
+            {
+                logger.LogWarning("OCPPMiddleware => Invalid message from chargepoint '{0}': {1} / Msg: {2}", chargePointStatus.Id, parseError, ocppMessage);
+
+                // Answer requests (or messages with unknown type) with a CALLERROR - not answers of the chargepoint
+                if (msgIn.MessageType != OcppMessageType.CallResult &&
+                    msgIn.MessageType != OcppMessageType.CallError &&
+                    msgIn.MessageType != OcppMessageType.CallResultError)
+                {
+                    OCPPMessage msgError = new OCPPMessage();
+                    msgError.MessageType = OcppMessageType.CallError;
+                    // message ID can't be read => "-1" (OCPP-J)
+                    msgError.UniqueId = string.IsNullOrEmpty(msgIn.UniqueId) ? OcppFrame.UnknownMessageId : msgIn.UniqueId;
+                    msgError.ErrorCode = invalidMessageErrorCode;
+                    msgError.ErrorDescription = parseError;
+                    await SendOcppMessage(msgError, logger, chargePointStatus);
+                }
+                return;
+            }
+
+            logger.LogInformation("OCPPMiddleware => OCPP-Message: Type={0} / ID={1} / Action={2}", msgIn.MessageType, msgIn.UniqueId, msgIn.Action);
+
+            // Send raw incoming messages to extensions
+            _ = Task.Run(() =>
+            {
+                ProcessRawIncomingMessageSinks(chargePointStatus.Protocol, chargePointStatus.Id, msgIn);
+            });
+
+            switch (msgIn.MessageType)
+            {
+                case OcppMessageType.Call:
+                    // Request from chargepoint to OCPP server
+                    OCPPMessage msgOut = processRequest(msgIn);
+                    // Send OCPP message with optional logging/dump
+                    await SendOcppMessage(msgOut, logger, chargePointStatus);
+                    break;
+
+                case OcppMessageType.CallResult:
+                    // Answer from chargepoint => process in controller
+                    if (chargePointStatus.PendingRequests.TryRemove(msgIn.UniqueId, out OCPPMessage msgRequest))
+                    {
+                        processAnswer(msgIn, msgRequest);
+                    }
+                    else
+                    {
+                        logger.LogError("OCPPMiddleware => Request not found (late answer after timeout?) / Msg: {0}", ocppMessage);
+                    }
+                    break;
+
+                case OcppMessageType.CallError:
+                    // Error answer from chargepoint => API caller gets the error immediately
+                    if (chargePointStatus.PendingRequests.TryRemove(msgIn.UniqueId, out OCPPMessage msgFailedRequest))
+                    {
+                        logger.LogWarning("OCPPMiddleware => Chargepoint '{0}' answered '{1}' with CALLERROR: {2} / {3}", chargePointStatus.Id, msgFailedRequest.Action, msgIn.ErrorCode, msgIn.ErrorDescription);
+                        msgFailedRequest.ErrorCode = msgIn.ErrorCode;
+                        msgFailedRequest.ErrorDescription = msgIn.ErrorDescription;
+                        msgFailedRequest.TaskCompletionSource?.TrySetResult(null);
+                    }
+                    else
+                    {
+                        logger.LogError("OCPPMiddleware => Request not found for CALLERROR (late answer after timeout?) / Msg: {0}", ocppMessage);
+                    }
+                    break;
+
+                case OcppMessageType.CallResultError:
+                    // (OCPP 2.1) the chargepoint couldn't process an answer of the server
+                    logger.LogWarning("OCPPMiddleware => Chargepoint '{0}' couldn't process an answer (CALLRESULTERROR): {1} / {2} / Msg: {3}", chargePointStatus.Id, msgIn.ErrorCode, msgIn.ErrorDescription, ocppMessage);
+                    break;
+
+                case OcppMessageType.Send:
+                    // (OCPP 2.1) unconfirmed message without response - not supported yet
+                    logger.LogInformation("OCPPMiddleware => SEND message '{0}' from chargepoint '{1}' ignored", msgIn.Action, chargePointStatus.Id);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Sends an OCPP message (frame with correct JSON escaping, optional dump, extensions)
+        /// </summary>
+        private async Task SendOcppFrame(OCPPMessage msg, ILogger logger, ChargePointStatus chargePointStatus, string dumpName)
+        {
+            // Send raw outgoing messages to extensions
+            _ = Task.Run(() =>
+            {
+                ProcessRawOutgoingMessageSinks(chargePointStatus.Protocol, chargePointStatus.Id, msg);
+            });
+
+            string ocppTextMessage = OcppFrame.Serialize(msg);
+            logger.LogTrace("OCPPMiddleware => SendOcppMessage: {0}", ocppTextMessage);
+
+            // write message (async) to dump directory
+            _ = Task.Run(() =>
+            {
+                DumpMessage(dumpName, ocppTextMessage);
+            });
+
+            byte[] binaryMessage = UTF8Encoding.UTF8.GetBytes(ocppTextMessage);
+            // only one send operation at a time on the WebSocket
+            await chargePointStatus.SendLock.WaitAsync();
+            try
+            {
+                await chargePointStatus.WebSocket.SendAsync(new ArraySegment<byte>(binaryMessage, 0, binaryMessage.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+            finally
+            {
+                chargePointStatus.SendLock.Release();
+            }
         }
 
         /// <summary>

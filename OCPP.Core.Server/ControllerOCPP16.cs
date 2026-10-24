@@ -55,7 +55,7 @@ namespace OCPP.Core.Server
         public OCPPMessage ProcessRequest(OCPPMessage msgIn, OCPPMiddleware ocppMiddleware)
         {
             OCPPMessage msgOut = new OCPPMessage();
-            msgOut.MessageType = "3";
+            msgOut.MessageType = OcppMessageType.CallResult;
             msgOut.UniqueId = msgIn.UniqueId;
 
             string errorCode = null;
@@ -94,8 +94,8 @@ namespace OCPP.Core.Server
 
             if (!string.IsNullOrEmpty(errorCode))
             {
-                // Inavlid message type => return type "4" (CALLERROR)
-                msgOut.MessageType = "4";
+                // Error => answer with CALLERROR
+                msgOut.MessageType = OcppMessageType.CallError;
                 msgOut.ErrorCode = errorCode;
                 Logger.LogDebug("ControllerOCPP16 => Return error code messge: ErrorCode={0}", errorCode);
             }

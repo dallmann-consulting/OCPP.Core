@@ -267,4 +267,10 @@
   <data name="ReportNotSupported" xml:space="preserve">
     <value>Die Ladestation unterstützt diesen Umfang nicht.</value>
   </data>
+  <data name="StatusCallError" xml:space="preserve">
+    <value>Die Ladestation hat mit einem Fehler geantwortet</value>
+  </data>
+  <data name="ReportCallError" xml:space="preserve">
+    <value>Die Ladestation hat mit einem Fehler geantwortet</value>
+  </data>
 </root>

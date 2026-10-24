@@ -106,6 +106,13 @@ namespace OCPP.Core.Management.Controllers
                                                     case "Timeout":
                                                         resultContent = _localizer["Timeout"];
                                                         break;
+                                                    case "Disconnected":
+                                                        resultContent = _localizer["ChargerOffline"];
+                                                        break;
+                                                    case "CallError":
+                                                        // the charge point answered the command with an error (CALLERROR) - error code is HTML encoded (text from the charge point, shown as HTML)
+                                                        resultContent = string.Format(_localizer["ChargerCallError"], System.Net.WebUtility.HtmlEncode((string)jsonObject.errorCode));
+                                                        break;
                                                     default:
                                                         resultContent = string.Format(_localizer["UnknownStatus"], status);
                                                         break;

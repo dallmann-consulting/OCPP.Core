@@ -73,5 +73,10 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// Any other error not covered by the previous ones
         /// </summary>
         public static string GenericError = "GenericError";
+
+        /// <summary>
+        /// Content of the call is not a valid RPC request, e.g. the message ID could not be read
+        /// </summary>
+        public static string RpcFrameworkError = "RpcFrameworkError";
     }
 }

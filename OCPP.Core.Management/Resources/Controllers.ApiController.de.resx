@@ -168,4 +168,7 @@
   <data name="VariablesError" xml:space="preserve">
     <value>Beim Abfragen oder Ändern von Konfigurationswerten ist ein Fehler aufgetreten.</value>
   </data>
+  <data name="ChargerCallError" xml:space="preserve">
+    <value>Die Ladestation hat den Befehl mit einem Fehler abgelehnt ({0}).</value>
+  </data>
 </root>

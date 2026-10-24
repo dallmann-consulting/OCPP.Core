@@ -267,4 +267,10 @@
   <data name="ReportNotSupported" xml:space="preserve">
     <value>The charge point doesn't support this scope.</value>
   </data>
+  <data name="StatusCallError" xml:space="preserve">
+    <value>The charge point answered with an error</value>
+  </data>
+  <data name="ReportCallError" xml:space="preserve">
+    <value>The charge point answered with an error</value>
+  </data>
 </root>
