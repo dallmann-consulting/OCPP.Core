@@ -110,7 +110,7 @@ namespace OCPP.Core.Server
             catch (Exception exp)
             {
                 Logger.LogError(exp, "StatusNotification => ChargePoint={0} / Exception: {1}", ChargePointStatus.Id, exp.Message);
-                errorCode = ErrorCodes.InternalError;
+                errorCode = IsMessageFormatError(exp) ? ErrorCodes.FormationViolation : ErrorCodes.InternalError;
             }
 
             return errorCode;

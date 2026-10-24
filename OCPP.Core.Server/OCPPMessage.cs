@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2024 dallmann consulting GmbH.
+ * Copyright (C) 2020-2026 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -58,6 +58,12 @@ namespace OCPP.Core.Server
         /// Error-Description
         /// </summary>
         public string ErrorDescription { get; set; }
+
+        /// <summary>
+        /// Request of the server: the answer of the chargepoint couldn't be processed (e.g. invalid content)
+        /// </summary>
+        [JsonIgnore]
+        public bool AnswerInvalid { get; set; }
 
         /// <summary>
         /// TaskCompletionSource for asynchronous API result

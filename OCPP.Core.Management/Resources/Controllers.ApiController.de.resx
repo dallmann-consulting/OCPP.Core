@@ -171,4 +171,7 @@
   <data name="ChargerCallError" xml:space="preserve">
     <value>Die Ladestation hat den Befehl mit einem Fehler abgelehnt ({0}).</value>
   </data>
+  <data name="ChargerInvalidAnswer" xml:space="preserve">
+    <value>Die Antwort der Ladestation konnte nicht verarbeitet werden.</value>
+  </data>
 </root>

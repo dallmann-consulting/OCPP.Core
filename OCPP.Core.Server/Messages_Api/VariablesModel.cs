@@ -40,6 +40,8 @@ namespace OCPP.Core.Server.Messages_Api
         public const string Disconnected = "Disconnected";
         // the chargepoint answered with a CALLERROR
         public const string CallError = "CallError";
+        // the answer of the chargepoint couldn't be processed (e.g. invalid content)
+        public const string InvalidAnswer = "InvalidAnswer";
     }
 
     /// <summary>

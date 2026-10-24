@@ -139,7 +139,7 @@ namespace OCPP.Core.Server
             catch (Exception exp)
             {
                 Logger.LogError(exp, "StopTransaction => Exception: {0}", exp.Message);
-                errorCode = ErrorCodes.FormationViolation;
+                errorCode = IsMessageFormatError(exp) ? ErrorCodes.FormationViolation : ErrorCodes.InternalError;
             }
 
             WriteMessageLog(ChargePointStatus?.Id, null, msgIn.Action, stopTransactionResponse.IdTagInfo?.Status.ToString(), errorCode);

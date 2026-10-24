@@ -119,7 +119,7 @@ namespace OCPP.Core.Server
             catch (Exception exp)
             {
                 Logger.LogError(exp, "Authorize => Exception: {0}", exp.Message);
-                errorCode = ErrorCodes.FormationViolation;
+                errorCode = IsMessageFormatError(exp) ? ErrorCodes.FormatViolation : ErrorCodes.InternalError;
             }
 
             WriteMessageLog(ChargePointStatus?.Id, null, msgIn.Action, $"'{idTag}'=>{authorizeResponse.IdTokenInfo?.Status}", errorCode);

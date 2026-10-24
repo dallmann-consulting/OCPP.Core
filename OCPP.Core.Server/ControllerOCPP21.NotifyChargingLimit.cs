@@ -92,7 +92,7 @@ namespace OCPP.Core.Server
             catch (Exception exp)
             {
                 Logger.LogError(exp, "NotifyChargingLimit => Exception: {0}", exp.Message);
-                errorCode = ErrorCodes.InternalError;
+                errorCode = IsMessageFormatError(exp) ? ErrorCodes.FormatViolation : ErrorCodes.InternalError;
             }
 
             WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, source, errorCode);

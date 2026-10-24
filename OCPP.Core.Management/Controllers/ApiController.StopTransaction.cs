@@ -67,7 +67,8 @@ namespace OCPP.Core.Management.Controllers
                                     }
                                     Uri uri = new Uri(serverApiUrl);
                                     uri = new Uri(uri, $"StopTransaction/{Uri.EscapeDataString(Id)}/{connectorId}");
-                                    httpClient.Timeout = new TimeSpan(0, 0, 15); // use short timeout
+                                    // the OCPP server waits up to 60 s for the answer of the charge point => wait a little longer
+                                    httpClient.Timeout = new TimeSpan(0, 0, 70);
 
                                     // API-Key authentication?
                                     if (!string.IsNullOrWhiteSpace(apiKeyConfig))
@@ -103,6 +104,9 @@ namespace OCPP.Core.Management.Controllers
                                                         break;
                                                     case "Disconnected":
                                                         resultContent = _localizer["ChargerOffline"];
+                                                        break;
+                                                    case "InvalidAnswer":
+                                                        resultContent = _localizer["ChargerInvalidAnswer"];
                                                         break;
                                                     case "CallError":
                                                         // the charge point answered the command with an error (CALLERROR) - error code is HTML encoded (text from the charge point, shown as HTML)

@@ -109,7 +109,7 @@ namespace OCPP.Core.Server
             catch (Exception exp)
             {
                 Logger.LogError(exp, "StartTransaction => Exception: {0}", exp.Message);
-                errorCode = ErrorCodes.FormationViolation;
+                errorCode = IsMessageFormatError(exp) ? ErrorCodes.FormationViolation : ErrorCodes.InternalError;
             }
 
             WriteMessageLog(ChargePointStatus?.Id, connectorId, msgIn.Action, startTransactionResponse.IdTagInfo?.Status.ToString(), errorCode);

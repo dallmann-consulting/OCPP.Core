@@ -926,6 +926,11 @@ namespace OCPP.Core.Server
                         // completed by a CALLERROR of the chargepoint
                         return OcppRequestResult.FromCallError(msgOut.ErrorCode, msgOut.ErrorDescription);
                     }
+                    if (msgOut.AnswerInvalid)
+                    {
+                        // answer of the chargepoint couldn't be processed
+                        return OcppRequestResult.FromNoAnswer(ApiVariableStatus.InvalidAnswer);
+                    }
                     // completed by AbortPendingRequests
                     logger.LogInformation("OCPPMiddleware => {0}: Chargepoint disconnected while waiting for the answer (ChargePoint='{1}')", action, chargePointStatus.Id);
                     return OcppRequestResult.FromNoAnswer(ApiVariableStatus.Disconnected);
@@ -1008,6 +1013,15 @@ namespace OCPP.Core.Server
                     if (chargePointStatus.PendingRequests.TryRemove(msgIn.UniqueId, out OCPPMessage msgRequest))
                     {
                         processAnswer(msgIn, msgRequest);
+
+                        // The controller sets the API result when the answer was processed successfully.
+                        // Not set (e.g. invalid content of the answer) => the API caller gets an error immediately (instead of a timeout)
+                        if (msgRequest.TaskCompletionSource != null && !msgRequest.TaskCompletionSource.Task.IsCompleted)
+                        {
+                            logger.LogWarning("OCPPMiddleware => Answer of chargepoint '{0}' to '{1}' couldn't be processed / Msg: {2}", chargePointStatus.Id, msgRequest.Action, ocppMessage);
+                            msgRequest.AnswerInvalid = true;
+                            msgRequest.TaskCompletionSource.TrySetResult(null);
+                        }
                     }
                     else
                     {

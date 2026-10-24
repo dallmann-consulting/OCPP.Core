@@ -273,4 +273,10 @@
   <data name="ReportCallError" xml:space="preserve">
     <value>The charge point answered with an error</value>
   </data>
+  <data name="StatusInvalidAnswer" xml:space="preserve">
+    <value>The answer of the charge point could not be processed</value>
+  </data>
+  <data name="ReportInvalidAnswer" xml:space="preserve">
+    <value>The answer of the charge point could not be processed</value>
+  </data>
 </root>

@@ -171,4 +171,7 @@
   <data name="ChargerCallError" xml:space="preserve">
     <value>The charge point rejected the command with an error ({0}).</value>
   </data>
+  <data name="ChargerInvalidAnswer" xml:space="preserve">
+    <value>The answer of the charge point could not be processed.</value>
+  </data>
 </root>

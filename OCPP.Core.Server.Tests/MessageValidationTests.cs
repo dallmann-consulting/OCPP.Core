@@ -16,6 +16,11 @@ namespace OCPP.Core.Server.Tests
             _factory = factory;
         }
 
+        /// <summary>
+        /// Error code for an invalid message: OCPP 1.6 "FormationViolation", OCPP 2.x "FormatViolation"
+        /// </summary>
+        private static string FormatErrorCode(string protocol) => (protocol == OcppProtocols.Ocpp16) ? "FormationViolation" : "FormatViolation";
+
         private static object AuthorizePayload(string protocol, object idTag) => (protocol == OcppProtocols.Ocpp16)
             ? new { idTag }
             : new { idToken = new { idToken = idTag, type = "ISO14443" } };
@@ -61,7 +66,7 @@ namespace OCPP.Core.Server.Tests
                 : await cp.CallAsync("Authorize", new { idToken = new { idToken = "VALIDTAG", type = "ISO14443" }, foo = 1 });
 
             Assert.True(result.IsError);
-            Assert.Equal("FormationViolation", result.ErrorCode);
+            Assert.Equal(FormatErrorCode(protocol), result.ErrorCode);
         }
 
         [Theory]
@@ -74,7 +79,7 @@ namespace OCPP.Core.Server.Tests
             OcppResult result = await cp.CallAsync("Authorize", AuthorizePayload(protocol, 12345));
 
             Assert.True(result.IsError);
-            Assert.Equal("FormationViolation", result.ErrorCode);
+            Assert.Equal(FormatErrorCode(protocol), result.ErrorCode);
         }
 
         [Theory]
@@ -87,7 +92,7 @@ namespace OCPP.Core.Server.Tests
             OcppResult result = await cp.CallAsync("Authorize", AuthorizePayload(protocol, new string('A', 300)));
 
             Assert.True(result.IsError);
-            Assert.Equal("FormationViolation", result.ErrorCode);
+            Assert.Equal(FormatErrorCode(protocol), result.ErrorCode);
         }
 
         /// <summary>
@@ -101,7 +106,7 @@ namespace OCPP.Core.Server.Tests
             OcppResult result = await cp.CallAsync("Authorize", new { idToken = new { idToken = "VALIDTAG", type = "Sleeping" } });
 
             Assert.True(result.IsError);
-            Assert.Equal("FormationViolation", result.ErrorCode);
+            Assert.Equal("FormatViolation", result.ErrorCode);
         }
 
         [Theory]
@@ -113,7 +118,7 @@ namespace OCPP.Core.Server.Tests
             OcppResult result = await cp.CallAsync("Authorize", new { });
 
             Assert.True(result.IsError);
-            Assert.Equal("FormationViolation", result.ErrorCode);
+            Assert.Equal(FormatErrorCode(protocol), result.ErrorCode);
         }
 
         [Theory]

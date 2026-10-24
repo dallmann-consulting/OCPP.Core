@@ -239,3 +239,4 @@ If the charger answers the request with an error (OCPP CALLERROR), the API calle
 the response {"status"="CallError", "errorCode"="...", "errorDescription"="..."} with the error code and
 description of the charger (e.g. "NotImplemented" if the charger doesn't support the command).
 GetVariables/SetVariables return the status "CallError" for the affected variables (error code and description in `statusInfo`).
+If the answer of the charger can't be processed (e.g. invalid content), the API caller immediately gets {"status"="InvalidAnswer"}.

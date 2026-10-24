@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2026 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -25,34 +25,44 @@ using System.Threading.Tasks;
 namespace OCPP.Core.Server.Messages_OCPP20
 {
     /// <summary>
-    /// Defined OCPP error codes
+    /// Defined OCPP-J error codes (OCPP-J 2.0.1/2.1 part 4 "RPC Framework Error Codes")
     /// </summary>
     public class ErrorCodes
     {
+        /// <summary>
+        /// Payload for Action is syntactically incorrect
+        /// </summary>
+        public static string FormatViolation = "FormatViolation";
+
+        /// <summary>
+        /// Any other error not covered by the more specific error codes
+        /// </summary>
+        public static string GenericError = "GenericError";
+
+        /// <summary>
+        /// An internal error occurred and the receiver was not able to process the requested Action successfully
+        /// </summary>
+        public static string InternalError = "InternalError";
+
+        /// <summary>
+        /// A message with a Message Type Number received that is not supported by this implementation
+        /// </summary>
+        public static string MessageTypeNotSupported = "MessageTypeNotSupported";
+
+        /// <summary>
+        /// Requested Action is not known by receiver
+        /// </summary>
+        public static string NotImplemented = "NotImplemented";
+
         /// <summary>
         /// Requested Action is recognized but not supported by the receiver
         /// </summary>
         public static string NotSupported = "NotSupported";
 
         /// <summary>
-        /// InternalError An internal error occurred and the receiver was not able to process the requested Action successfully
+        /// Payload for Action is syntactically correct but at least one of the fields violates occurrence constraints
         /// </summary>
-        public static string InternalError = "InternalError";
-
-        /// <summary>
-        /// Payload for Action is incomplete
-        /// </summary>
-        public static string ProtocolError = "ProtocolError";
-
-        /// <summary>
-        /// During the processing of Action a security issue occurred preventing receiver from completing the Action successfully
-        /// </summary>
-        public static string SecurityError = "SecurityError";
-
-        /// <summary>
-        /// Payload for Action is syntactically incorrect or not conform the PDU structure for Action
-        /// </summary>
-        public static string FormationViolation = "FormationViolation";
+        public static string OccurrenceConstraintViolation = "OccurrenceConstraintViolation";
 
         /// <summary>
         /// Payload is syntactically correct but at least one field contains an invalid value
@@ -60,23 +70,23 @@ namespace OCPP.Core.Server.Messages_OCPP20
         public static string PropertyConstraintViolation = "PropertyConstraintViolation";
 
         /// <summary>
-        /// Payload for Action is syntactically correct but at least one of the fields violates occurence constraints
+        /// Payload for Action is not conform the PDU structure
         /// </summary>
-        public static string OccurenceConstraintViolation = "OccurenceConstraintViolation";
-
-        /// <summary>
-        ///  Payload for Action is syntactically correct but at least one of the fields violates data type constraints(e.g. “somestring”: 12)
-        /// </summary>
-        public static string TypeConstraintViolation = "TypeConstraintViolation";
-
-        /// <summary>
-        /// Any other error not covered by the previous ones
-        /// </summary>
-        public static string GenericError = "GenericError";
+        public static string ProtocolError = "ProtocolError";
 
         /// <summary>
         /// Content of the call is not a valid RPC request, e.g. the message ID could not be read
         /// </summary>
         public static string RpcFrameworkError = "RpcFrameworkError";
+
+        /// <summary>
+        /// During the processing of Action a security issue occurred preventing receiver from completing the Action successfully
+        /// </summary>
+        public static string SecurityError = "SecurityError";
+
+        /// <summary>
+        /// Payload for Action is syntactically correct but at least one of the fields violates data type constraints (e.g. "somestring": 12)
+        /// </summary>
+        public static string TypeConstraintViolation = "TypeConstraintViolation";
     }
 }

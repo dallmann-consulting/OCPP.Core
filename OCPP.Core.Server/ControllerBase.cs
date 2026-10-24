@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2026 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -114,6 +114,16 @@ namespace OCPP.Core.Server
             using JsonTextReader reader = new JsonTextReader(new StringReader(msg.JsonPayload));
             JsonSerializer serializer = new JsonSerializer();
             return serializer.Deserialize<T>(reader);
+        }
+
+        /// <summary>
+        /// True if an exception while processing a request was caused by an invalid message
+        /// (schema validation or deserialization) => answer with the format error code of the OCPP version,
+        /// otherwise with "InternalError"
+        /// </summary>
+        protected static bool IsMessageFormatError(Exception exp)
+        {
+            return exp is FormatException || exp is JsonException;
         }
 
         /// <summary>

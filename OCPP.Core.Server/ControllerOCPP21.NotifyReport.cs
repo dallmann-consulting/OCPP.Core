@@ -61,7 +61,7 @@ namespace OCPP.Core.Server
             catch (Exception exp)
             {
                 Logger.LogError(exp, "NotifyReport => Exception: {0}", exp.Message);
-                errorCode = ErrorCodes.InternalError;
+                errorCode = IsMessageFormatError(exp) ? ErrorCodes.FormatViolation : ErrorCodes.InternalError;
             }
 
             WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, result, errorCode);
