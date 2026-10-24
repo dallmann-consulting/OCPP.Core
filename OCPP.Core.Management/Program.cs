@@ -63,6 +63,15 @@ namespace OCPP.Core.Management
                 logger.LogInformation("Created role '{Role}'", Constants.AdminRoleName);
             }
 
+            // Lockout must be possible for every account: an account that is never locked would be distinguishable
+            // from other (and unknown) user names
+            var usersWithoutLockout = await userManager.Users.Where(u => !u.LockoutEnabled).ToListAsync();
+            foreach (var user in usersWithoutLockout)
+            {
+                await userManager.SetLockoutEnabledAsync(user, true);
+                logger.LogInformation("Enabled login lockout for user '{Username}'", user.UserName);
+            }
+
             // If no users exist yet, try to migrate from configuration / environment variables
             if (!await userManager.Users.AnyAsync())
             {

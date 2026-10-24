@@ -138,4 +138,10 @@
   <data name="TransactionTagNotPermitted" xml:space="preserve">
     <value>{0} (nicht berechtigt)</value>
   </data>
+  <data name="LoginInvalid" xml:space="preserve">
+    <value>Ungültige Anmeldung</value>
+  </data>
+  <data name="LoginLockedOut" xml:space="preserve">
+    <value>Zu viele fehlgeschlagene Anmeldeversuche. Bitte in {0} Minute(n) erneut versuchen.</value>
+  </data>
 </root>

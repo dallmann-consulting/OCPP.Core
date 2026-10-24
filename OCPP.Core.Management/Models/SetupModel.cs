@@ -27,7 +27,7 @@ namespace OCPP.Core.Management.Models
         public string Username { get; set; }
 
         [Required(ErrorMessage = "FieldRequired")]
-        [MinLength(4, ErrorMessage = "FieldMinLength")]
+        [MinLength(8, ErrorMessage = "FieldMinLength")]
         public string Password { get; set; }
 
         [Required(ErrorMessage = "FieldRequired")]

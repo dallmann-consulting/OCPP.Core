@@ -32,6 +32,11 @@ namespace OCPP.Core.Management.Models
         public string Id { get; set; }
         public string Username { get; set; }
         public bool IsAdmin { get; set; }
+
+        /// <summary>
+        /// End of a temporary lockout (too many failed logins) or null if not locked
+        /// </summary>
+        public System.DateTimeOffset? LockoutEnd { get; set; }
     }
 
     public class CreateUserModel
@@ -40,7 +45,7 @@ namespace OCPP.Core.Management.Models
         public string Username { get; set; }
 
         [Required(ErrorMessage = "FieldRequired")]
-        [MinLength(4, ErrorMessage = "FieldMinLength")]
+        [MinLength(8, ErrorMessage = "FieldMinLength")]
         public string Password { get; set; }
 
         [Required(ErrorMessage = "FieldRequired")]
@@ -56,7 +61,7 @@ namespace OCPP.Core.Management.Models
         public string Username { get; set; }
         public bool IsAdmin { get; set; }
 
-        [MinLength(4, ErrorMessage = "FieldMinLength")]
+        [MinLength(8, ErrorMessage = "FieldMinLength")]
         public string NewPassword { get; set; }
 
         [Compare(nameof(NewPassword), ErrorMessage = "PasswordMismatch")]

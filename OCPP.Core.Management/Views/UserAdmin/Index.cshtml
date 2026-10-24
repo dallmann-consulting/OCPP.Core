@@ -51,8 +51,20 @@
                     {
                         <span class="badge badge-secondary">@Localizer["RoleUser"]</span>
                     }
+                    @if (user.LockoutEnd.HasValue)
+                    {
+                        <span class="badge badge-danger"><i class="fas fa-lock"></i> @string.Format(Localizer["LockedUntil"].Value, user.LockoutEnd.Value.ToLocalTime().ToString("t"))</span>
+                    }
                 </td>
                 <td class="text-right">
+                    @if (user.LockoutEnd.HasValue)
+                    {
+                        <form asp-controller="UserAdmin" asp-action="Unlock" asp-route-id="@user.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-unlock"></i> @Localizer["Unlock"]
+                            </button>
+                        </form>
+                    }
                     <a asp-controller="UserAdmin" asp-action="Edit" asp-route-id="@user.Id"
                        class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-edit"></i> @Localizer["Edit"]

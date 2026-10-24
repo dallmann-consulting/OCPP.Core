@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
@@ -32,17 +33,20 @@ namespace OCPP.Core.Management.Controllers
     public class AccountController : BaseController
     {
         private readonly UserManager<IdentityUser> _identityUserManager;
+        private readonly IStringLocalizer<SharedResource> _sharedLocalizer;
 
         public AccountController(
             IUserManager userManager,
             ILoggerFactory loggerFactory,
             IConfiguration config,
             OCPPCoreContext dbContext,
-            UserManager<IdentityUser> identityUserManager)
+            UserManager<IdentityUser> identityUserManager,
+            IStringLocalizer<SharedResource> sharedLocalizer)
             : base(userManager, loggerFactory, config, dbContext)
         {
             Logger = loggerFactory.CreateLogger<AccountController>();
             _identityUserManager = identityUserManager;
+            _sharedLocalizer = sharedLocalizer;
         }
 
         [HttpGet]
@@ -61,11 +65,15 @@ namespace OCPP.Core.Management.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                bool success = await UserManager.SignIn(this.HttpContext, userModel, false);
-                if (success)
+                // persistent login cookie (as before)
+                LoginResult result = await UserManager.SignIn(this.HttpContext, userModel, true);
+                if (result.Succeeded)
                     return RedirectToLocal(returnUrl);
 
-                ModelState.AddModelError(string.Empty, "Invalid login attempt");
+                // temporary lockout after too many failed attempts (also for unknown user names => same message)
+                ModelState.AddModelError(string.Empty, result.IsLockedOut
+                    ? string.Format(_sharedLocalizer["LoginLockedOut"], result.LockoutMinutes)
+                    : _sharedLocalizer["LoginInvalid"]);
             }
             return View(userModel);
         }

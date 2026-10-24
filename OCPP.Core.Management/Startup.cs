@@ -50,7 +50,12 @@ namespace OCPP.Core.Management
                 options.Password.RequireLowercase = false;
                 options.Password.RequireUppercase = false;
                 options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequiredLength = 4;
+                options.Password.RequiredLength = 8;
+
+                // Temporary lockout after too many failed logins (0 attempts = no lockout)
+                options.Lockout.MaxFailedAccessAttempts = Configuration.GetValue<int>("LoginMaxFailedAttempts", 5);
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(Math.Max(1, Configuration.GetValue<int>("LoginLockoutMinutes", 5)));
+                options.Lockout.AllowedForNewUsers = true;
                 options.User.AllowedUserNameCharacters =
                     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+ ";
             })
@@ -79,6 +84,7 @@ namespace OCPP.Core.Management
                 });
 
             services.AddScoped<IUserManager, UserManager>();
+            services.AddSingleton<UnknownLoginTracker>();
             services.AddDistributedMemoryCache();
         }
 

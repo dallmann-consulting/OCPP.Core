@@ -153,4 +153,10 @@
   <data name="DeleteTitle" xml:space="preserve">
     <value>Benutzer löschen</value>
   </data>
+  <data name="LockedUntil" xml:space="preserve">
+    <value>Gesperrt bis {0}</value>
+  </data>
+  <data name="Unlock" xml:space="preserve">
+    <value>Entsperren</value>
+  </data>
 </root>

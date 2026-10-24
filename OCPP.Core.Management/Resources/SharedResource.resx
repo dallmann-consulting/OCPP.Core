@@ -138,4 +138,10 @@
   <data name="TransactionTagNotPermitted" xml:space="preserve">
     <value>{0} (not permitted)</value>
   </data>
+  <data name="LoginInvalid" xml:space="preserve">
+    <value>Invalid login attempt</value>
+  </data>
+  <data name="LoginLockedOut" xml:space="preserve">
+    <value>Too many failed login attempts. Please try again in {0} minute(s).</value>
+  </data>
 </root>

@@ -62,7 +62,9 @@ namespace OCPP.Core.Management.Controllers
                 {
                     Id = u.Id,
                     Username = u.UserName,
-                    IsAdmin = await _identityUserManager.IsInRoleAsync(u, Constants.AdminRoleName)
+                    IsAdmin = await _identityUserManager.IsInRoleAsync(u, Constants.AdminRoleName),
+                    // only current lockouts (an expired lockout end remains in the database)
+                    LockoutEnd = (u.LockoutEnd.HasValue && u.LockoutEnd.Value > System.DateTimeOffset.UtcNow) ? u.LockoutEnd : null
                 });
             }
             return View(model);
@@ -143,6 +145,24 @@ namespace OCPP.Core.Management.Controllers
 
             Logger.LogInformation("Admin '{Admin}' edited user '{Username}'",
                 User.Identity.Name, user.UserName);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST /UserAdmin/Unlock/id
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Unlock(string id)
+        {
+            var user = await _identityUserManager.FindByIdAsync(id);
+            if (user != null)
+            {
+                // end the temporary lockout immediately and reset the counter of failed logins
+                await _identityUserManager.SetLockoutEndDateAsync(user, null);
+                await _identityUserManager.ResetAccessFailedCountAsync(user);
+                Logger.LogInformation("Admin '{Admin}' unlocked user '{Username}'",
+                    User.Identity.Name, user.UserName);
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

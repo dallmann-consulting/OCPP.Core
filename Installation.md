@@ -64,6 +64,15 @@ The OCPP server and its REST-API run on the same port. The API can unlock connec
 "RequireChargePointAuthentication": false,
 ```
 
+### Management-UI login
+- **Lockout:** After `LoginMaxFailedAttempts` failed logins (default 5) the login is locked for `LoginLockoutMinutes` (default 5). The lockout is temporary and ends automatically; an administrator can also unlock an account immediately in the user administration. Unknown user names behave exactly the same (same messages, same lockout, same response time), so user names can't be found out systematically. `"LoginMaxFailedAttempts": 0` deactivates the lockout.
+- **Passwords** need at least 8 characters (existing passwords remain valid).
+
+```
+"LoginMaxFailedAttempts": 5,
+"LoginLockoutMinutes": 5,
+```
+
 ## Connections
 After a network failure the server may still consider the old connection of a chargepoint as open. Two settings handle this:
 
