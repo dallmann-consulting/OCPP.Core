@@ -80,6 +80,11 @@ namespace OCPP.Core.Server
                                     DumpMessage("ocpp21-in", ocppMessage);
                                 });
 
+                                // The DbContext lives as long as the connection => forget tracked entities before every message:
+                                // changes in the database (e.g. tag blocked in the management UI) are effective immediately
+                                // and the tracked entities don't grow during the connection
+                                dbContext.ChangeTracker.Clear();
+
                                 Match match = Regex.Match(ocppMessage, MessageRegExp);
                                 if (match != null && match.Groups != null && match.Groups.Count >= 3)
                                 {
