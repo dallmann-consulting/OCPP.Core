@@ -1,6 +1,6 @@
 ﻿/*
  * OCPP.Core - https://github.com/dallmann-consulting/OCPP.Core
- * Copyright (C) 2020-2021 dallmann consulting GmbH.
+ * Copyright (C) 2020-2026 dallmann consulting GmbH.
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -45,8 +45,22 @@ namespace OCPP.Core.Server
                 Logger.LogTrace("StartTransaction => Message deserialized");
 
                 string idTag = CleanChargeTagId(startTransactionRequest.IdTag, Logger);
+                DateTime startTime = startTransactionRequest.Timestamp.UtcDateTime;
+                double meterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh
 
-                startTransactionResponse.IdTagInfo = InternalAuthorize(idTag, ocppMiddleware, startTransactionRequest.ConnectorId, AuthAction.StartTransaction, string.Empty, string.Empty, denyConcurrentTx);
+                // Repeated message (e.g. the response got lost)? => identical connector, start time, meter and tag
+                // (two real transactions never have the same start time and meter)
+                Transaction existingTransaction = DbContext.Transactions
+                    .Where(t => t.ChargePointId == ChargePointStatus.Id &&
+                                t.ConnectorId == startTransactionRequest.ConnectorId &&
+                                t.StartTime == startTime &&
+                                t.MeterStart == meterStart &&
+                                t.StartTagId == idTag)
+                    .OrderByDescending(t => t.TransactionId)
+                    .FirstOrDefault();
+
+                // for a repeated message no check for concurrent transactions (the first message has created the open transaction)
+                startTransactionResponse.IdTagInfo = InternalAuthorize(idTag, ocppMiddleware, startTransactionRequest.ConnectorId, AuthAction.StartTransaction, string.Empty, string.Empty, denyConcurrentTx && existingTransaction == null);
 
                 if (connectorId > 0)
                 {
@@ -59,20 +73,29 @@ namespace OCPP.Core.Server
                 // => always record it. The authorization result is stored in "StartResult" and returned to the charge point.
                 try
                 {
-                    CloseSupersededTransactions(startTransactionRequest.ConnectorId, startTransactionRequest.Timestamp.UtcDateTime, (double)startTransactionRequest.MeterStart / 1000);
+                    if (existingTransaction != null)
+                    {
+                        // repeated message => return the transaction ID again (the charge point uses it in StopTransaction)
+                        Logger.LogInformation("StartTransaction => Repeated message for transaction {0} => no new transaction", existingTransaction.TransactionId);
+                        startTransactionResponse.TransactionId = existingTransaction.TransactionId;
+                    }
+                    else
+                    {
+                        CloseSupersededTransactions(startTransactionRequest.ConnectorId, startTime, meterStart);
 
-                    Transaction transaction = new Transaction();
-                    transaction.ChargePointId = ChargePointStatus?.Id;
-                    transaction.ConnectorId = startTransactionRequest.ConnectorId;
-                    transaction.StartTagId = idTag;
-                    transaction.StartTime = startTransactionRequest.Timestamp.UtcDateTime;
-                    transaction.MeterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh
-                    transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();
-                    DbContext.Add<Transaction>(transaction);
-                    DbContext.SaveChanges();
+                        Transaction transaction = new Transaction();
+                        transaction.ChargePointId = ChargePointStatus?.Id;
+                        transaction.ConnectorId = startTransactionRequest.ConnectorId;
+                        transaction.StartTagId = idTag;
+                        transaction.StartTime = startTime;
+                        transaction.MeterStart = meterStart;
+                        transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();
+                        DbContext.Add<Transaction>(transaction);
+                        DbContext.SaveChanges();
 
-                    // Return DB-ID as transaction ID
-                    startTransactionResponse.TransactionId = transaction.TransactionId;
+                        // Return DB-ID as transaction ID
+                        startTransactionResponse.TransactionId = transaction.TransactionId;
+                    }
                 }
                 catch (Exception exp)
                 {
