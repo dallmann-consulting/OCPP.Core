@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -70,7 +71,8 @@ namespace OCPP.Core.Management
                 options.SlidingExpiration = true;
             });
 
-            services.AddControllersWithViews();
+            // CSRF protection: every unsafe request (POST, PUT, DELETE, ...) must contain a valid antiforgery token
+            services.AddControllersWithViews(options => options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 
             services.AddLocalization(opts => { opts.ResourcesPath = "Resources"; });
             services.AddMvc()

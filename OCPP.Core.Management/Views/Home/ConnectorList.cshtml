@@ -6,6 +6,7 @@
     ViewData["Title"] = @Localizer["Title"];
 }
 <br />
+@Html.AntiForgeryToken()
 
 @if (Model != null)
 {
@@ -110,7 +111,8 @@
 
                                 }
                             };
-                            xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/UnlockConnector/"))" + chargepointId + '/' + connectorid, true);
+                            xmlhttp.open("POST", "@Html.Raw(Url.Content("~/API/UnlockConnector/"))" + chargepointId + '/' + connectorid, true);
+                            xmlhttp.setRequestHeader("RequestVerificationToken", $('input[name="__RequestVerificationToken"]').val());
                             xmlhttp.send();
                         }
                     }, {
@@ -177,7 +179,8 @@
 
                                 }
                             };
-                            xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/StartTransaction/"))" + chargepointId + '/' + connectorid + '/' + chargeTag, true);
+                            xmlhttp.open("POST", "@Html.Raw(Url.Content("~/API/StartTransaction/"))" + chargepointId + '/' + connectorid + '/' + chargeTag, true);
+                            xmlhttp.setRequestHeader("RequestVerificationToken", $('input[name="__RequestVerificationToken"]').val());
                             xmlhttp.send();
                         }
                     }, {
@@ -227,7 +230,8 @@
 
                                 }
                             };
-                            xmlhttp.open("GET", "@Html.Raw(Url.Content("~/API/StopTransaction/"))" + chargepointId + '/' + connectorid, true);
+                            xmlhttp.open("POST", "@Html.Raw(Url.Content("~/API/StopTransaction/"))" + chargepointId + '/' + connectorid, true);
+                            xmlhttp.setRequestHeader("RequestVerificationToken", $('input[name="__RequestVerificationToken"]').val());
                             xmlhttp.send();
                         }
                     }, {

@@ -33,6 +33,8 @@ namespace OCPP.Core.Management.Controllers
     public partial class ApiController : BaseController
     {
         [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public async Task<IActionResult> UnlockConnector(string Id, int connectorId)
         {

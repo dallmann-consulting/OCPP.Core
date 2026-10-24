@@ -78,7 +78,9 @@ namespace OCPP.Core.Management.Controllers
             return View(userModel);
         }
 
+        [HttpPost]
         [AllowAnonymous]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout(UserModel userModel)
         {
             await UserManager.SignOut(this.HttpContext);
