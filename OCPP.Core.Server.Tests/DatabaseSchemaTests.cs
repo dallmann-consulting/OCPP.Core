@@ -147,7 +147,9 @@ namespace OCPP.Core.Server.Tests
             }
             finally
             {
-                SqliteConnection.ClearAllPools();
+                // only the pools of this database (ClearAllPools() would affect other test classes)
+                SqliteConnection.ClearPool(new SqliteConnection($"Filename={file};"));
+                SqliteConnection.ClearPool(new SqliteConnection($"Filename={file};Default Timeout=1;"));
                 File.Delete(file);
             }
         }
@@ -179,7 +181,8 @@ namespace OCPP.Core.Server.Tests
             }
             finally
             {
-                SqliteConnection.ClearAllPools();
+                // only the pool of this database (ClearAllPools() would affect other test classes)
+                SqliteConnection.ClearPool(new SqliteConnection(connectionString));
                 File.Delete(file);
             }
         }

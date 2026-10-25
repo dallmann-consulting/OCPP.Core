@@ -129,7 +129,8 @@ namespace OCPP.Core.Server.Tests.Infrastructure
         public override async ValueTask DisposeAsync()
         {
             await base.DisposeAsync();
-            SqliteConnection.ClearAllPools();
+            // only the pool of this database: ClearAllPools() would also close the connections of other test classes running in parallel
+            SqliteConnection.ClearPool(new SqliteConnection(ConnectionString));
             try
             {
                 File.Delete(_dbFile);

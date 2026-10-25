@@ -464,83 +464,27 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
-        /// Extract different meter values from collection
+        /// Extract different meter values from collection (selection: see MeterValueEvaluator)
         /// </summary>
         private void GetMeterValues(ICollection<MeterValueType> meterValues, out double meterKWH, out double currentChargeKW, out double stateOfCharge, out DateTimeOffset? meterTime)
         {
-            currentChargeKW = -1;
-            meterKWH = -1;
-            meterTime = null;
-            stateOfCharge = -1;
+            IEnumerable<MeterSample> samples = (meterValues ?? Enumerable.Empty<MeterValueType>())
+                .SelectMany(meterValue => (meterValue.SampledValue ?? Enumerable.Empty<SampledValueType>())
+                    .Select(sampleValue => new MeterSample(
+                        meterValue.Timestamp,
+                        MeterValueEvaluator.EnumValue(sampleValue.Measurand),
+                        MeterValueEvaluator.EnumValue(sampleValue.Phase),
+                        MeterValueEvaluator.EnumValue(sampleValue.Location),
+                        sampleValue.Value,
+                        // Spec: without unitOfMeasure the default unit is "Wh" (energy)
+                        sampleValue.UnitOfMeasure?.Unit,
+                        sampleValue.UnitOfMeasure?.Multiplier ?? 0)));
 
-            foreach (MeterValueType meterValue in meterValues)
-            {
-                foreach (SampledValueType sampleValue in meterValue.SampledValue)
-                {
-                    Logger.LogTrace("GetMeterValues => Context={0} / SignedMeterValue={1} / Value={2} / Unit={3} / Location={4} / Measurand={5} / Phase={6}",
-                        sampleValue.Context, sampleValue.SignedMeterValue, sampleValue.Value, sampleValue.UnitOfMeasure, sampleValue.Location, sampleValue.Measurand, sampleValue.Phase);
-
-                    if (sampleValue.Measurand == MeasurandEnumType.Power_Active_Import)
-                    {
-                        // current charging power
-                        currentChargeKW = sampleValue.Value;
-                        if (sampleValue.UnitOfMeasure?.Unit == "W" ||
-                            sampleValue.UnitOfMeasure?.Unit == "VA" ||
-                            sampleValue.UnitOfMeasure?.Unit == "var" ||
-                            sampleValue.UnitOfMeasure?.Unit == null ||
-                            sampleValue.UnitOfMeasure == null)
-                        {
-                            Logger.LogTrace("GetMeterValues => Charging '{0:0.0}' W", currentChargeKW);
-                            // convert W => kW
-                            currentChargeKW = currentChargeKW / 1000;
-                        }
-                        else if (sampleValue.UnitOfMeasure?.Unit == "KW" ||
-                                sampleValue.UnitOfMeasure?.Unit == "kVA" ||
-                                sampleValue.UnitOfMeasure?.Unit == "kvar")
-                        {
-                            // already kW => OK
-                            Logger.LogTrace("GetMeterValues => Charging '{0:0.0}' kW", currentChargeKW);
-                        }
-                        else
-                        {
-                            Logger.LogWarning("GetMeterValues => Charging: unexpected unit: '{0}' (Value={1})", sampleValue.UnitOfMeasure?.Unit, sampleValue.Value);
-                        }
-                    }
-                    else if (sampleValue.Measurand == MeasurandEnumType.Energy_Active_Import_Register ||
-                             sampleValue.Measurand == null)  // Spec: Default=Energy_Active_Import_Register
-                    {
-                        // charged amount of energy
-                        meterKWH = sampleValue.Value;
-                        if (sampleValue.UnitOfMeasure?.Unit == "Wh" ||
-                            sampleValue.UnitOfMeasure?.Unit == "VAh" ||
-                            sampleValue.UnitOfMeasure?.Unit == "varh" ||
-                            (sampleValue.UnitOfMeasure == null || sampleValue.UnitOfMeasure.Unit == null))
-                        {
-                            Logger.LogTrace("GetMeterValues => Value: '{0:0.0}' Wh", meterKWH);
-                            // convert Wh => kWh
-                            meterKWH = meterKWH / 1000;
-                        }
-                        else if (sampleValue.UnitOfMeasure?.Unit == "kWh" ||
-                                sampleValue.UnitOfMeasure?.Unit == "kVAh" ||
-                                sampleValue.UnitOfMeasure?.Unit == "kvarh")
-                        {
-                            // already kWh => OK
-                            Logger.LogTrace("GetMeterValues => Value: '{0:0.0}' kWh", meterKWH);
-                        }
-                        else
-                        {
-                            Logger.LogWarning("GetMeterValues => Value: unexpected unit: '{0}' (Value={1})", sampleValue.UnitOfMeasure?.Unit, sampleValue.Value);
-                        }
-                        meterTime = meterValue.Timestamp;
-                    }
-                    else if (sampleValue.Measurand == MeasurandEnumType.SoC)
-                    {
-                        // state of charge (battery status)
-                        stateOfCharge = sampleValue.Value;
-                        Logger.LogTrace("GetMeterValues => SoC: '{0:0.0}'%", stateOfCharge);
-                    }
-                }
-            }
+            MeterReading reading = MeterValueEvaluator.Evaluate(samples, Logger);
+            meterKWH = reading.MeterKWH;
+            currentChargeKW = reading.CurrentChargeKW;
+            stateOfCharge = reading.StateOfCharge;
+            meterTime = reading.MeterTime;
         }
     }
 }

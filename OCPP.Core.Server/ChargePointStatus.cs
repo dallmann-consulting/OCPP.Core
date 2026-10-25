@@ -32,8 +32,6 @@ namespace OCPP.Core.Server
     /// </summary>
     public class ChargePointStatus
     {
-        private Dictionary<int, OnlineConnectorStatus> _onlineConnectors;
-
         public ChargePointStatus()
         {
         }
@@ -63,23 +61,11 @@ namespace OCPP.Core.Server
         public string Protocol { get; set; }
 
         /// <summary>
-        /// Dictionary with online connectors
+        /// Dictionary with online connectors.
+        /// Concurrent: the receive loop of the chargepoint changes it while the API (status) serializes it
+        /// (a normal Dictionary => "Collection was modified" => HTTP 500 without content)
         /// </summary>
-        public Dictionary<int, OnlineConnectorStatus> OnlineConnectors
-        {
-            get
-            {
-                if (_onlineConnectors == null)
-                {
-                    _onlineConnectors = new Dictionary<int, OnlineConnectorStatus>();
-                }
-                return _onlineConnectors;
-            }
-            set
-            {
-                _onlineConnectors = value;
-            }
-        }
+        public ConcurrentDictionary<int, OnlineConnectorStatus> OnlineConnectors { get; set; } = new ConcurrentDictionary<int, OnlineConnectorStatus>();
 
         /// <summary>
         /// WebSocket for internal processing
