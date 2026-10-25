@@ -200,25 +200,14 @@ namespace OCPP.Core.Server
                 {
                     if (context.WebSockets.IsWebSocketRequest)
                     {
-                        // Match supported sub protocols
-                        string subProtocol = null;
-                        foreach (string supportedProtocol in SupportedProtocols)
-                        {
-                            if (context.WebSockets.WebSocketRequestedProtocols.Contains(supportedProtocol))
-                            {
-                                subProtocol = supportedProtocol;
-                                break;
-                            }
-                        }
+                        // Match supported sub protocols: the order of the charge station is its preference
+                        // (OCPP-J: the first protocol of its list that the server supports is used)
+                        string subProtocol = context.WebSockets.WebSocketRequestedProtocols
+                            .FirstOrDefault(requestedProtocol => SupportedProtocols.Contains(requestedProtocol));
                         if (string.IsNullOrEmpty(subProtocol))
                         {
                             // Not matching protocol! => failure
-                            string protocols = string.Empty;
-                            foreach (string p in context.WebSockets.WebSocketRequestedProtocols)
-                            {
-                                if (string.IsNullOrEmpty(protocols)) protocols += ",";
-                                protocols += p;
-                            }
+                            string protocols = string.Join(", ", context.WebSockets.WebSocketRequestedProtocols);
                             _logger.LogWarning("OCPPMiddleware => No supported sub-protocol in '{0}' from charge station '{1}'", protocols, chargepointIdentifier);
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         }
