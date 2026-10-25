@@ -25,7 +25,7 @@
                 {
                     <div class="col-sm-6">
                         <div class="form-group">
-                            <input type="text" class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 50)" data-val-length-max="50" data-val-required="@Localizer["RequiredField"]" id="TagId" maxlength="50" name="TagId" placeholder="@Localizer["ChargeTagIdPlaceholder"]" value="@Model.TagId">
+                            <input type="text" class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 255)" data-val-length-max="255" data-val-required="@Localizer["RequiredField"]" id="TagId" maxlength="255" name="TagId" placeholder="@Localizer["ChargeTagIdPlaceholder"]" value="@Model.TagId">
                         </div>
                     </div>
                     <div class="col-sm-2">
@@ -64,7 +64,7 @@
                 </div>
                 <div class="col-sm-6">
                     <div class="form-group">
-                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 50)" data-val-length-max="50" id="ParentTagId" maxlength="50" name="ParentTagId" placeholder="@Localizer["GroupNamePlaceholder"]" type="text" value="@Model.ParentTagId" />
+                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 255)" data-val-length-max="255" id="ParentTagId" maxlength="255" name="ParentTagId" placeholder="@Localizer["GroupNamePlaceholder"]" type="text" value="@Model.ParentTagId" />
                     </div>
                 </div>
                 <div class="col-sm-2">

@@ -257,8 +257,8 @@ namespace OCPP.Core.Database.Migrations
             modelBuilder.Entity("OCPP.Core.Database.ChargeTag", b =>
                 {
                     b.Property<string>("TagId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<bool?>("Blocked")
                         .HasColumnType("bit");
@@ -267,8 +267,8 @@ namespace OCPP.Core.Database.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ParentTagId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("TagName")
                         .HasMaxLength(200)
@@ -344,7 +344,9 @@ namespace OCPP.Core.Database.Migrations
 
                     b.HasKey("LogId");
 
-                    b.HasIndex(new[] { "LogTime" }, "IX_MessageLog_ChargePointId");
+                    b.HasIndex(new[] { "ChargePointId", "LogTime" }, "IX_MessageLog_ChargePointId");
+
+                    b.HasIndex(new[] { "LogTime" }, "IX_MessageLog_LogTime");
 
                     b.ToTable("MessageLog", (string)null);
                 });
@@ -376,8 +378,8 @@ namespace OCPP.Core.Database.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("StartTagId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
@@ -387,8 +389,8 @@ namespace OCPP.Core.Database.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("StopTagId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<DateTime?>("StopTime")
                         .HasColumnType("datetime2");

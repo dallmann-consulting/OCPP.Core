@@ -76,9 +76,10 @@ namespace OCPP.Core.Database
                 entity.HasKey(e => e.TagId)
                     .HasName("PK_ChargeKeys");
 
-                entity.Property(e => e.TagId).HasMaxLength(50);
+                // idToken: OCPP 2.1 allows up to 255 characters (1.6: 20, 2.0.1: 36)
+                entity.Property(e => e.TagId).HasMaxLength(255);
 
-                entity.Property(e => e.ParentTagId).HasMaxLength(50);
+                entity.Property(e => e.ParentTagId).HasMaxLength(255);
 
                 entity.Property(e => e.TagName).HasMaxLength(200);
             });
@@ -108,7 +109,10 @@ namespace OCPP.Core.Database
 
                 entity.ToTable("MessageLog");
 
-                entity.HasIndex(e => e.LogTime, "IX_MessageLog_ChargePointId");
+                // LogTime: cleanup of old entries (MessageLogRetentionDays), ChargePointId: messages of a charge point
+                entity.HasIndex(e => e.LogTime, "IX_MessageLog_LogTime");
+
+                entity.HasIndex(e => new { e.ChargePointId, e.LogTime }, "IX_MessageLog_ChargePointId");
 
                 entity.Property(e => e.ChargePointId)
                     .IsRequired()
@@ -129,11 +133,11 @@ namespace OCPP.Core.Database
                     .IsRequired()
                     .HasMaxLength(100);
 
-                entity.Property(e => e.StartTagId).HasMaxLength(50);
+                entity.Property(e => e.StartTagId).HasMaxLength(255);
 
                 entity.Property(e => e.StartResult).HasMaxLength(100);
 
-                entity.Property(e => e.StopTagId).HasMaxLength(50);
+                entity.Property(e => e.StopTagId).HasMaxLength(255);
 
                 entity.Property(e => e.StopReason).HasMaxLength(100);
 

@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace OCPP.Core.Database
@@ -85,6 +86,38 @@ namespace OCPP.Core.Database
             if (await TableExistsAsync(context, "__EFMigrationsHistory", isSqlite))
                 return; // Already using migrations
 
+            // Server and Management may start at the same time (e.g. Docker) => bootstrap under a lock and check again.
+            // (Migrate() itself is protected by EF Core, but this bootstrap runs before it)
+            await context.Database.OpenConnectionAsync();
+            try
+            {
+                // SQLite: the transaction is started with "BEGIN IMMEDIATE" => write lock for the whole bootstrap
+                await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync();
+                if (!isSqlite)
+                {
+                    await context.Database.ExecuteSqlRawAsync(
+                        "EXEC sp_getapplock @Resource = 'OCPP.Core.MigrationBootstrap', @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 60000");
+                }
+
+                if (await TableExistsAsync(context, "__EFMigrationsHistory", isSqlite))
+                {
+                    logger?.LogInformation("Migration history was bootstrapped by another process.");
+                    return;
+                }
+
+                await BootstrapMigrationHistoryAsync(context, logger, isSqlite);
+                await transaction.CommitAsync();
+            }
+            finally
+            {
+                await context.Database.CloseConnectionAsync();
+            }
+
+            logger?.LogInformation("Migration history bootstrapped successfully.");
+        }
+
+        private static async Task BootstrapMigrationHistoryAsync(OCPPCoreContext context, ILogger logger, bool isSqlite)
+        {
             logger?.LogInformation("Pre-migration database detected. Bootstrapping migration history...");
 
             if (isSqlite)
@@ -117,8 +150,6 @@ namespace OCPP.Core.Database
                     IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = '20260503000001_ConnectorStatusForeignKey')
                         INSERT INTO [__EFMigrationsHistory] VALUES ('20260503000001_ConnectorStatusForeignKey','10.0.9')");
             }
-
-            logger?.LogInformation("Migration history bootstrapped successfully.");
         }
 
         private static async Task<bool> TableExistsAsync(OCPPCoreContext context, string tableName, bool isSqlite)
@@ -131,6 +162,8 @@ namespace OCPP.Core.Database
                 {
                     DbConnection conn = context.Database.GetDbConnection();
                     await using DbCommand cmd = conn.CreateCommand();
+                    // needed within the bootstrap transaction (SqlClient requires it)
+                    cmd.Transaction = context.Database.CurrentTransaction?.GetDbTransaction();
                     cmd.CommandText = isSqlite
                         ? $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}'"
                         : $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='{tableName}'";

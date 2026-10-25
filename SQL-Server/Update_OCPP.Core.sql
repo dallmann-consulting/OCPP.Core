@@ -342,3 +342,96 @@ END;
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261025182008_TagLengthMessageLogIndex'
+)
+BEGIN
+    EXEC sp_rename N'[MessageLog].[IX_MessageLog_ChargePointId]', N'IX_MessageLog_LogTime', 'INDEX';
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261025182008_TagLengthMessageLogIndex'
+)
+BEGIN
+    DECLARE @var1 nvarchar(max);
+    SELECT @var1 = QUOTENAME([d].[name])
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Transactions]') AND [c].[name] = N'StopTagId');
+    IF @var1 IS NOT NULL EXEC(N'ALTER TABLE [Transactions] DROP CONSTRAINT ' + @var1 + ';');
+    ALTER TABLE [Transactions] ALTER COLUMN [StopTagId] nvarchar(255) NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261025182008_TagLengthMessageLogIndex'
+)
+BEGIN
+    DECLARE @var2 nvarchar(max);
+    SELECT @var2 = QUOTENAME([d].[name])
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Transactions]') AND [c].[name] = N'StartTagId');
+    IF @var2 IS NOT NULL EXEC(N'ALTER TABLE [Transactions] DROP CONSTRAINT ' + @var2 + ';');
+    ALTER TABLE [Transactions] ALTER COLUMN [StartTagId] nvarchar(255) NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261025182008_TagLengthMessageLogIndex'
+)
+BEGIN
+    DECLARE @var3 nvarchar(max);
+    SELECT @var3 = QUOTENAME([d].[name])
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[ChargeTags]') AND [c].[name] = N'ParentTagId');
+    IF @var3 IS NOT NULL EXEC(N'ALTER TABLE [ChargeTags] DROP CONSTRAINT ' + @var3 + ';');
+    ALTER TABLE [ChargeTags] ALTER COLUMN [ParentTagId] nvarchar(255) NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261025182008_TagLengthMessageLogIndex'
+)
+BEGIN
+    DECLARE @var4 nvarchar(max);
+    SELECT @var4 = QUOTENAME([d].[name])
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[ChargeTags]') AND [c].[name] = N'TagId');
+    IF @var4 IS NOT NULL EXEC(N'ALTER TABLE [ChargeTags] DROP CONSTRAINT ' + @var4 + ';');
+    ALTER TABLE [ChargeTags] ALTER COLUMN [TagId] nvarchar(255) NOT NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261025182008_TagLengthMessageLogIndex'
+)
+BEGIN
+    CREATE INDEX [IX_MessageLog_ChargePointId] ON [MessageLog] ([ChargePointId], [LogTime]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261025182008_TagLengthMessageLogIndex'
+)
+BEGIN
+    IF OBJECT_ID(N'[dbo].[ConnectorStatusView]', N'V') IS NOT NULL EXEC sp_refreshview N'[dbo].[ConnectorStatusView]';
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261025182008_TagLengthMessageLogIndex'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261025182008_TagLengthMessageLogIndex', N'10.0.12');
+END;
+
+COMMIT;
+GO
+

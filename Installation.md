@@ -23,7 +23,7 @@ The project includes templates for SQL-Server and SQLite:
 
 The main Script in both folders always contain the latest version for a full database. For updating an existing SQL-Server database from any previous version there is the update script `SQL-Server/Update_OCPP.Core.sql` (see below).
 
-By default both applications update the database schema automatically at startup (`"AutoMigrateDB": true`). On SQL-Server the database login of the applications usually has no rights to change the schema. Then set `"AutoMigrateDB": false` and run `SQL-Server/Update_OCPP.Core.sql` with an administrative login (SSMS or `sqlcmd`). It updates a database of any previous version (since V1.0), applies only the missing changes and can be run repeatedly. A new database created with `Create_OCPP.Core.sql` is already up to date. If the database schema is older than the application, both applications log a warning at startup and the Management-UI shows a warning to administrators.
+By default both applications update the database schema automatically at startup (`"AutoMigrateDB": true`). On SQL-Server the database login of the applications usually has no rights to change the schema. Then set `"AutoMigrateDB": false` in both applications and run `SQL-Server/Update_OCPP.Core.sql` with an administrative login (SSMS or `sqlcmd`). It updates a database of any previous version (since V1.0), applies only the missing changes and can be run repeatedly. A new database created with `Create_OCPP.Core.sql` is already up to date. If the database schema is older than the application, both applications log a warning at startup and the Management-UI shows a warning to administrators. Server and Management-UI may start at the same time (e.g. in Docker): the migration is protected by a database lock, the second application waits.
 
 ## Webserver
 The OCPP-Server and the Web-UI are independent webs/servers and both need database connection information. The Web-UI needs the the URL to the OCPP server for status information and some actions.
@@ -40,6 +40,10 @@ If you configure a dump directory, the server writes all OCPP requests and respo
 ```
 "MessageDumpDir": "c:\\temp\\OCPP",
 "DbMessageLog": 2,  //0=None, 1=Info, 2=Verbose (all)
+```
+The server deletes entries in the database message log (table MessageLog) older than `MessageLogRetentionDays` once a day (default 90 days, 0 = keep forever).
+```
+"MessageLogRetentionDays": 90,
 ```
 **OCPP.Core.Management**
 See above for the database connection. 

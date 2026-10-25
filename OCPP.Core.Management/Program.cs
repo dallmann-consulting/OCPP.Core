@@ -54,7 +54,12 @@ namespace OCPP.Core.Management
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
             var configuration = services.GetRequiredService<IConfiguration>();
 
-            await dbContext.EnsureMigratedAsync(logger);
+            // Migrate database, but only when not disabled (needs admin permissions in SQL-Server!)
+            // Server and Management may migrate at the same time (e.g. Docker) => protected by a lock
+            if (configuration.GetValue<bool>("AutoMigrateDB", true))
+            {
+                await dbContext.EnsureMigratedAsync(logger);
+            }
             // warning if the database schema is older than the application (e.g. no rights for automatic migrations)
             dbContext.LogPendingMigrations(logger);
 

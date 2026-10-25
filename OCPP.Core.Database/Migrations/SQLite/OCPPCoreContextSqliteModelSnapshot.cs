@@ -246,7 +246,7 @@ namespace OCPP.Core.Database.Migrations.SQLite
             modelBuilder.Entity("OCPP.Core.Database.ChargeTag", b =>
                 {
                     b.Property<string>("TagId")
-                        .HasMaxLength(50)
+                        .HasMaxLength(255)
                         .HasColumnType("TEXT");
 
                     b.Property<bool?>("Blocked")
@@ -256,7 +256,7 @@ namespace OCPP.Core.Database.Migrations.SQLite
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ParentTagId")
-                        .HasMaxLength(50)
+                        .HasMaxLength(255)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TagName")
@@ -331,7 +331,9 @@ namespace OCPP.Core.Database.Migrations.SQLite
 
                     b.HasKey("LogId");
 
-                    b.HasIndex(new[] { "LogTime" }, "IX_MessageLog_ChargePointId");
+                    b.HasIndex(new[] { "ChargePointId", "LogTime" }, "IX_MessageLog_ChargePointId");
+
+                    b.HasIndex(new[] { "LogTime" }, "IX_MessageLog_LogTime");
 
                     b.ToTable("MessageLog", (string)null);
                 });
@@ -361,7 +363,7 @@ namespace OCPP.Core.Database.Migrations.SQLite
                         .HasColumnType("TEXT");
 
                     b.Property<string>("StartTagId")
-                        .HasMaxLength(50)
+                        .HasMaxLength(255)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("StartTime")
@@ -372,7 +374,7 @@ namespace OCPP.Core.Database.Migrations.SQLite
                         .HasColumnType("TEXT");
 
                     b.Property<string>("StopTagId")
-                        .HasMaxLength(50)
+                        .HasMaxLength(255)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("StopTime")

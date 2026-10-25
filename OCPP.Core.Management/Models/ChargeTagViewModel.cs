@@ -33,13 +33,14 @@ namespace OCPP.Core.Management.Models
         public string CurrentTagId { get; set; }
 
 
-        [Required, StringLength(50)]
+        // idToken: OCPP 2.1 allows up to 255 characters
+        [Required, StringLength(255)]
         public string TagId { get; set; }
 
         [Required, StringLength(200)]
         public string TagName { get; set; }
 
-        [StringLength(50)]
+        [StringLength(255)]
         public string ParentTagId { get; set; }
 
         [DataType(DataType.Date)]

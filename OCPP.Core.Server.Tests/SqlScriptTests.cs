@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using OCPP.Core.Database;
+using OCPP.Core.Server.Tests.Infrastructure;
 
 namespace OCPP.Core.Server.Tests
 {
@@ -11,7 +12,7 @@ namespace OCPP.Core.Server.Tests
     /// </summary>
     public class SqlScriptTests
     {
-        private static readonly string ScriptDir = Path.Combine(FindRepositoryRoot(), "SQL-Server");
+        private static readonly string ScriptDir = RepositoryPaths.File("SQL-Server");
 
         public static TheoryData<string> Migrations()
         {
@@ -65,16 +66,6 @@ namespace OCPP.Core.Server.Tests
                 .Options;
             using OCPPCoreContextSqlServer dbContext = new OCPPCoreContextSqlServer(options);
             return dbContext.Database.GetMigrations().ToList();
-        }
-
-        private static string FindRepositoryRoot()
-        {
-            DirectoryInfo? dir = new DirectoryInfo(AppContext.BaseDirectory);
-            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "OCPP.Core.sln")))
-            {
-                dir = dir.Parent;
-            }
-            return dir?.FullName ?? throw new DirectoryNotFoundException("Repository root (OCPP.Core.sln) not found");
         }
     }
 }

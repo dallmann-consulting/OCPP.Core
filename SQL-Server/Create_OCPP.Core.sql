@@ -24,9 +24,9 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[ChargeTags](
-	[TagId] [nvarchar](50) NOT NULL,
+	[TagId] [nvarchar](255) NOT NULL,
 	[TagName] [nvarchar](200) NULL,
-	[ParentTagId] [nvarchar](50) NULL,
+	[ParentTagId] [nvarchar](255) NULL,
 	[ExpiryDate] [datetime2](7) NULL,
 	[Blocked] [bit] NULL,
  CONSTRAINT [PK_ChargeKeys] PRIMARY KEY CLUSTERED 
@@ -64,11 +64,11 @@ CREATE TABLE [dbo].[Transactions](
 	[Uid] [nvarchar](50) NULL,
 	[ChargePointId] [nvarchar](100) NOT NULL,
 	[ConnectorId] [int] NOT NULL,
-	[StartTagId] [nvarchar](50) NULL,
+	[StartTagId] [nvarchar](255) NULL,
 	[StartTime] [datetime2](7) NOT NULL,
 	[MeterStart] [float] NOT NULL,
 	[StartResult] [nvarchar](100) NULL,
-	[StopTagId] [nvarchar](50) NULL,
+	[StopTagId] [nvarchar](255) NULL,
 	[StopTime] [datetime2](7) NULL,
 	[MeterStop] [float] NULL,
 	[StopReason] [nvarchar](100) NULL,
@@ -127,9 +127,15 @@ CREATE UNIQUE NONCLUSTERED INDEX [ChargePoint_Identifier] ON [dbo].[ChargePoint]
 	[ChargePointId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_MessageLog_ChargePointId]    Script Date: 20.12.2020 22:54:30 ******/
+/**** V1.9.0: index on LogTime renamed (was "IX_MessageLog_ChargePointId"), new index on ChargePointId (migration "TagLengthMessageLogIndex") ****/
+CREATE NONCLUSTERED INDEX [IX_MessageLog_LogTime] ON [dbo].[MessageLog]
+(
+	[LogTime] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+GO
 CREATE NONCLUSTERED INDEX [IX_MessageLog_ChargePointId] ON [dbo].[MessageLog]
 (
+	[ChargePointId] ASC,
 	[LogTime] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
@@ -278,6 +284,9 @@ values ('20261025101244_ChargePointPasswordHash','10.0.12')
 GO
 INSERT INTO [dbo].[__EFMigrationsHistory]
 values ('20261025120424_TransactionsUidIndex','10.0.12')
+GO
+INSERT INTO [dbo].[__EFMigrationsHistory]
+values ('20261025182008_TagLengthMessageLogIndex','10.0.12')
 GO
 
 USE [master]
