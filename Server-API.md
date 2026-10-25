@@ -231,8 +231,12 @@ Mapping for OCPP 2.x:
 
 ### In general
 These commands means that the server send a request to the charger and the charger needs to answer in a reasonable period
-of time. The server can not wait indefinitely and the OCPP server waits for 60 seconds.
+of time. The server can not wait indefinitely and the OCPP server waits for 60 seconds (setting `RequestTimeout`).
 After that the API caller will get the response {"status"="Timeout"}.
+The server sends only one request at a time to a charger (OCPP doesn't allow a new request before the previous one is
+answered or timed out). Parallel API calls for the same charger wait for the previous request - at most half of the
+timeout, the time counts towards the timeout of the API call. If the previous request is still not answered after that,
+the API caller gets {"status"="Timeout"} and the request is not sent to the charger.
 If the charger disconnects while the server waits for the answer, the API caller immediately gets
 the response {"status"="Disconnected"}.
 If the charger answers the request with an error (OCPP CALLERROR), the API caller immediately gets

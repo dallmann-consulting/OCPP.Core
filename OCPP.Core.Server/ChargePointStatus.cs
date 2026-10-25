@@ -95,6 +95,13 @@ namespace OCPP.Core.Server
         public SemaphoreSlim SendLock { get; } = new SemaphoreSlim(1, 1);
 
         /// <summary>
+        /// Only one request (CALL) from the server at a time: OCPP-J doesn't allow a new CALL until the previous one
+        /// is answered or timed out (2.0.1/2.1: SHALL NOT, 1.6: SHOULD NOT)
+        /// </summary>
+        [JsonIgnore]
+        public SemaphoreSlim RequestLock { get; } = new SemaphoreSlim(1, 1);
+
+        /// <summary>
         /// Requests sent to the chargepoint that wait for an answer (key = unique id)
         /// </summary>
         [JsonIgnore]
