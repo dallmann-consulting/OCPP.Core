@@ -144,6 +144,8 @@ namespace OCPP.Core.Database
                     .HasConstraintName("FK_Transactions_ChargePoint");
 
                 entity.HasIndex(e => new { e.ChargePointId, e.ConnectorId });
+                // TransactionEvent (2.x) finds transactions by charge point + Uid. Not unique: duplicates are prevented in the code (old data may contain some)
+                entity.HasIndex(e => new { e.ChargePointId, e.Uid });
             });
 
             OnModelCreatingPartial(modelBuilder);

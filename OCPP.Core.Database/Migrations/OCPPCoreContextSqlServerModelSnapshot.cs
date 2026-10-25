@@ -401,6 +401,8 @@ namespace OCPP.Core.Database.Migrations
 
                     b.HasIndex("ChargePointId", "ConnectorId");
 
+                    b.HasIndex("ChargePointId", "Uid");
+
                     b.ToTable("Transactions");
                 });
 

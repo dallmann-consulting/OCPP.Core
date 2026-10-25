@@ -386,6 +386,8 @@ namespace OCPP.Core.Database.Migrations.SQLite
 
                     b.HasIndex("ChargePointId", "ConnectorId");
 
+                    b.HasIndex("ChargePointId", "Uid");
+
                     b.ToTable("Transactions");
                 });
 

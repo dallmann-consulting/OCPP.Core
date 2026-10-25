@@ -149,6 +149,13 @@ CREATE NONCLUSTERED INDEX [IX_Transactions_ChargePointId_ConnectorId] ON [dbo].[
 	[ConnectorId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
+/**** New with V1.9.0 (migration "TransactionsUidIndex") ****/
+CREATE NONCLUSTERED INDEX [IX_Transactions_ChargePointId_Uid] ON [dbo].[Transactions]
+(
+	[ChargePointId] ASC,
+	[Uid] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+GO
 
 
 /**** New with V1.7.0 (migration "ConnectorStatusForeignKey") ****/
@@ -268,6 +275,9 @@ values ('20260610192144_AddIdentity','10.0.12')
 GO
 INSERT INTO [dbo].[__EFMigrationsHistory]
 values ('20261025101244_ChargePointPasswordHash','10.0.12')
+GO
+INSERT INTO [dbo].[__EFMigrationsHistory]
+values ('20261025120424_TransactionsUidIndex','10.0.12')
 GO
 
 USE [master]
