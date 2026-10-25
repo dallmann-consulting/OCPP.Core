@@ -121,7 +121,8 @@ namespace OCPP.Core.Server
                         CheckStopTag(transaction, idTag, stopTransactionResponse.IdTagInfo.ParentIdTag);
 
                         transaction.StopTagId = idTag;
-                        transaction.MeterStop =  (double)stopTransactionRequest.MeterStop / 1000; // Meter value here is always Wh
+                        // Meter value here is always Wh. Taken over unchanged (also if smaller than the start value => warning)
+                        SetTransactionMeter(transaction, (double)stopTransactionRequest.MeterStop / 1000, isFinal: true, msgIn.Action);
                         transaction.StopReason = stopTransactionRequest.Reason.ToString();
                         transaction.StopTime = stopTransactionRequest.Timestamp.UtcDateTime;
                         DbContext.SaveChanges();

@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Mvc.Localization
 @model OCPP.Core.Management.Models.ChargeReportViewModel
 @inject IViewLocalizer Localizer
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> SharedLocalizer
 
 <style>
     .compact-table th, .compact-table td {
@@ -96,13 +97,12 @@ else
             <tbody>
                 @foreach (var tag in group.Tags)
                 {
-                    var totalEnergy = tag.Transactions
-                    .Where(t => t.Energy.HasValue)
-                    .Sum(t => t.Energy.Value);
+                    // a decreased meter (error of the charge point) counts as 0 => warning
+                    var totalEnergy = tag.Transactions.Sum(t => t.EnergyForSum);
 
                     <tr>
                         <td>@tag.TagName</td>
-                        <td>@(Math.Round(totalEnergy, 2)) kWh</td>
+                        <td>@(Math.Round(totalEnergy, 2)) kWh @TransactionDisplay.MeterWarningIcon(tag.Transactions.Any(t => t.MeterDecreased), SharedLocalizer)</td>
                     </tr>
                 }
             </tbody>

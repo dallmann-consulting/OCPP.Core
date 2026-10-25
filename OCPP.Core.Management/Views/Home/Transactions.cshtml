@@ -152,7 +152,7 @@
                         <td>@((t.StopTime != null) ? string.Format("{0} {1}", t.StopTime.Value.ToLocalTime().ToShortDateString(), t.StopTime.Value.ToLocalTime().ToShortTimeString()) : string.Empty)</td>
                         <td>@TransactionDisplay.StopTag(t, SharedLocalizer)</td>
                         <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", t.MeterStop) : string.Empty)</td>
-                        <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", (t.MeterStop - t.MeterStart)) : string.Empty)</td>
+                        <td>@((t.MeterStop != null) ? string.Format("{0:0.0##}", (t.MeterStop - t.MeterStart)) : string.Empty) @TransactionDisplay.MeterWarningIcon(TransactionDisplay.IsMeterDecreased(t.MeterStart, t.MeterStop), SharedLocalizer)</td>
                     </tr>
                 }
             }

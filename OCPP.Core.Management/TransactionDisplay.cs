@@ -18,6 +18,8 @@
  */
 
 using System;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Html;
 using Microsoft.Extensions.Localization;
 using OCPP.Core.Database;
 
@@ -72,6 +74,41 @@ namespace OCPP.Core.Management
                 return string.Format(localizer["TransactionTagNotPermitted"], tag);
             }
             return tag;
+        }
+
+        /// <summary>
+        /// True if the meter at the end is smaller than at the start (error of the charge point?).
+        /// The values of the charge point are kept unchanged => the negative energy is shown with a warning.
+        /// </summary>
+        public static bool IsMeterDecreased(double meterStart, double? meterStop)
+        {
+            return meterStart >= 0 && meterStop.HasValue && meterStop.Value < meterStart;
+        }
+
+        /// <summary>
+        /// Energy for sums (report): a decreased meter (negative energy) counts as 0
+        /// </summary>
+        public static double EnergyForSum(double meterStart, double? meterStop)
+        {
+            return (meterStop.HasValue && !IsMeterDecreased(meterStart, meterStop)) ? meterStop.Value - meterStart : 0;
+        }
+
+        /// <summary>
+        /// Hint text for exports (null if there is nothing to note)
+        /// </summary>
+        public static string MeterHint(double meterStart, double? meterStop, IStringLocalizer<SharedResource> localizer)
+        {
+            return IsMeterDecreased(meterStart, meterStop) ? localizer["MeterDecreased"].Value : null;
+        }
+
+        /// <summary>
+        /// Warning icon with tooltip for a decreased meter (empty otherwise)
+        /// </summary>
+        public static IHtmlContent MeterWarningIcon(bool meterDecreased, IStringLocalizer<SharedResource> localizer)
+        {
+            if (!meterDecreased) return HtmlString.Empty;
+            string text = HtmlEncoder.Default.Encode(localizer["MeterDecreased"].Value);
+            return new HtmlString($"<i class=\"fas fa-triangle-exclamation text-warning\" title=\"{text}\"></i>");
         }
 
         /// <summary>

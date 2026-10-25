@@ -32,7 +32,7 @@ namespace OCPP.Core.Server.Tests
                     await cp.CallAsync("StatusNotification", new { connectorId, errorCode = "NoError", status = "Available", timestamp = DateTimeOffset.UtcNow });
                 }
                 stop.Cancel();
-            });
+            }, TestContext.Current.CancellationToken);
 
             int requests = 0;
             List<string> errors = new List<string>();

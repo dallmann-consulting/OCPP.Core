@@ -27,6 +27,7 @@ using OCPP.Core.Database;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -262,12 +263,22 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
-        /// Stores the current meter value of a transaction (OCPP 2.x "Updated"/"Ended").
+        /// Error code of the MessageLog entry for a meter value that is smaller than before (within the transaction)
+        /// </summary>
+        public const string MeterDecreasedErrorCode = "MeterDecreased";
+
+        /// <summary>
+        /// Stores the current meter value of a transaction (OCPP 2.x "Updated"/"Ended", OCPP 1.6 "StopTransaction").
         /// Without meter value in the message (meterKWH &lt; 0) the last value is kept.
         /// A transaction can start without meter value (MeterStart &lt; 0 = unknown)
         /// => the first valid meter value is used as start value.
+        /// A meter value smaller than before (within the transaction, e.g. an error of the charge point):
+        /// - intermediate value ("Updated"): ignored => the highest value is kept
+        /// - final value ("Ended"/"StopTransaction"): taken over unchanged => the error remains visible (negative energy)
+        /// Both are logged as warning and always written into the MessageLog (independent of "DbMessageLog").
+        /// "action" = null: estimated value (no message of the charge point) => no warning
         /// </summary>
-        protected void SetTransactionMeter(Transaction transaction, double meterKWH)
+        protected void SetTransactionMeter(Transaction transaction, double meterKWH, bool isFinal, string action)
         {
             if (meterKWH < 0) return;
 
@@ -276,7 +287,41 @@ namespace OCPP.Core.Server
                 Logger.LogInformation("SetTransactionMeter => Transaction {0} started without meter value => start meter = {1} (kWh)", transaction.TransactionId, meterKWH);
                 transaction.MeterStart = meterKWH;
             }
+            else if (action != null &&
+                     (meterKWH < transaction.MeterStart ||
+                      // the stop value of an automatically closed transaction is only an estimate
+                      (transaction.MeterStop.HasValue && meterKWH < transaction.MeterStop && transaction.StopReason != TransactionStatus.StopReasonSuperseded)))
+            {
+                LogMeterDecreased(transaction, meterKWH, isFinal, action);
+                if (!isFinal)
+                {
+                    // intermediate value => keep the highest value (the final value follows)
+                    return;
+                }
+            }
             transaction.MeterStop = meterKWH;
+        }
+
+        /// <summary>
+        /// Warning and MessageLog entry for a meter value that is smaller than before (saved with the transaction)
+        /// </summary>
+        private void LogMeterDecreased(Transaction transaction, double meterKWH, bool isFinal, string action)
+        {
+            string info = string.Format(CultureInfo.InvariantCulture,
+                "Transaction={0} / Uid={1} / Start={2} / Last={3} / New={4} (kWh) => {5}",
+                transaction.TransactionId, transaction.Uid, transaction.MeterStart, transaction.MeterStop, meterKWH,
+                isFinal ? "taken over (final value)" : "ignored (intermediate value)");
+            Logger.LogWarning("SetTransactionMeter => Meter value decreased: chargepoint='{0}' / connector={1} / {2}", ChargePointStatus?.Id, transaction.ConnectorId, info);
+
+            DbContext.MessageLogs.Add(new MessageLog()
+            {
+                ChargePointId = ChargePointStatus?.Id ?? transaction.ChargePointId,
+                ConnectorId = transaction.ConnectorId,
+                LogTime = DateTime.UtcNow,
+                Message = action,
+                Result = info,
+                ErrorCode = MeterDecreasedErrorCode
+            });
         }
 
         /// <summary>
@@ -299,9 +344,10 @@ namespace OCPP.Core.Server
                 transaction.StopTime = newStartTime;
                 transaction.StopReason = TransactionStatus.StopReasonSuperseded;
                 // last meter value from the transaction or the meter at the start of the new transaction
+                // (estimate: never below the start value => no negative energy, e.g. charge points starting each transaction at 0)
                 if (!transaction.MeterStop.HasValue || transaction.MeterStop < transaction.MeterStart)
                 {
-                    SetTransactionMeter(transaction, newMeterStart);
+                    SetTransactionMeter(transaction, Math.Max(newMeterStart, transaction.MeterStart), isFinal: true, action: null);
                 }
             }
 

@@ -144,4 +144,10 @@
   <data name="LoginLockedOut" xml:space="preserve">
     <value>Zu viele fehlgeschlagene Anmeldeversuche. Bitte in {0} Minute(n) erneut versuchen.</value>
   </data>
+  <data name="MeterDecreased" xml:space="preserve">
+    <value>Der Zählerstand am Ende ist kleiner als am Start (Fehler der Ladestation?)</value>
+  </data>
+  <data name="ExportNote" xml:space="preserve">
+    <value>Hinweis</value>
+  </data>
 </root>

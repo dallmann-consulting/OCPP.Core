@@ -144,4 +144,10 @@
   <data name="LoginLockedOut" xml:space="preserve">
     <value>Too many failed login attempts. Please try again in {0} minute(s).</value>
   </data>
+  <data name="MeterDecreased" xml:space="preserve">
+    <value>The meter value at the end is smaller than at the start (error of the charging station?)</value>
+  </data>
+  <data name="ExportNote" xml:space="preserve">
+    <value>Note</value>
+  </data>
 </root>

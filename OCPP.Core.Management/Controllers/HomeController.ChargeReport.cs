@@ -41,24 +41,37 @@ namespace OCPP.Core.Management.Controllers
                 var report = GenerateReport(startDate, stopDate);
                 var csv = new StringBuilder();
 
+                // column "note" only if there is a note (normally never)
+                bool withNote = report.Groups.Any(g => g.Tags.Any(tag => tag.Transactions.Any(t => t.MeterDecreased)));
+
                 csv.Append(_localizer["ChargeReportGroup"]);
                 csv.Append(DefaultCSVSeparator);
                 csv.Append(_localizer["ChargeReportTag"]);
                 csv.Append(DefaultCSVSeparator);
-                csv.AppendLine(_localizer["ChargeReportEnergy"]);
+                csv.Append(_localizer["ChargeReportEnergy"]);
+                if (withNote)
+                {
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(_sharedLocalizer["ExportNote"]);
+                }
+                csv.AppendLine();
 
                 foreach (var group in report.Groups)
                 {
                     foreach (var tag in group.Tags)
                     {
-                        var totalEnergy = tag.Transactions
-                            .Where(t => t.Energy.HasValue)
-                            .Sum(t => t.Energy.Value);
+                        // a decreased meter (error of the charge point) counts as 0
+                        var totalEnergy = tag.Transactions.Sum(t => t.EnergyForSum);
                         csv.Append(EscapeCsvValue(group.GroupName, DefaultCSVSeparator));
                         csv.Append(DefaultCSVSeparator);
                         csv.Append(EscapeCsvValue(tag.TagName, DefaultCSVSeparator));
                         csv.Append(DefaultCSVSeparator);
                         csv.Append(Math.Round(totalEnergy, 3));
+                        if (withNote)
+                        {
+                            csv.Append(DefaultCSVSeparator);
+                            csv.Append(EscapeCsvValue(tag.Transactions.Any(t => t.MeterDecreased) ? _sharedLocalizer["MeterDecreased"].Value : null, DefaultCSVSeparator));
+                        }
                         csv.AppendLine();
                     }
                 }
@@ -87,19 +100,28 @@ namespace OCPP.Core.Management.Controllers
                 worksheet.Cell(1, 1).Value = _localizer["ChargeReportGroup"].ToString();
                 worksheet.Cell(1, 2).Value = _localizer["ChargeReportTag"].ToString();
                 worksheet.Cell(1, 3).Value = _localizer["ChargeReportEnergy"].ToString();
+                // column "note" only if there is a note (normally never)
+                bool withNote = report.Groups.Any(g => g.Tags.Any(tag => tag.Transactions.Any(t => t.MeterDecreased)));
+                if (withNote)
+                {
+                    worksheet.Cell(1, 4).Value = _sharedLocalizer["ExportNote"].Value;
+                }
 
                 var row = 2;
                 foreach (var group in report.Groups)
                 {
                     foreach (var tag in group.Tags)
                     {
-                        var totalEnergy = tag.Transactions
-                            .Where(t => t.Energy.HasValue)
-                            .Sum(t => t.Energy.Value);
+                        // a decreased meter (error of the charge point) counts as 0
+                        var totalEnergy = tag.Transactions.Sum(t => t.EnergyForSum);
 
                         worksheet.Cell(row, 1).Value = group.GroupName;
                         worksheet.Cell(row, 2).Value = tag.TagName;
                         worksheet.Cell(row, 3).Value = Math.Round(totalEnergy, 3);
+                        if (withNote && tag.Transactions.Any(t => t.MeterDecreased))
+                        {
+                            worksheet.Cell(row, 4).Value = _sharedLocalizer["MeterDecreased"].Value;
+                        }
                         row++;
                     }
                 }
@@ -133,6 +155,8 @@ namespace OCPP.Core.Management.Controllers
                      from t in tlvm.Transactions
                      join cs in tlvm.ConnectorStatuses on new { t.ChargePointId, t.ConnectorId } equals new { cs.ChargePointId, cs.ConnectorId }
                      select new { t, cs };
+                // column "note" only if there is a note (normally never)
+                bool withNote = fullTransactions.Any(ft => TransactionDisplay.IsMeterDecreased(ft.t.MeterStart, ft.t.MeterStop));
 
                 Logger.LogTrace("ChargeReport: AllTransactionsCsv() - Build Csv");
 
@@ -161,7 +185,13 @@ namespace OCPP.Core.Management.Controllers
                 csv.Append(DefaultCSVSeparator);
                 csv.Append(_localizer["StopMeter"]);
                 csv.Append(DefaultCSVSeparator);
-                csv.AppendLine(_localizer["Energy-kWh"]);
+                csv.Append(_localizer["Energy-kWh"]);
+                if (withNote)
+                {
+                    csv.Append(DefaultCSVSeparator);
+                    csv.Append(_sharedLocalizer["ExportNote"]);
+                }
+                csv.AppendLine();
 
                 foreach (var ft in fullTransactions)
                 {
@@ -192,6 +222,11 @@ namespace OCPP.Core.Management.Controllers
                     csv.Append(ft.t.MeterStop);
                     csv.Append(DefaultCSVSeparator);
                     csv.Append(energy);
+                    if (withNote)
+                    {
+                        csv.Append(DefaultCSVSeparator);
+                        csv.Append(EscapeCsvValue(TransactionDisplay.MeterHint(ft.t.MeterStart, ft.t.MeterStop, _sharedLocalizer), DefaultCSVSeparator));
+                    }
                     csv.AppendLine();
                 }
 
@@ -238,6 +273,12 @@ namespace OCPP.Core.Management.Controllers
                 worksheet.Cell(1, 11).Value = _localizer["StopTime"].Value;
                 worksheet.Cell(1, 12).Value = _localizer["StopMeter"].Value;
                 worksheet.Cell(1, 13).Value = _localizer["Energy-kWh"].Value;
+                // column "note" only if there is a note (normally never)
+                bool withNote = fullTransactions.Any(ft => TransactionDisplay.IsMeterDecreased(ft.t.MeterStart, ft.t.MeterStop));
+                if (withNote)
+                {
+                    worksheet.Cell(1, 14).Value = _sharedLocalizer["ExportNote"].Value;
+                }
 
                 var row = 2;
                 foreach (var ft in fullTransactions)
@@ -262,6 +303,8 @@ namespace OCPP.Core.Management.Controllers
                         worksheet.Cell(row, 12).SetValue(ft.t.MeterStop);
                     if (energy.HasValue)
                         worksheet.Cell(row, 13).SetValue(energy);
+                    if (withNote && TransactionDisplay.IsMeterDecreased(ft.t.MeterStart, ft.t.MeterStop))
+                        worksheet.Cell(row, 14).Value = TransactionDisplay.MeterHint(ft.t.MeterStart, ft.t.MeterStop, _sharedLocalizer);
 
                     row++;
                 }

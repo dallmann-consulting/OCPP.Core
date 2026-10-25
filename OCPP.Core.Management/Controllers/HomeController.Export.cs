@@ -46,8 +46,11 @@ namespace OCPP.Core.Management.Controllers
                 var workbook = CreateSpreadsheet(tlvm);
 
                 using var memoryStream = new MemoryStream();
-                IEnumerable<string> lines = workbook.Worksheet(1).RowsUsed().Select(row =>
-                    string.Join(DefaultCSVSeparator, row.Cells(1, row.LastCellUsed(XLCellsUsedOptions.AllContents).Address.ColumnNumber)
+                // all rows with the same number of columns (e.g. the optional column "note")
+                IXLWorksheet worksheet = workbook.Worksheet(1);
+                int lastColumn = worksheet.LastColumnUsed(XLCellsUsedOptions.AllContents).ColumnNumber();
+                IEnumerable<string> lines = worksheet.RowsUsed().Select(row =>
+                    string.Join(DefaultCSVSeparator, row.Cells(1, lastColumn)
                                                     .Select(cell => EscapeCsvValue(cell.GetValue<string>(), DefaultCSVSeparator))));
 
                 using (var writer = new StreamWriter(memoryStream, Encoding.GetEncoding("ISO-8859-1"), 4096, true))
@@ -180,6 +183,12 @@ namespace OCPP.Core.Management.Controllers
 
             if (tlvm?.Transactions != null)
             {
+                // column "note" only if there is a note (normally never)
+                if (tlvm.Transactions.Any(t => TransactionDisplay.IsMeterDecreased(t.MeterStart, t.MeterStop)))
+                {
+                    worksheet.Cell(1, 9).Value = _sharedLocalizer["ExportNote"].Value;
+                }
+
                 int row = 2;
                 foreach (TransactionExtended t in tlvm?.Transactions)
                 {
@@ -194,6 +203,10 @@ namespace OCPP.Core.Management.Controllers
                     {
                         worksheet.Cell(row, 7).SetValue(t.MeterStop);
                         worksheet.Cell(row, 8).SetValue(t.MeterStop - t.MeterStart);
+                    }
+                    if (TransactionDisplay.IsMeterDecreased(t.MeterStart, t.MeterStop))
+                    {
+                        worksheet.Cell(row, 9).Value = TransactionDisplay.MeterHint(t.MeterStart, t.MeterStop, _sharedLocalizer);
                     }
 
                     row++;

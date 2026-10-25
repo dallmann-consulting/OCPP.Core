@@ -36,5 +36,15 @@ namespace OCPP.Core.Management.Models
         public double? MeterStop { get; set; }
         public string StopReason { get; set; }
         public double? Energy => MeterStop.HasValue ? MeterStop.Value - MeterStart : (double?)null;
+
+        /// <summary>
+        /// Meter at the end smaller than at the start (error of the charge point?) => counts as 0 in sums
+        /// </summary>
+        public bool MeterDecreased => TransactionDisplay.IsMeterDecreased(MeterStart, MeterStop);
+
+        /// <summary>
+        /// Energy for sums: a decreased meter counts as 0
+        /// </summary>
+        public double EnergyForSum => TransactionDisplay.EnergyForSum(MeterStart, MeterStop);
     }
 }

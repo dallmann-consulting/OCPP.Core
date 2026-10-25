@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Mvc.Localization
 @model OverviewViewModel
 @inject IViewLocalizer Localizer
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> SharedLocalizer
 @{
     ViewData["Title"] = @Localizer["Title"];
 }
@@ -55,7 +56,7 @@
                         }
                         else if (!string.IsNullOrEmpty(lastCharge))
                         {
-                            <p class="card-text">@lastCharge</p>
+                            <p class="card-text">@lastCharge @TransactionDisplay.MeterWarningIcon(TransactionDisplay.IsMeterDecreased(cpvm.MeterStart, cpvm.MeterStop), SharedLocalizer)</p>
                         }
                         else
                         {
