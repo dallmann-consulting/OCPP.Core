@@ -66,7 +66,7 @@ namespace OCPP.Core.Database
 
                 entity.Property(e => e.Username).HasMaxLength(50);
 
-                entity.Property(e => e.Password).HasMaxLength(50);
+                entity.Property(e => e.Password).HasMaxLength(200);   // hash (or plaintext before the migration)
 
                 entity.Property(e => e.ClientCertThumb).HasMaxLength(100);
             });

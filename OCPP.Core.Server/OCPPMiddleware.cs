@@ -112,21 +112,32 @@ namespace OCPP.Core.Server
                             // Chargepoint MUST send basic authentication header
 
                             bool basicAuthSuccess = false;
-                            string authHeader = context.Request.Headers["Authorization"];
-                            if (!string.IsNullOrEmpty(authHeader))
+                            if (TryReadBasicAuthentication(context.Request.Headers["Authorization"], out string username, out string password))
                             {
-                                string[] cred = System.Text.ASCIIEncoding.ASCII.GetString(Convert.FromBase64String(authHeader.Substring(6))).Split(':');
-                                if (cred.Length == 2 && chargePoint.Username == cred[0] && chargePoint.Password == cred[1])
+                                // password is stored as hash (or as plaintext before the migration / the first login)
+                                // '&' (not '&&'): the password is always checked => no timing difference for a wrong user name
+                                if (ChargePointPassword.FixedTimeEquals(chargePoint.Username, username) &
+                                    ChargePointPassword.Verify(chargePoint.Password, password, out bool isPlaintext))
                                 {
                                     // Authentication match => OK
                                     _logger.LogInformation("OCPPMiddleware => SUCCESS: Basic authentication for chargepoint '{0}' match", chargePoint.ChargePointId);
                                     basicAuthSuccess = true;
+
+                                    if (isPlaintext)
+                                    {
+                                        // stepwise migration: replace the plaintext password by a hash
+                                        UpgradeChargePointPassword(dbContext, chargePoint, password);
+                                    }
                                 }
                                 else
                                 {
                                     // Authentication does NOT match => Failure
                                     _logger.LogWarning("OCPPMiddleware => FAILURE: Basic authentication for chargepoint '{0}' does NOT match", chargePoint.ChargePointId);
                                 }
+                            }
+                            else
+                            {
+                                _logger.LogWarning("OCPPMiddleware => FAILURE: Missing or invalid basic authentication header from chargepoint '{0}'", chargePoint.ChargePointId);
                             }
                             if (basicAuthSuccess == false)
                             {
@@ -806,6 +817,64 @@ namespace OCPP.Core.Server
             {
                 _logger.LogWarning("OCPPMiddleware => Bad path request");
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            }
+        }
+
+        /// <summary>
+        /// Reads user name and password from a basic authentication header ("Basic base64(user:password)", RFC 7617).
+        /// Returns false for a missing or invalid header (=> 401, not an exception).
+        /// </summary>
+        internal static bool TryReadBasicAuthentication(string authHeader, out string username, out string password)
+        {
+            username = null;
+            password = null;
+
+            const string prefix = "Basic ";
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            byte[] decoded = new byte[authHeader.Length];
+            if (!Convert.TryFromBase64String(authHeader.Substring(prefix.Length).Trim(), decoded, out int length))
+            {
+                return false;
+            }
+
+            // UTF-8 (OCPP 2.0.1 A00.FR.205), separated at the FIRST ':' => the password may contain ':'
+            string credentials = Encoding.UTF8.GetString(decoded, 0, length);
+            int separator = credentials.IndexOf(':');
+            if (separator < 0)
+            {
+                return false;
+            }
+            username = credentials.Substring(0, separator);
+            password = credentials.Substring(separator + 1);
+            return true;
+        }
+
+        /// <summary>
+        /// Stepwise migration: replaces the plaintext password of a chargepoint by its hash after a successful login.
+        /// Only after the database migration (before, the column is too short for the hash).
+        /// </summary>
+        private void UpgradeChargePointPassword(OCPPCoreContext dbContext, ChargePoint chargePoint, string password)
+        {
+            try
+            {
+                if (!dbContext.IsMigrationApplied(MigrationExtensions.ChargePointPasswordHashMigration))
+                {
+                    _logger.LogWarning("OCPPMiddleware => Password of chargepoint '{0}' remains plaintext: database migration '{1}' is pending", chargePoint.ChargePointId, MigrationExtensions.ChargePointPasswordHashMigration);
+                    return;
+                }
+
+                chargePoint.Password = ChargePointPassword.Hash(password);
+                dbContext.SaveChanges();
+                _logger.LogInformation("OCPPMiddleware => Password of chargepoint '{0}' is stored as hash now", chargePoint.ChargePointId);
+            }
+            catch (Exception exp)
+            {
+                // login is successful anyway
+                _logger.LogError(exp, "OCPPMiddleware => Error storing the password hash of chargepoint '{0}': {1}", chargePoint.ChargePointId, exp.Message);
             }
         }
 

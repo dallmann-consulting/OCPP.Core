@@ -45,8 +45,16 @@ namespace OCPP.Core.Management.Models
         [StringLength(50)]
         public string Username { get; set; }
 
-        [StringLength(50)]
+        /// <summary>
+        /// New password (input only - the stored password is never shown)
+        /// </summary>
+        [StringLength(ChargePointPassword.MaxPlaintextLength)]
         public string Password { get; set; }
+
+        /// <summary>
+        /// A password is stored for the charge point
+        /// </summary>
+        public bool HasPassword { get; set; }
 
         [StringLength(100)]
         public string ClientCertThumb { get; set; }

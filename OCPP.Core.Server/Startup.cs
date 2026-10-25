@@ -94,6 +94,8 @@ namespace OCPP.Core.Server
             {
                 dbContext.EnsureMigrated(logger);
             }
+            // warning if the database schema is older than the application (e.g. no rights for automatic migrations)
+            dbContext.LogPendingMigrations(logger);
 
             LogSecurityWarnings(logger, dbContext);
 

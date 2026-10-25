@@ -1,5 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Mvc.Localization
 @inject IViewLocalizer Localizer
+@inject DatabaseStatus DatabaseStatus
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -73,6 +74,17 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
+            @if (this.User.IsInRole(Constants.AdminRoleName))
+            {
+                // database schema is older than the application => only admins can do something about it
+                var pendingMigrations = DatabaseStatus.GetPendingMigrations();
+                if (pendingMigrations.Count > 0)
+                {
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-triangle-exclamation"></i> @string.Format(Localizer["PendingMigrations"].Value, pendingMigrations.Count, string.Join(", ", pendingMigrations))
+                    </div>
+                }
+            }
             @RenderBody()
         </main>
     </div>

@@ -198,4 +198,13 @@
   <data name="TitleConfiguration" xml:space="preserve">
     <value>Configuration</value>
   </data>
+  <data name="PasswordPlaceholderUnchanged" xml:space="preserve">
+    <value>Password stored - leave empty to keep it</value>
+  </data>
+  <data name="GeneratePassword" xml:space="preserve">
+    <value>Generate random password</value>
+  </data>
+  <data name="PasswordHint" xml:space="preserve">
+    <value>The password is not shown after saving. It is removed when the username is cleared.</value>
+  </data>
 </root>

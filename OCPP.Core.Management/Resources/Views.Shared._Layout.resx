@@ -144,4 +144,7 @@
   <data name="Users" xml:space="preserve">
     <value>Users</value>
   </data>
+  <data name="PendingMigrations" xml:space="preserve">
+    <value>The database is not up to date: {0} migration(s) pending ({1}). Apply them with 'AutoMigrateDB' or the SQL scripts (see Installation.md). Until then, charge point passwords are stored as plaintext.</value>
+  </data>
 </root>

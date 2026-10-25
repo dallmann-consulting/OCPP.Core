@@ -96,7 +96,14 @@
                 </div>
                 <div class="col-sm-6">
                     <div class="form-group">
-                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 50)" data-val-length-max="50" id="Password" maxlength="50" name="Password" placeholder="@Localizer["PasswordPlaceholder"]" type="text" value="@Model.Password" />
+                        @* The stored password is never shown (hash). Empty field => password unchanged *@
+                        <div class="input-group">
+                            <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 50)" data-val-length-max="50" id="Password" maxlength="50" name="Password" placeholder="@(Model.HasPassword ? Localizer["PasswordPlaceholderUnchanged"] : Localizer["PasswordPlaceholder"])" type="password" autocomplete="new-password" value="" />
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-secondary" onclick="GeneratePassword()" title="@Localizer["GeneratePassword"]"><i class="fas fa-dice"></i></button>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">@Localizer["PasswordHint"]</small>
                     </div>
                 </div>
                 <div class="col-sm-2">
@@ -173,6 +180,23 @@
 
 
     @section scripts {
+    <script>
+        // Random password for the charge point: 24 letters/digits (easy to enter at the charge point, ~140 bit)
+        function GeneratePassword() {
+            var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            var values = new Uint32Array(24);
+            window.crypto.getRandomValues(values);
+            var password = '';
+            for (var i = 0; i < values.length; i++) {
+                password += chars[values[i] % chars.length];
+            }
+            // show the password => can be copied and entered at the charge point
+            var field = document.getElementById('Password');
+            field.type = 'text';
+            field.value = password;
+            field.select();
+        }
+    </script>
         @if (!string.IsNullOrWhiteSpace(Model.ChargePointId))
         {
             <script>

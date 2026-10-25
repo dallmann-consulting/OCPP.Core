@@ -101,7 +101,8 @@ namespace OCPP.Core.Management.Controllers
                             newChargePoint.Name = cpvm.Name;
                             newChargePoint.Comment = cpvm.Comment;
                             newChargePoint.Username = cpvm.Username;
-                            newChargePoint.Password = cpvm.Password;
+                            // password only with user name (basic authentication)
+                            newChargePoint.Password = (string.IsNullOrEmpty(cpvm.Username) || string.IsNullOrEmpty(cpvm.Password)) ? null : StoredChargePointPassword(cpvm.Password);
                             newChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
                             DbContext.ChargePoints.Add(newChargePoint);
                             DbContext.SaveChanges();
@@ -160,7 +161,16 @@ namespace OCPP.Core.Management.Controllers
                             currentChargePoint.Name = cpvm.Name;
                             currentChargePoint.Comment = cpvm.Comment;
                             currentChargePoint.Username = cpvm.Username;
-                            currentChargePoint.Password = cpvm.Password;
+                            if (string.IsNullOrEmpty(cpvm.Username))
+                            {
+                                // no basic authentication => no password
+                                currentChargePoint.Password = null;
+                            }
+                            else if (!string.IsNullOrEmpty(cpvm.Password))
+                            {
+                                // new password entered (empty field => password unchanged)
+                                currentChargePoint.Password = StoredChargePointPassword(cpvm.Password);
+                            }
                             currentChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
 
                             DbContext.SaveChanges();
@@ -184,7 +194,8 @@ namespace OCPP.Core.Management.Controllers
                         cpvm.Name = currentChargePoint.Name;
                         cpvm.Comment = currentChargePoint.Comment;
                         cpvm.Username = currentChargePoint.Username;
-                        cpvm.Password = currentChargePoint.Password;
+                        // the password is never shown (stored as hash)
+                        cpvm.HasPassword = !string.IsNullOrEmpty(currentChargePoint.Password);
                         cpvm.ClientCertThumb = currentChargePoint.ClientCertThumb;
                     }
 
@@ -198,6 +209,21 @@ namespace OCPP.Core.Management.Controllers
                 TempData["ErrMessage"] = exp.Message;
                 return RedirectToAction("Error", new { Id = "" });
             }
+        }
+
+        /// <summary>
+        /// Value for the password column: hash - or plaintext as long as the database migration is pending
+        /// (the column is too short for the hash before the migration)
+        /// </summary>
+        private string StoredChargePointPassword(string password)
+        {
+            if (DbContext.IsMigrationApplied(MigrationExtensions.ChargePointPasswordHashMigration))
+            {
+                return ChargePointPassword.Hash(password);
+            }
+
+            Logger.LogWarning("ChargePoint: Password is stored as plaintext: database migration '{0}' is pending", MigrationExtensions.ChargePointPasswordHashMigration);
+            return password;
         }
     }
 }

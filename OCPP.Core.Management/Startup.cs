@@ -87,6 +87,7 @@ namespace OCPP.Core.Management
 
             services.AddScoped<IUserManager, UserManager>();
             services.AddSingleton<UnknownLoginTracker>();
+            services.AddSingleton<DatabaseStatus>();
             services.AddDistributedMemoryCache();
         }
 

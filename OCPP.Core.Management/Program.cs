@@ -55,6 +55,8 @@ namespace OCPP.Core.Management
             var configuration = services.GetRequiredService<IConfiguration>();
 
             await dbContext.EnsureMigratedAsync(logger);
+            // warning if the database schema is older than the application (e.g. no rights for automatic migrations)
+            dbContext.LogPendingMigrations(logger);
 
             // Ensure the Admin role exists
             if (!await roleManager.RoleExistsAsync(Constants.AdminRoleName))

@@ -144,4 +144,7 @@
   <data name="Users" xml:space="preserve">
     <value>Benutzer</value>
   </data>
+  <data name="PendingMigrations" xml:space="preserve">
+    <value>Die Datenbank ist nicht aktuell: {0} Migration(en) ausstehend ({1}). Bitte mit 'AutoMigrateDB' oder den SQL-Skripten (siehe Installation.md) aktualisieren. Bis dahin werden Passwörter der Ladestationen im Klartext gespeichert.</value>
+  </data>
 </root>

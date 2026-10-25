@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -23,6 +25,49 @@ namespace OCPP.Core.Database
         /// </summary>
         public static void EnsureMigrated(this OCPPCoreContext context, ILogger logger = null)
             => EnsureMigratedAsync(context, logger).GetAwaiter().GetResult();
+
+        /// <summary>
+        /// Migration that widens the column for charge point passwords => passwords can be stored as hash
+        /// </summary>
+        public const string ChargePointPasswordHashMigration = "ChargePointPasswordHash";
+
+        /// <summary>
+        /// Names of the migrations that are not applied to the database yet
+        /// (e.g. "AutoMigrateDB": false or a database login without the rights for schema changes).
+        /// Only reads the migration history => no special database rights needed.
+        /// </summary>
+        public static List<string> GetPendingMigrationNames(this OCPPCoreContext context)
+        {
+            return context.Database.GetPendingMigrations().ToList();
+        }
+
+        /// <summary>
+        /// True if the migration with this name (without the timestamp prefix) is applied to the database
+        /// </summary>
+        public static bool IsMigrationApplied(this OCPPCoreContext context, string migrationName)
+        {
+            return context.Database.GetAppliedMigrations().Any(m => m.EndsWith("_" + migrationName, StringComparison.Ordinal));
+        }
+
+        /// <summary>
+        /// Logs a warning if migrations are pending (the database schema is older than the application)
+        /// </summary>
+        public static void LogPendingMigrations(this OCPPCoreContext context, ILogger logger)
+        {
+            try
+            {
+                List<string> pending = context.GetPendingMigrationNames();
+                if (pending.Count > 0)
+                {
+                    logger?.LogWarning("Database => {0} migration(s) pending: {1}. Apply them with 'AutoMigrateDB' or the SQL scripts (see Installation.md).",
+                        pending.Count, string.Join(", ", pending));
+                }
+            }
+            catch (Exception exp)
+            {
+                logger?.LogError(exp, "Database => Error checking the migration state: {0}", exp.Message);
+            }
+        }
 
         /// <summary>
         /// Detects databases created from SQL scripts before EF migrations were introduced.

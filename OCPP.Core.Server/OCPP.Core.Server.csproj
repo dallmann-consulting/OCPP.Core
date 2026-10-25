@@ -45,6 +45,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- tests of internal helpers (e.g. basic authentication parsing) -->
+    <InternalsVisibleTo Include="OCPP.Core.Server.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\OCPP.Core.Database\OCPP.Core.Database.csproj" />
     <ProjectReference Include="..\OCPP.Core.Server.Extensions\OCPP.Core.Server.Extensions.csproj" />
   </ItemGroup>
