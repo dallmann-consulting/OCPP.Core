@@ -416,7 +416,8 @@ namespace OCPP.Core.Server
                                 transaction.StopTime = transactionEventRequest.Timestamp.UtcDateTime;
                                 SetTransactionMeter(transaction, meterKWH, isFinal: true, msgIn.Action);
                                 transaction.StopTagId = idTag;
-                                transaction.StopReason = transactionEventRequest.TriggerReason.ToString();
+                                // reason of the end (not the trigger of the message). OCPP 2.x: "MAY only be omitted when Reason is Local"
+                                transaction.StopReason = transactionEventRequest.TransactionInfo.StoppedReason?.ToString() ?? ReasonEnumType.Local.ToString();
                                 DbContext.SaveChanges();
                                 WriteTransactionStoppedEvent(transaction);
                             }
