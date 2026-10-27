@@ -31,7 +31,8 @@ using OCPP.Core.Database;
 namespace OCPP.Core.Server
 {
     /// <summary>
-    /// Deletes old entries in the tables MessageLog ("MessageLogRetentionDays") and EventLog ("EventLogRetentionDays"), 0 = keep forever.
+    /// Deletes old entries in the tables MessageLog ("MessageLogRetentionDays") and EventLog ("EventLogRetentionDays")
+    /// and old message dumps ("MessageDumpRetentionDays"), 0 = keep forever.
     /// Runs shortly after the start and then once a day.
     /// </summary>
     public class LogCleanupService : BackgroundService
@@ -52,6 +53,8 @@ namespace OCPP.Core.Server
         private readonly ILogger<LogCleanupService> _logger;
         private readonly int _messageLogRetentionDays;
         private readonly int _eventLogRetentionDays;
+        private readonly int _messageDumpRetentionDays;
+        private readonly string _messageDumpDirectory;
 
         public LogCleanupService(IServiceScopeFactory scopeFactory, IConfiguration configuration, ILogger<LogCleanupService> logger)
         {
@@ -59,13 +62,18 @@ namespace OCPP.Core.Server
             _logger = logger;
             _messageLogRetentionDays = configuration.GetValue<int>("MessageLogRetentionDays", DefaultMessageLogRetentionDays);
             _eventLogRetentionDays = configuration.GetValue<int>("EventLogRetentionDays", DefaultEventLogRetentionDays);
+            _messageDumpRetentionDays = configuration.GetValue<int>("MessageDumpRetentionDays", MessageDump.DefaultRetentionDays);
+            _messageDumpDirectory = MessageDump.GetDirectory(configuration);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             LogSetting("MessageLog", "MessageLogRetentionDays", _messageLogRetentionDays);
             LogSetting("EventLog", "EventLogRetentionDays", _eventLogRetentionDays);
-            if (_messageLogRetentionDays <= 0 && _eventLogRetentionDays <= 0) return;
+            // message dumps only if they are switched on
+            bool cleanupDumps = _messageDumpDirectory != null && _messageDumpRetentionDays > 0;
+            if (_messageDumpDirectory != null) LogSetting("MessageDump", "MessageDumpRetentionDays", _messageDumpRetentionDays);
+            if (_messageLogRetentionDays <= 0 && _eventLogRetentionDays <= 0 && !cleanupDumps) return;
 
             try
             {
@@ -79,6 +87,10 @@ namespace OCPP.Core.Server
                     if (_eventLogRetentionDays > 0)
                     {
                         await CleanupAsync("EventLog", _eventLogRetentionDays, DeleteOldEventsAsync, stoppingToken);
+                    }
+                    if (cleanupDumps)
+                    {
+                        CleanupMessageDumps();
                     }
 
                     await Task.Delay(Interval, stoppingToken);
@@ -119,6 +131,22 @@ namespace OCPP.Core.Server
             {
                 // e.g. database not available => next try in the next interval
                 _logger.LogError(exp, "LogCleanup => {0}: error deleting old entries: {1}", table, exp.Message);
+            }
+        }
+
+        private void CleanupMessageDumps()
+        {
+            try
+            {
+                int deleted = MessageDump.DeleteOldFiles(_messageDumpDirectory, _messageDumpRetentionDays);
+                if (deleted > 0)
+                {
+                    _logger.LogInformation("LogCleanup => MessageDump: {0} files older than {1} days deleted", deleted, _messageDumpRetentionDays);
+                }
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError(exp, "LogCleanup => MessageDump: error deleting old files: {0}", exp.Message);
             }
         }
 

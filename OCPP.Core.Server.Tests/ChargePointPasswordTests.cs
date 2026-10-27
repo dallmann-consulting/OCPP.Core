@@ -67,7 +67,7 @@ namespace OCPP.Core.Server.Tests
     }
 
     /// <summary>
-    /// Basic authentication of charge points with hashed and plaintext passwords (#16, #19)
+    /// Basic authentication of charge points with hashed and plaintext passwords
     /// </summary>
     public class ChargePointPasswordTests : IClassFixture<OcppServerFactory>
     {
@@ -148,7 +148,7 @@ namespace OCPP.Core.Server.Tests
         [Fact]
         public async Task PasswordWithColon_Connects()
         {
-            // #19: only the first ':' separates user name and password
+            // only the first ':' separates user name and password
             string chargePointId = _factory.AddChargePoint(username: "user1", password: ChargePointPassword.Hash("pass:word:123"));
 
             await using ChargePointSimulator cp = await _factory.ConnectAsync(chargePointId, OcppProtocols.Ocpp16, "user1", "pass:word:123");
@@ -164,7 +164,7 @@ namespace OCPP.Core.Server.Tests
         [InlineData("Basic dXNlcjFzZWNyZXQtcGFzc3dvcmQtMTIz")]        // "user1secret-password-123" without ':'
         public async Task MalformedAuthorizationHeader_IsRejectedWith401(string header)
         {
-            // #19: an invalid header must not cause an exception (=> 500)
+            // an invalid header must not cause an exception (=> 500)
             string chargePointId = _factory.AddChargePoint(username: "user1", password: ChargePointPassword.Hash("secret-password-123"));
 
             WebSocketClient client = _factory.Server.CreateWebSocketClient();

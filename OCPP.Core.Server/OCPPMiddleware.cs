@@ -1585,12 +1585,15 @@ namespace OCPP.Core.Server
         /// </summary>
         private void DumpMessage(string nameSuffix, string message)
         {
-            string dumpDir = _configuration.GetValue<string>("MessageDumpDir");
-            if (!string.IsNullOrWhiteSpace(dumpDir))
+            // environment variables (e.g. %TEMP%) expanded
+            string dumpDir = MessageDump.GetDirectory(_configuration);
+            if (dumpDir != null)
             {
-                string path = Path.Combine(dumpDir, string.Format("{0}_{1}.txt", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-ffff"), nameSuffix));
+                string path = Path.Combine(dumpDir, MessageDump.FileName(DateTime.Now, nameSuffix));
                 try
                 {
+                    // the directory is created if it doesn't exist (no effect if it exists)
+                    Directory.CreateDirectory(dumpDir);
                     // Write incoming message into dump directory
                     File.WriteAllText(path, message);
                 }

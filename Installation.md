@@ -38,9 +38,10 @@ Edit the appsettings.json file and configure the 'SQLite' *or* 'SqlServer' entry
 	"SqlServer": "Server=.;Database=OCPP.Core;Trusted_Connection=True;"
 	},
 ```
-If you configure a dump directory, the server writes all OCPP requests and responses there. You can also log basic message information in the database.
+If you configure a dump directory, the server writes all OCPP requests and responses there as files (for debugging - they contain tokens and possibly passwords, so it's off by default). Environment variables are expanded (e.g. `%TEMP%\\OCPP`) and the directory is created if necessary. Dump files older than `MessageDumpRetentionDays` are deleted once a day (default 7 days, 0 = keep forever; only files with the name of a dump are deleted). You can also log basic message information in the database.
 ```
 "MessageDumpDir": "c:\\temp\\OCPP",
+"MessageDumpRetentionDays": 7,
 "DbMessageLog": 2,  //0=None, 1=Info, 2=Verbose (all)
 ```
 The server deletes entries in the database message log (table MessageLog) older than `MessageLogRetentionDays` once a day (default 90 days, 0 = keep forever).
@@ -56,7 +57,6 @@ See above for the database connection.
 With an empty database the Management-UI shows a setup page to register the first admin user.
 If you have existing user definitions in your configuration, these users are migrated into the database.
 
-```
 The Management-UI needs the URL to the OCPP server for internal communication.  To secure this API you can configure API keys (=identical passwords) on both sides:
 ```
 "ServerApiUrl": "http://localhost:8081/API",
@@ -108,36 +108,49 @@ After a network failure the server may still consider the old connection of a ch
 Download a precompiled [release](https://github.com/dallmann-consulting/OCPP.Core/releases).
 They are compiled 'portable' and run on different platforms.
 
+For a quick start use the included SQLite database (folder "SQLite"). The database connection must be activated in the configuration files first.
+
 ### Windows
 * Download and install the .NET 10 runtime.
 * Extract the ZIP file somewhere. 
-* Open the file "appsettings.json" in the OCPP.Server and configure "MessageDumpDir" to an existing directory or leave it empty to turn off message dumps.
+* Open the file "appsettings.json" in both projects (OCPP.Core.Server and OCPP.Core.Management): activate the "SQLite" connection string (remove the `//`). If the "SqlServer" entry is active, deactivate it (add `//`) - only one connection string may be set.
+* Optional: to dump all OCPP messages for debugging, open the file "appsettings.json" in the OCPP.Server and configure "MessageDumpDir" (empty = off).
 * Start the "OCPP.Core.Server.exe" and "OCPP.Core.Management.exe". 
-* Open "http://localhost:8082" in a browser.
+* Open "http://localhost:8082" in a browser. With the empty database the Management-UI shows the setup page for the first admin user.
 
 ### Linux
+For a permanent installation (systemd services, reverse proxy with TLS, backup) see the [Raspberry Pi installation guide](Raspberry-Pi-Installation.md). It works the same way on most Linux distributions.
+
 * Install the .NET 10 runtime for your Linux distribution and version. Instructions [here](https://docs.microsoft.com/en-us/dotnet/core/install/linux).
 * Extract the ZIP file somewhere. 
-* Open the file "appsettings.json" in both projects
-	* change the paths to the sqlite file to a valid unix path: "SQLite": "Filename=./../SQLite/OCPP.Core.sqlite;"
-	* Only OCPP.Server: configure the "MessageDumpDir" to an existing directory or leave it empty to turn off message dumps.
-* Give the file "SQLite/OCPP.Core.sqlite" Read&Write permissions to everone.
-* Start both projects in consoles:
+* Open the file "appsettings.json" in both projects (OCPP.Core.Server and OCPP.Core.Management)
+	* activate the "SQLite" connection string with a unix path. If the "SqlServer" entry is active, deactivate it (only one connection string may be set):
 	```
+	"ConnectionStrings": {
+	  "SQLite": "Filename=./../SQLite/OCPP.Core.sqlite;"
+	  //"SqlServer": "..."
+	},
+	```
+	* Only OCPP.Server, optional: configure "MessageDumpDir" to dump all OCPP messages for debugging (empty = off).
+* The user running both applications needs write permissions for the folder "SQLite" (not only for the database file): in WAL mode SQLite creates the files "OCPP.Core.sqlite-wal" and "OCPP.Core.sqlite-shm" there. If you extracted the ZIP file with this user, nothing needs to be done. Don't give write permissions to everyone.
+* The path to the database is relative to the current directory. Therefore start each project from its own folder in a separate console:
+	```
+	cd OCPP.Core.Server
 	dotnet OCPP.Core.Server.dll
 	```
 
 	```
+	cd OCPP.Core.Management
 	dotnet OCPP.Core.Management.dll
 	```
-* Open "http://localhost:8082" in a browser.
+* Open "http://localhost:8082" in a browser. With the empty database the Management-UI shows the setup page for the first admin user.
 
 ### Docker
 Both the OCPP server and the Management UI run in a **single container**. A `compose.yaml` is provided that bind-mounts the `./SQLite` folder into the container so the database file is directly accessible on the host.
 
 A ocpp-core.service template is provided for systemd startup of the docker compose container.
 This requires a user "ocpp" being setup, and is assuming you have a working directory of
-/usr/bin/local/ocpp.core.  Adjust as appropriate.
+/usr/local/bin/ocpp.core (with the `compose.yaml`).  Adjust as appropriate.
 
 To use pre-built docker container:
 	```
@@ -191,12 +204,12 @@ You will see a command shell where the active URLs are shown and all logging out
 
 The appsettings.json files contain the following URL settings for the Kestrel server:
 
- - OCPP.Server without SSL: "http://localhost:8081" => "ws://localhost:8081/OCPP/<chargepoint-ID>"
- - OCPP.Server with SSL: "https://localhost:8091" => "wss://localhost:8091/OCPP/<chargepoint-ID>"
- - OCPP.Management without SSL: "http://localhost:8082"
- - OCPP.Management with SSL: "https://localhost:8092"
+ - OCPP.Server without SSL: "http://0.0.0.0:8081" (all network interfaces) => "ws://<host>:8081/OCPP/<chargepoint-ID>"
+ - OCPP.Server with SSL: "https://localhost:8091" (only local computer) => "wss://localhost:8091/OCPP/<chargepoint-ID>"
+ - OCPP.Management without SSL: "http://0.0.0.0:8082" (all network interfaces)
+ - OCPP.Management with SSL: "https://localhost:8092" (only local computer)
  
- Both projects contain a self-signed certificate (.pfx file) for testing purposes.
+ Both projects contain a self-signed certificate (.pfx file) for testing purposes. For production use your own certificate or a reverse proxy with TLS. Behind a reverse proxy on the same machine change "0.0.0.0" to "127.0.0.1", so the applications are only reachable through the proxy.
 
 ***Attention:***
 

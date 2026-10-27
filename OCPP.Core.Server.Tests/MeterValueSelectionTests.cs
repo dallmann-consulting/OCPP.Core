@@ -124,7 +124,7 @@ namespace OCPP.Core.Server.Tests
     }
 
     /// <summary>
-    /// #18 end-to-end: meter value messages of all OCPP versions
+    /// End-to-end: meter value messages of all OCPP versions
     /// </summary>
     public class MeterValueSelectionTests : IClassFixture<OcppServerFactory>
     {

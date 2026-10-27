@@ -28,7 +28,7 @@ EXPOSE 8081 8082
 # Defaults — override via environment variables or compose.yaml
 ENV ASPNETCORE_ENVIRONMENT="Production" \
     ConnectionStrings__SQLite="Filename=/db/OCPP.Core.sqlite;" \
-    MessageDumpDir="/tmp/ocpp" \
+    MessageDumpDir="" \
     ServerApiUrl="http://localhost:8081/API" \
     ApiKey="" \
     Logging__LogLevel__Default="Information" \
