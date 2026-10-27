@@ -79,6 +79,11 @@ namespace OCPP.Core.Server.Tests
             ServerCall call = await cp.WaitForServerCallAsync("UnlockConnector");
             string idField = (protocol == OcppProtocols.Ocpp16) ? "connectorId" : "evseId";
             Assert.Equal(1, call.Payload[idField]!.Value<int>());
+            if (protocol != OcppProtocols.Ocpp16)
+            {
+                // OCPP 2.x requires the connector within the EVSE (0 doesn't exist)
+                Assert.Equal(1, call.Payload["connectorId"]!.Value<int>());
+            }
         }
 
         [Theory]

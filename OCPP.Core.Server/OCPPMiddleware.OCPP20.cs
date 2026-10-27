@@ -146,6 +146,9 @@ namespace OCPP.Core.Server
 
             Messages_OCPP20.UnlockConnectorRequest unlockConnectorRequest = new Messages_OCPP20.UnlockConnectorRequest();
             unlockConnectorRequest.EvseId = 0;
+            // required in OCPP 2.x: connector within the EVSE. The server addresses EVSEs (one connector each) => always 1
+            // (0 doesn't exist => many charging stations answer "UnknownConnector")
+            unlockConnectorRequest.ConnectorId = 1;
             unlockConnectorRequest.CustomData = new CustomDataType();
             unlockConnectorRequest.CustomData.VendorId = ControllerOCPP20.VendorId;
 
@@ -156,7 +159,7 @@ namespace OCPP.Core.Server
                     unlockConnectorRequest.EvseId = iConnectorId;
                 }
             }
-            logger.LogTrace("OCPPMiddleware.OCPP20 => UnlockConnector20: ChargePoint='{0}' / EvseId={1}", chargePointStatus.Id, unlockConnectorRequest.EvseId);
+            logger.LogTrace("OCPPMiddleware.OCPP20 => UnlockConnector20: ChargePoint='{0}' / EvseId={1} / ConnectorId={2}", chargePointStatus.Id, unlockConnectorRequest.EvseId, unlockConnectorRequest.ConnectorId);
 
 
             // Send request and wait (asynchronously) for the chargepoint response
