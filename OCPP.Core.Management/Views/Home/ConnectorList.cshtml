@@ -1,5 +1,4 @@
 ﻿@using Microsoft.AspNetCore.Mvc.Localization
-@using System.Text
 @model ConnectorStatusViewModel
 @inject IViewLocalizer Localizer
 @{
@@ -55,15 +54,15 @@
                             <div style="display: inline-block;">
                                 @if (cpOnlineStatus != null)
                                 {
-                                    <button class="btn btn-info" id="btnUnlock" onclick="UnlockConnector('@cs.ChargePointId', @cs.ConnectorId, '@cs.ConnectorName')"><i class="fas fa-lock-open" title="@Localizer["TitleUnlockConnector"]"></i></button>
+                                    <button class="btn btn-info" id="btnUnlock" data-chargepoint="@cs.ChargePointId" data-connector="@cs.ConnectorId" data-name="@(cs.ConnectorName ?? string.Empty)" onclick="UnlockConnector(this.dataset.chargepoint, this.dataset.connector, this.dataset.name)"><i class="fas fa-lock-open" title="@Localizer["TitleUnlockConnector"]"></i></button>
                                 }
                                 @if (cpOnlineStatus != null)
                                 {
-                                    <button class="btn btn-success" id="btnStartTransaction" onclick="StartTransaction('@cs.ChargePointId', @cs.ConnectorId, '@cs.ConnectorName')"><i class="fa-solid fa-plug-circle-check" title="@Localizer["TitleStartTransaction"]"></i></button>
+                                    <button class="btn btn-success" id="btnStartTransaction" data-chargepoint="@cs.ChargePointId" data-connector="@cs.ConnectorId" data-name="@(cs.ConnectorName ?? string.Empty)" onclick="StartTransaction(this.dataset.chargepoint, this.dataset.connector, this.dataset.name)"><i class="fa-solid fa-plug-circle-check" title="@Localizer["TitleStartTransaction"]"></i></button>
                                 }
                                 @if (cpOnlineStatus != null)
                                 {
-                                    <button class="btn btn-danger" id="btnStopTransaction" onclick="StopTransaction('@cs.ChargePointId', @cs.ConnectorId, '@cs.ConnectorName')"><i class="fa-solid fa-plug-circle-xmark" title="@Localizer["TitleStopTransaction"]"></i></button>
+                                    <button class="btn btn-danger" id="btnStopTransaction" data-chargepoint="@cs.ChargePointId" data-connector="@cs.ConnectorId" data-name="@(cs.ConnectorName ?? string.Empty)" onclick="StopTransaction(this.dataset.chargepoint, this.dataset.connector, this.dataset.name)"><i class="fa-solid fa-plug-circle-xmark" title="@Localizer["TitleStopTransaction"]"></i></button>
                                 }
                             </div>
                         </td>
@@ -75,9 +74,14 @@
 
     @section scripts {
         <script>
+            // values of the database (names, IDs) are inserted as text, never as HTML/JavaScript
+            function escapeHtml(text) {
+                return $('<div>').text(text).html();
+            }
+
             function UnlockConnector(chargepointId, connectorid, connectorName) {
                 if (connectorName.length==0) connectorName=chargepointId+':'+connectorid;
-                var msg = '@Localizer["DialogUnlockConnector"]'.replace('%', connectorName);
+                var msg = '@Localizer["DialogUnlockConnector"]'.replace('%', escapeHtml(connectorName));
                 var dialog = new BootstrapDialog({
                     title: '@Localizer["TitleUnlockConnector"]',
                     message: msg,
@@ -111,7 +115,7 @@
 
                                 }
                             };
-                            xmlhttp.open("POST", "@Html.Raw(Url.Content("~/API/UnlockConnector/"))" + chargepointId + '/' + connectorid, true);
+                            xmlhttp.open("POST", "@Html.Raw(Url.Content("~/API/UnlockConnector/"))" + encodeURIComponent(chargepointId) + '/' + encodeURIComponent(connectorid), true);
                             xmlhttp.setRequestHeader("RequestVerificationToken", $('input[name="__RequestVerificationToken"]').val());
                             xmlhttp.send();
                         }
@@ -126,24 +130,16 @@
                 dialog.open();
             }
 
-            @{
-                StringBuilder sb = new StringBuilder();
-                if (Model.ChargeTags != null)
-                {
-                        foreach (ChargeTag ct in Model.ChargeTags)
-                        {
-                                sb.Append("<option value=\"");
-                                sb.Append(ct.TagId.Replace("'", "&#39;"));
-                                sb.Append("\">");
-                                sb.Append(Html.Encode(ct.TagName));
-                                sb.Append("<//option>");
-                        }
-                }
-            }
+            // charge tags for the selection (JSON: special characters are escaped by the serializer)
+            var chargeTags = @Json.Serialize((Model.ChargeTags ?? new List<ChargeTag>()).Select(ct => new { id = ct.TagId, name = ct.TagName }));
+
             function StartTransaction(chargepointId, connectorid, connectorName) {
                 if (connectorName.length==0) connectorName=chargepointId+':'+connectorid;
-                var msg = '@Html.Raw(Localizer["DialogStartTransaction"].Value.Replace("%options%",sb.ToString()))';
-                msg = msg.replace('%connector%', connectorName);
+                var msg = $('<div>').html('@Html.Raw(Localizer["DialogStartTransaction"].Value.Replace("%options%", string.Empty))'.replace('%connector%', escapeHtml(connectorName)));
+                var select = msg.find('select');
+                chargeTags.forEach(function (tag) {
+                    select.append($('<option>').val(tag.id).text(tag.name));
+                });
                 var dialog = new BootstrapDialog({
                     title: '@Localizer["TitleStartTransaction"]',
                     message: msg,
@@ -179,7 +175,7 @@
 
                                 }
                             };
-                            xmlhttp.open("POST", "@Html.Raw(Url.Content("~/API/StartTransaction/"))" + chargepointId + '/' + connectorid + '/' + chargeTag, true);
+                            xmlhttp.open("POST", "@Html.Raw(Url.Content("~/API/StartTransaction/"))" + encodeURIComponent(chargepointId) + '/' + encodeURIComponent(connectorid) + '/' + encodeURIComponent(chargeTag), true);
                             xmlhttp.setRequestHeader("RequestVerificationToken", $('input[name="__RequestVerificationToken"]').val());
                             xmlhttp.send();
                         }
@@ -196,7 +192,7 @@
 
             function StopTransaction(chargepointId, connectorid, connectorName) {
                 if (connectorName.length==0) connectorName=chargepointId+':'+connectorid;
-                var msg = '@Localizer["DialogStopTransaction"]'.replace('%', connectorName);
+                var msg = '@Localizer["DialogStopTransaction"]'.replace('%', escapeHtml(connectorName));
                 var dialog = new BootstrapDialog({
                     title: '@Localizer["TitleStopTransaction"]',
                     message: msg,
@@ -230,7 +226,7 @@
 
                                 }
                             };
-                            xmlhttp.open("POST", "@Html.Raw(Url.Content("~/API/StopTransaction/"))" + chargepointId + '/' + connectorid, true);
+                            xmlhttp.open("POST", "@Html.Raw(Url.Content("~/API/StopTransaction/"))" + encodeURIComponent(chargepointId) + '/' + encodeURIComponent(connectorid), true);
                             xmlhttp.setRequestHeader("RequestVerificationToken", $('input[name="__RequestVerificationToken"]').val());
                             xmlhttp.send();
                         }
