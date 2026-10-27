@@ -100,14 +100,15 @@ namespace OCPP.Core.Server
                     {
                         if (ct.ExpiryDate.HasValue)
                         {
-                            idTagInfo.ExpiryDate = ct.ExpiryDate.Value;
+                            // valid until the end of the expiry date (local time of the server)
+                            idTagInfo.ExpiryDate = new DateTimeOffset(DateTime.SpecifyKind(TagValidUntil(ct.ExpiryDate.Value), DateTimeKind.Local));
                         }
                         idTagInfo.ParentIdTag = string.IsNullOrWhiteSpace(ct.ParentTagId) ? null : ct.ParentTagId;
                         if (ct.Blocked.HasValue && ct.Blocked.Value)
                         {
                             idTagInfo.Status = IdTagInfoStatus.Blocked;
                         }
-                        else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                        else if (IsExpired(ct))
                         {
                             idTagInfo.Status = IdTagInfoStatus.Expired;
                         }

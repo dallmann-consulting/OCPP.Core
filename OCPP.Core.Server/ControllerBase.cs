@@ -169,7 +169,8 @@ namespace OCPP.Core.Server
 
                 if (!string.IsNullOrEmpty(status))
                 {
-                    DateTime dbTime = ((statusTime.HasValue) ? statusTime.Value : DateTimeOffset.UtcNow).DateTime;
+                    // UTC (as all times in the database) - the time of the charge point can have an offset (e.g. +01:00)
+                    DateTime dbTime = ((statusTime.HasValue) ? statusTime.Value : DateTimeOffset.UtcNow).UtcDateTime;
                     DbContext.ConnectorStatuses.Where(cs => cs.ChargePointId == ChargePointStatus.Id && cs.ConnectorId == connectorId)
                         .ExecuteUpdate(s => s
                             .SetProperty(cs => cs.LastStatus, status)
@@ -190,7 +191,7 @@ namespace OCPP.Core.Server
 
                 if (meter.HasValue)
                 {
-                    DateTime dbTime = ((meterTime.HasValue) ? meterTime.Value : DateTimeOffset.UtcNow).DateTime;
+                    DateTime dbTime = ((meterTime.HasValue) ? meterTime.Value : DateTimeOffset.UtcNow).UtcDateTime;
                     DbContext.ConnectorStatuses.Where(cs => cs.ChargePointId == ChargePointStatus.Id && cs.ConnectorId == connectorId)
                         .ExecuteUpdate(s => s
                             .SetProperty(cs => cs.LastMeter, meter.Value)
@@ -498,6 +499,23 @@ namespace OCPP.Core.Server
             }
 
             return idTag;
+        }
+
+        /// <summary>
+        /// Charge tags: the expiry date is a calendar date (entered in the management, local time) and means
+        /// "valid until the end of this day" => the tag expires at 0:00 of the next day
+        /// </summary>
+        protected static DateTime TagValidUntil(DateTime expiryDate)
+        {
+            return expiryDate.Date.AddDays(1);
+        }
+
+        /// <summary>
+        /// True if the charge tag is expired (see <see cref="TagValidUntil"/>)
+        /// </summary>
+        protected static bool IsExpired(ChargeTag chargeTag)
+        {
+            return chargeTag.ExpiryDate.HasValue && DateTime.Now >= TagValidUntil(chargeTag.ExpiryDate.Value);
         }
 
         /// <summary>

@@ -412,7 +412,7 @@ namespace OCPP.Core.Server
                         {
                             idTokenInfo.Status = AuthorizationStatusEnumType.Blocked;
                         }
-                        else if (ct.ExpiryDate.HasValue && ct.ExpiryDate.Value < DateTime.Now)
+                        else if (IsExpired(ct))
                         {
                             idTokenInfo.Status = AuthorizationStatusEnumType.Expired;
                         }
