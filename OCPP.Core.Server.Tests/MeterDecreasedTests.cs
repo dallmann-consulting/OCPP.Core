@@ -7,7 +7,7 @@ namespace OCPP.Core.Server.Tests
     /// <summary>
     /// Meter values smaller than before (within a transaction, e.g. an error of the charge point).
     /// Intermediate values don't lower the meter, final values are taken over unchanged.
-    /// Always a MessageLog entry (also with "DbMessageLog" = 0 as in the tests).
+    /// Always an EventLog entry ("MeterDecreased").
     /// </summary>
     public class MeterDecreasedTests : IClassFixture<OcppServerFactory>
     {
@@ -43,11 +43,11 @@ namespace OCPP.Core.Server.Tests
             Assert.Equal(10.0, transaction.MeterStart, 6);
             Assert.Equal(9.0, transaction.MeterStop!.Value, 6);
 
-            List<MessageLog> warnings = MeterWarnings(cp.ChargePointId);
+            List<ChargePointEvent> warnings = MeterWarnings(cp.ChargePointId);
             Assert.Equal(2, warnings.Count);
-            Assert.All(warnings, w => Assert.Equal("TransactionEvent", w.Message));
-            Assert.Contains(warnings, w => w.Result.Contains("New=9") && w.Result.Contains("taken over"));
-            Assert.Contains(warnings, w => w.Result.Contains("New=11") && w.Result.Contains("ignored"));
+            Assert.All(warnings, w => Assert.StartsWith("TransactionEvent:", w.Details));
+            Assert.Contains(warnings, w => EventLogExtensions.ReadParameters(w.Parameters)["new"] == "9" && EventLogExtensions.ReadParameters(w.Parameters)["takenOver"] == "true");
+            Assert.Contains(warnings, w => EventLogExtensions.ReadParameters(w.Parameters)["new"] == "11" && EventLogExtensions.ReadParameters(w.Parameters)["takenOver"] == "false");
         }
 
         [Theory]
@@ -96,8 +96,9 @@ namespace OCPP.Core.Server.Tests
             Transaction transaction = db.Transactions.Single(t => t.TransactionId == transactionId);
             Assert.Equal(5.0, transaction.MeterStart, 6);
             Assert.Equal(4.0, transaction.MeterStop!.Value, 6);
-            MessageLog warning = Assert.Single(MeterWarnings(cp.ChargePointId));
-            Assert.Equal("StopTransaction", warning.Message);
+            ChargePointEvent warning = Assert.Single(MeterWarnings(cp.ChargePointId));
+            Assert.StartsWith("StopTransaction:", warning.Details);
+            Assert.Equal(EventSeverity.Warning, warning.Severity);
         }
 
         [Fact]
@@ -170,10 +171,10 @@ namespace OCPP.Core.Server.Tests
             return db.Transactions.Single(t => t.Uid == uid);
         }
 
-        private List<MessageLog> MeterWarnings(string chargePointId)
+        private List<ChargePointEvent> MeterWarnings(string chargePointId)
         {
             using OCPPCoreContext db = _factory.CreateDbContext();
-            return db.MessageLogs.Where(l => l.ChargePointId == chargePointId && l.ErrorCode == ControllerBase.MeterDecreasedErrorCode).ToList();
+            return db.ChargePointEvents.Where(e => e.ChargePointId == chargePointId && e.EventCode == EventCode.MeterDecreased).ToList();
         }
     }
 }

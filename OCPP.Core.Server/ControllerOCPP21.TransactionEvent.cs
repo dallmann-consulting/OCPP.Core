@@ -185,6 +185,7 @@ namespace OCPP.Core.Server
                                 DbContext.Add<Transaction>(transaction);
 
                                 DbContext.SaveChanges();
+                                WriteTransactionStartedEvent(transaction);
                             }
                         }
                         catch (Exception exp)
@@ -227,6 +228,7 @@ namespace OCPP.Core.Server
                             transaction.MeterStart = meterKWH;
                             DbContext.Add<Transaction>(transaction);
                             DbContext.SaveChanges();
+                            WriteTransactionStartedEvent(transaction);
                         }
 
                         if (transaction.StopTime.HasValue)
@@ -416,6 +418,7 @@ namespace OCPP.Core.Server
                                 transaction.StopTagId = idTag;
                                 transaction.StopReason = transactionEventRequest.TriggerReason.ToString();
                                 DbContext.SaveChanges();
+                                WriteTransactionStoppedEvent(transaction);
                             }
                         }
                         catch (Exception exp)
@@ -435,6 +438,12 @@ namespace OCPP.Core.Server
                     msgLogText = $"EndTx => {transactionEventResponse.IdTokenInfo?.Status} | {msgLogText}";
                 }
 
+                if (transactionEventResponse.IdTokenInfo != null)
+                {
+                    WriteAuthorizationEvent(connectorId, idTag, transactionEventResponse.IdTokenInfo.Status.ToString(),
+                        transactionEventResponse.IdTokenInfo.Status == AuthorizationStatusEnumType.Accepted,
+                        transactionEventRequest.EventType == TransactionEventEnumType.Ended ? "Stop" : "Start");
+                }
                 msgOut.JsonPayload = JsonConvert.SerializeObject(transactionEventResponse);
                 Logger.LogTrace("TransactionEvent => Response serialized");
             }

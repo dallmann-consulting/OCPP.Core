@@ -435,3 +435,52 @@ END;
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261026215936_EventLog'
+)
+BEGIN
+    CREATE TABLE [EventLog] (
+        [EventId] bigint NOT NULL IDENTITY,
+        [EventTime] datetime2 NOT NULL,
+        [ChargePointId] nvarchar(100) NOT NULL,
+        [ConnectorId] int NULL,
+        [Category] nvarchar(20) NOT NULL,
+        [Severity] nvarchar(10) NOT NULL,
+        [EventCode] nvarchar(50) NOT NULL,
+        [Parameters] nvarchar(max) NULL,
+        [Details] nvarchar(max) NULL,
+        CONSTRAINT [PK_EventLog] PRIMARY KEY ([EventId]),
+        CONSTRAINT [FK_EventLog_ChargePoint] FOREIGN KEY ([ChargePointId]) REFERENCES [ChargePoint] ([ChargePointId]) ON DELETE CASCADE
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261026215936_EventLog'
+)
+BEGIN
+    CREATE INDEX [IX_EventLog_ChargePointId_EventTime] ON [EventLog] ([ChargePointId], [EventTime]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261026215936_EventLog'
+)
+BEGIN
+    CREATE INDEX [IX_EventLog_EventTime] ON [EventLog] ([EventTime]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261026215936_EventLog'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261026215936_EventLog', N'10.0.12');
+END;
+
+COMMIT;
+GO
+

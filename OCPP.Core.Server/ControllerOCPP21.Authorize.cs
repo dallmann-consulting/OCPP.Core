@@ -113,6 +113,7 @@ namespace OCPP.Core.Server
                     }
                 }
 
+                WriteAuthorizationEvent(0, idTag, authorizeResponse.IdTokenInfo?.Status.ToString(), authorizeResponse.IdTokenInfo?.Status == AuthorizationStatusEnumType.Accepted, "Authorize");
                 msgOut.JsonPayload = JsonConvert.SerializeObject(authorizeResponse);
                 Logger.LogTrace("Authorize => Response serialized");
             }

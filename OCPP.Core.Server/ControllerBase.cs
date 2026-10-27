@@ -149,11 +149,13 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Helper function for creating and updating the ConnectorStatus in then database
         /// </summary>
-        protected bool UpdateConnectorStatus(int connectorId, string status, DateTimeOffset? statusTime, double? meter, DateTimeOffset? meterTime)
+        protected bool UpdateConnectorStatus(int connectorId, string status, DateTimeOffset? statusTime, double? meter, DateTimeOffset? meterTime,
+            string statusErrorCode = null, string statusInfo = null)
         {
             try
             {
                 ConnectorStatus connectorStatus = DbContext.Find<ConnectorStatus>(ChargePointStatus.Id, connectorId);
+                string oldStatus = connectorStatus?.LastStatus;
                 if (connectorStatus == null)
                 {
                     // no matching entry => create connector status
@@ -173,6 +175,17 @@ namespace OCPP.Core.Server
                             .SetProperty(cs => cs.LastStatus, status)
                             .SetProperty(cs => cs.LastStatusTime, dbTime)
                             );
+
+                    // EventLog: only real changes (or a new error code) - not every repeated status message
+                    if (!string.Equals(oldStatus, status, StringComparison.OrdinalIgnoreCase) || !string.IsNullOrEmpty(statusErrorCode))
+                    {
+                        string severity = status == ConnectorStatusEnum.Faulted.ToString() ? EventSeverity.Error :
+                                          status == ConnectorStatusEnum.Unavailable.ToString() ? EventSeverity.Warning : EventSeverity.Info;
+                        Dictionary<string, object> parameters = new Dictionary<string, object> { ["old"] = oldStatus, ["new"] = status };
+                        if (!string.IsNullOrEmpty(statusErrorCode)) parameters["errorCode"] = statusErrorCode;
+                        if (!string.IsNullOrEmpty(statusInfo)) parameters["info"] = statusInfo;
+                        WriteEvent(connectorId, EventCategory.Status, severity, EventCode.StatusChanged, parameters);
+                    }
                 }
 
                 if (meter.HasValue)
@@ -263,9 +276,83 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
-        /// Error code of the MessageLog entry for a meter value that is smaller than before (within the transaction)
+        /// Writes an event of this charge point into the EventLog (errors are only logged)
         /// </summary>
-        public const string MeterDecreasedErrorCode = "MeterDecreased";
+        protected void WriteEvent(int? connectorId, string category, string severity, string eventCode, Dictionary<string, object> parameters = null, string details = null)
+        {
+            DbContext.WriteEvent(Logger, ChargePointStatus?.Id, connectorId, category, severity, eventCode, parameters, details);
+        }
+
+        /// <summary>
+        /// EventLog: boot of the charge point (and a changed firmware compared to the last boot)
+        /// </summary>
+        protected void WriteBootEvent(string vendor, string model, string firmware, string reason)
+        {
+            if (ChargePointStatus == null) return;
+            try
+            {
+                string lastBoot = DbContext.ChargePointEvents.AsNoTracking()
+                    .Where(e => e.ChargePointId == ChargePointStatus.Id && e.EventCode == EventCode.Boot)
+                    .OrderByDescending(e => e.EventTime)
+                    .Select(e => e.Parameters)
+                    .FirstOrDefault();
+                if (lastBoot != null)
+                {
+                    EventLogExtensions.ReadParameters(lastBoot).TryGetValue("firmware", out string lastFirmware);
+                    if (!string.IsNullOrEmpty(firmware) && !string.IsNullOrEmpty(lastFirmware) && firmware != lastFirmware)
+                    {
+                        WriteEvent(null, EventCategory.Station, EventSeverity.Info, EventCode.FirmwareChanged,
+                            new Dictionary<string, object> { ["old"] = lastFirmware, ["new"] = firmware });
+                    }
+                }
+            }
+            catch (Exception exp)
+            {
+                Logger.LogError(exp, "BootNotification => Error reading the last boot event: {0}", exp.Message);
+            }
+
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            if (!string.IsNullOrEmpty(vendor)) parameters["vendor"] = vendor;
+            if (!string.IsNullOrEmpty(model)) parameters["model"] = model;
+            if (!string.IsNullOrEmpty(firmware)) parameters["firmware"] = firmware;
+            if (!string.IsNullOrEmpty(reason)) parameters["reason"] = reason;
+            WriteEvent(null, EventCategory.Station, EventSeverity.Info, EventCode.Boot, parameters);
+        }
+
+        /// <summary>
+        /// EventLog: result of an authorization (Authorize, start or stop of a transaction)
+        /// </summary>
+        protected void WriteAuthorizationEvent(int connectorId, string tag, string status, bool accepted, string action)
+        {
+            if (string.IsNullOrEmpty(tag)) return;
+            Dictionary<string, object> parameters = new Dictionary<string, object> { ["tag"] = tag, ["action"] = action };
+            if (!accepted) parameters["status"] = status;
+            WriteEvent(connectorId > 0 ? connectorId : null, EventCategory.Authorization, accepted ? EventSeverity.Info : EventSeverity.Warning,
+                accepted ? EventCode.TokenAccepted : EventCode.TokenRejected, parameters);
+        }
+
+        /// <summary>
+        /// EventLog: a transaction was started
+        /// </summary>
+        protected void WriteTransactionStartedEvent(Transaction transaction)
+        {
+            Dictionary<string, object> parameters = new Dictionary<string, object> { ["transactionId"] = transaction.TransactionId };
+            if (!string.IsNullOrEmpty(transaction.StartTagId)) parameters["tag"] = transaction.StartTagId;
+            if (transaction.MeterStart >= 0) parameters["meterStart"] = Math.Round(transaction.MeterStart, 3);
+            WriteEvent(transaction.ConnectorId, EventCategory.Transaction, EventSeverity.Info, EventCode.TransactionStarted, parameters);
+        }
+
+        /// <summary>
+        /// EventLog: a transaction was stopped (by the charge point)
+        /// </summary>
+        protected void WriteTransactionStoppedEvent(Transaction transaction)
+        {
+            Dictionary<string, object> parameters = new Dictionary<string, object> { ["transactionId"] = transaction.TransactionId };
+            if (!string.IsNullOrEmpty(transaction.StopTagId)) parameters["tag"] = transaction.StopTagId;
+            if (transaction.MeterStop.HasValue && transaction.MeterStart >= 0) parameters["energy"] = Math.Round(transaction.MeterStop.Value - transaction.MeterStart, 3);
+            if (!string.IsNullOrEmpty(transaction.StopReason)) parameters["reason"] = transaction.StopReason;
+            WriteEvent(transaction.ConnectorId, EventCategory.Transaction, EventSeverity.Info, EventCode.TransactionStopped, parameters);
+        }
 
         /// <summary>
         /// Stores the current meter value of a transaction (OCPP 2.x "Updated"/"Ended", OCPP 1.6 "StopTransaction").
@@ -303,7 +390,7 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
-        /// Warning and MessageLog entry for a meter value that is smaller than before (saved with the transaction)
+        /// Warning and EventLog entry for a meter value that is smaller than before
         /// </summary>
         private void LogMeterDecreased(Transaction transaction, double meterKWH, bool isFinal, string action)
         {
@@ -313,15 +400,15 @@ namespace OCPP.Core.Server
                 isFinal ? "taken over (final value)" : "ignored (intermediate value)");
             Logger.LogWarning("SetTransactionMeter => Meter value decreased: chargepoint='{0}' / connector={1} / {2}", ChargePointStatus?.Id, transaction.ConnectorId, info);
 
-            DbContext.MessageLogs.Add(new MessageLog()
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                ChargePointId = ChargePointStatus?.Id ?? transaction.ChargePointId,
-                ConnectorId = transaction.ConnectorId,
-                LogTime = DateTime.UtcNow,
-                Message = action,
-                Result = info,
-                ErrorCode = MeterDecreasedErrorCode
-            });
+                ["transactionId"] = transaction.TransactionId,
+                ["start"] = Math.Round(transaction.MeterStart, 3),
+                ["new"] = Math.Round(meterKWH, 3),
+                ["takenOver"] = isFinal
+            };
+            if (transaction.MeterStop.HasValue) parameters["last"] = Math.Round(transaction.MeterStop.Value, 3);
+            WriteEvent(transaction.ConnectorId, EventCategory.Transaction, EventSeverity.Warning, EventCode.MeterDecreased, parameters, $"{action}: {info}");
         }
 
         /// <summary>
@@ -349,6 +436,10 @@ namespace OCPP.Core.Server
                 {
                     SetTransactionMeter(transaction, Math.Max(newMeterStart, transaction.MeterStart), isFinal: true, action: null);
                 }
+
+                Dictionary<string, object> parameters = new Dictionary<string, object> { ["transactionId"] = transaction.TransactionId };
+                if (transaction.MeterStop.HasValue && transaction.MeterStart >= 0) parameters["energy"] = Math.Round(transaction.MeterStop.Value - transaction.MeterStart, 3);
+                WriteEvent(connectorId, EventCategory.Transaction, EventSeverity.Warning, EventCode.TransactionClosedAutomatically, parameters);
             }
 
             if (openTransactions.Count > 0)
@@ -384,6 +475,8 @@ namespace OCPP.Core.Server
 
             Logger.LogWarning("CheckStopTag => Transaction {0} on chargepoint '{1}' was stopped with tag '{2}' which is neither the start tag '{3}' nor in its group => the charging station allowed the stop (configuration?)",
                 transaction.TransactionId, ChargePointStatus.Id, stopTagId, transaction.StartTagId);
+            WriteEvent(transaction.ConnectorId, EventCategory.Transaction, EventSeverity.Warning, EventCode.StopTagNotPermitted,
+                new Dictionary<string, object> { ["transactionId"] = transaction.TransactionId, ["startTag"] = transaction.StartTagId, ["stopTag"] = stopTagId });
         }
 
         /// <summary>

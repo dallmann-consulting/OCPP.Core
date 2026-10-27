@@ -67,7 +67,7 @@ namespace OCPP.Core.Server
         {
             services.AddOCPPDbContext(Configuration);
             services.AddControllers();
-            services.AddHostedService<MessageLogCleanupService>();
+            services.AddHostedService<LogCleanupService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -46,6 +46,7 @@ namespace OCPP.Core.Server
                 authorizeResponse.CustomData = new CustomDataType();
                 authorizeResponse.CustomData.VendorId = VendorId;
 
+                WriteAuthorizationEvent(0, idTag, authorizeResponse.IdTokenInfo?.Status.ToString(), authorizeResponse.IdTokenInfo?.Status == AuthorizationStatusEnumType.Accepted, "Authorize");
                 msgOut.JsonPayload = JsonConvert.SerializeObject(authorizeResponse);
                 Logger.LogTrace("Authorize => Response serialized");
             }

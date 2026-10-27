@@ -46,6 +46,7 @@ namespace OCPP.Core.Database
         public virtual DbSet<ConnectorStatus> ConnectorStatuses { get; set; }
         public virtual DbSet<MessageLog> MessageLogs { get; set; }
         public virtual DbSet<Transaction> Transactions { get; set; }
+        public virtual DbSet<ChargePointEvent> ChargePointEvents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -150,6 +151,40 @@ namespace OCPP.Core.Database
                 entity.HasIndex(e => new { e.ChargePointId, e.ConnectorId });
                 // TransactionEvent (2.x) finds transactions by charge point + Uid. Not unique: duplicates are prevented in the code (old data may contain some)
                 entity.HasIndex(e => new { e.ChargePointId, e.Uid });
+            });
+
+            modelBuilder.Entity<ChargePointEvent>(entity =>
+            {
+                entity.ToTable("EventLog");
+
+                entity.HasKey(e => e.EventId);
+
+                entity.Property(e => e.ChargePointId)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Category)
+                    .IsRequired()
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.Severity)
+                    .IsRequired()
+                    .HasMaxLength(10);
+
+                entity.Property(e => e.EventCode)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                // deleting a charge point deletes its events
+                entity.HasOne(e => e.ChargePoint)
+                    .WithMany()
+                    .HasForeignKey(e => e.ChargePointId)
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .HasConstraintName("FK_EventLog_ChargePoint");
+
+                // view of a charge point (newest first) and cleanup (EventLogRetentionDays)
+                entity.HasIndex(e => new { e.ChargePointId, e.EventTime }, "IX_EventLog_ChargePointId_EventTime");
+                entity.HasIndex(e => e.EventTime, "IX_EventLog_EventTime");
             });
 
             OnModelCreatingPartial(modelBuilder);

@@ -150,4 +150,229 @@
   <data name="ExportNote" xml:space="preserve">
     <value>Hinweis</value>
   </data>
+  <data name="EventCategory_Connection" xml:space="preserve">
+    <value>Verbindung</value>
+  </data>
+  <data name="EventCategory_Station" xml:space="preserve">
+    <value>Station</value>
+  </data>
+  <data name="EventCategory_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="EventCategory_Authorization" xml:space="preserve">
+    <value>Autorisierung</value>
+  </data>
+  <data name="EventCategory_Transaction" xml:space="preserve">
+    <value>Ladevorgang</value>
+  </data>
+  <data name="EventCategory_Command" xml:space="preserve">
+    <value>Befehl</value>
+  </data>
+  <data name="EventSeverity_Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="EventSeverity_Warning" xml:space="preserve">
+    <value>Warnung</value>
+  </data>
+  <data name="EventSeverity_Error" xml:space="preserve">
+    <value>Fehler</value>
+  </data>
+  <data name="Event_Connected" xml:space="preserve">
+    <value>Verbunden (Protokoll {0})</value>
+  </data>
+  <data name="Event_Disconnected" xml:space="preserve">
+    <value>Verbindung getrennt: {0}</value>
+  </data>
+  <data name="Close_NormalClosure" xml:space="preserve">
+    <value>von der Ladestation beendet</value>
+  </data>
+  <data name="Close_Aborted" xml:space="preserve">
+    <value>abgebrochen</value>
+  </data>
+  <data name="Close_Closed" xml:space="preserve">
+    <value>geschlossen</value>
+  </data>
+  <data name="Event_ConnectionReplaced" xml:space="preserve">
+    <value>Verbindung durch eine neue Verbindung ersetzt</value>
+  </data>
+  <data name="Event_ConnectionRefused" xml:space="preserve">
+    <value>Neue Verbindung abgelehnt: bereits verbunden</value>
+  </data>
+  <data name="Event_AuthenticationFailed" xml:space="preserve">
+    <value>Anmeldung der Ladestation fehlgeschlagen: {0}</value>
+  </data>
+  <data name="AuthMethod_Password" xml:space="preserve">
+    <value>falscher Benutzername oder falsches Passwort</value>
+  </data>
+  <data name="AuthMethod_Missing" xml:space="preserve">
+    <value>keine Zugangsdaten gesendet</value>
+  </data>
+  <data name="AuthMethod_Certificate" xml:space="preserve">
+    <value>Zertifikat passt nicht</value>
+  </data>
+  <data name="AuthMethod_NotConfigured" xml:space="preserve">
+    <value>keine Zugangsdaten hinterlegt, aber Anmeldung ist vorgeschrieben</value>
+  </data>
+  <data name="Event_Boot" xml:space="preserve">
+    <value>Startmeldung: {0}</value>
+  </data>
+  <data name="Event_Firmware" xml:space="preserve">
+    <value>Firmware {0}</value>
+  </data>
+  <data name="Event_BootReason" xml:space="preserve">
+    <value>Grund: {0}</value>
+  </data>
+  <data name="Event_FirmwareChanged" xml:space="preserve">
+    <value>Firmware geändert: {0} → {1}</value>
+  </data>
+  <data name="Event_StatusChanged" xml:space="preserve">
+    <value>Status: {0} → {1}</value>
+  </data>
+  <data name="Event_StatusError" xml:space="preserve">
+    <value>Fehler: {0}</value>
+  </data>
+  <data name="Status_Available" xml:space="preserve">
+    <value>verfügbar</value>
+  </data>
+  <data name="Status_Occupied" xml:space="preserve">
+    <value>belegt</value>
+  </data>
+  <data name="Status_Unavailable" xml:space="preserve">
+    <value>nicht verfügbar</value>
+  </data>
+  <data name="Status_Faulted" xml:space="preserve">
+    <value>Störung</value>
+  </data>
+  <data name="Event_TokenAccepted" xml:space="preserve">
+    <value>Token {0} akzeptiert ({1})</value>
+  </data>
+  <data name="Event_TokenRejected" xml:space="preserve">
+    <value>Token {0} abgelehnt: {1} ({2})</value>
+  </data>
+  <data name="AuthAction_Authorize" xml:space="preserve">
+    <value>Autorisierung</value>
+  </data>
+  <data name="AuthAction_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="AuthAction_Stop" xml:space="preserve">
+    <value>Stopp</value>
+  </data>
+  <data name="AuthStatus_Invalid" xml:space="preserve">
+    <value>unbekannt oder ungültig</value>
+  </data>
+  <data name="AuthStatus_Unknown" xml:space="preserve">
+    <value>unbekannt</value>
+  </data>
+  <data name="AuthStatus_Blocked" xml:space="preserve">
+    <value>gesperrt</value>
+  </data>
+  <data name="AuthStatus_Expired" xml:space="preserve">
+    <value>abgelaufen</value>
+  </data>
+  <data name="AuthStatus_ConcurrentTx" xml:space="preserve">
+    <value>bereits in Benutzung</value>
+  </data>
+  <data name="Event_TransactionStarted" xml:space="preserve">
+    <value>Ladevorgang {0} gestartet</value>
+  </data>
+  <data name="Event_TransactionStopped" xml:space="preserve">
+    <value>Ladevorgang {0} beendet</value>
+  </data>
+  <data name="Event_TransactionClosedAutomatically" xml:space="preserve">
+    <value>Ladevorgang {0} automatisch geschlossen (Stopp-Meldung fehlt, ein neuer Ladevorgang hat begonnen)</value>
+  </data>
+  <data name="Event_StopTagNotPermitted" xml:space="preserve">
+    <value>Ladevorgang {0} mit Token {1} beendet, der weder der Start-Token {2} ist noch zu dessen Gruppe gehört</value>
+  </data>
+  <data name="Event_MeterDecreased" xml:space="preserve">
+    <value>Ladevorgang {0}: Zählerstand gesunken von {1} auf {2} kWh – {3}</value>
+  </data>
+  <data name="Event_MeterTakenOver" xml:space="preserve">
+    <value>Endwert übernommen</value>
+  </data>
+  <data name="Event_MeterIgnored" xml:space="preserve">
+    <value>Zwischenwert ignoriert</value>
+  </data>
+  <data name="Event_Token" xml:space="preserve">
+    <value>Token {0}</value>
+  </data>
+  <data name="Event_MeterStart" xml:space="preserve">
+    <value>Zählerstand {0} kWh</value>
+  </data>
+  <data name="Event_Energy" xml:space="preserve">
+    <value>{0} kWh</value>
+  </data>
+  <data name="Event_StopReason" xml:space="preserve">
+    <value>Grund: {0}</value>
+  </data>
+  <data name="Event_Command" xml:space="preserve">
+    <value>Befehl „{0}“: {1}</value>
+  </data>
+  <data name="Event_CommandUser" xml:space="preserve">
+    <value>von {0}</value>
+  </data>
+  <data name="Command_Reset" xml:space="preserve">
+    <value>Neustart</value>
+  </data>
+  <data name="Command_UnlockConnector" xml:space="preserve">
+    <value>Entriegeln</value>
+  </data>
+  <data name="Command_RemoteStartTransaction" xml:space="preserve">
+    <value>Ladevorgang starten</value>
+  </data>
+  <data name="Command_RequestStartTransaction" xml:space="preserve">
+    <value>Ladevorgang starten</value>
+  </data>
+  <data name="Command_RemoteStopTransaction" xml:space="preserve">
+    <value>Ladevorgang beenden</value>
+  </data>
+  <data name="Command_RequestStopTransaction" xml:space="preserve">
+    <value>Ladevorgang beenden</value>
+  </data>
+  <data name="Command_ChangeConfiguration" xml:space="preserve">
+    <value>Konfiguration ändern</value>
+  </data>
+  <data name="Command_SetVariables" xml:space="preserve">
+    <value>Konfiguration ändern</value>
+  </data>
+  <data name="Command_SetChargingProfile" xml:space="preserve">
+    <value>Ladeleistung begrenzen</value>
+  </data>
+  <data name="Command_ClearChargingProfile" xml:space="preserve">
+    <value>Ladeleistungsbegrenzung aufheben</value>
+  </data>
+  <data name="Result_Accepted" xml:space="preserve">
+    <value>angenommen</value>
+  </data>
+  <data name="Result_Rejected" xml:space="preserve">
+    <value>abgelehnt</value>
+  </data>
+  <data name="Result_Unlocked" xml:space="preserve">
+    <value>entriegelt</value>
+  </data>
+  <data name="Result_UnlockFailed" xml:space="preserve">
+    <value>Entriegeln fehlgeschlagen</value>
+  </data>
+  <data name="Result_Scheduled" xml:space="preserve">
+    <value>geplant</value>
+  </data>
+  <data name="Result_RebootRequired" xml:space="preserve">
+    <value>angenommen, Neustart erforderlich</value>
+  </data>
+  <data name="Result_Timeout" xml:space="preserve">
+    <value>keine Antwort (Timeout)</value>
+  </data>
+  <data name="Result_Disconnected" xml:space="preserve">
+    <value>Ladestation nicht verbunden</value>
+  </data>
+  <data name="Result_CallError" xml:space="preserve">
+    <value>Fehler der Ladestation</value>
+  </data>
+  <data name="Result_InvalidAnswer" xml:space="preserve">
+    <value>ungültige Antwort</value>
+  </data>
+  <data name="Result_Answered" xml:space="preserve">
+    <value>beantwortet</value>
+  </data>
 </root>

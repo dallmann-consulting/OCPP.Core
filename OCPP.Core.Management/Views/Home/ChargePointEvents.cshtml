@@ -1,0 +1,105 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@using OCPP.Core.Database
+@model ChargePointEventsViewModel
+@inject IViewLocalizer Localizer
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    ViewData["Title"] = @Localizer["Title"];
+    EventDisplay display = new EventDisplay(SharedLocalizer, Model.TagNames);
+
+    // link to another page with the same filters
+    string PageUrl(int page) => Url.Action("ChargePointEvents", Constants.HomeController,
+        new { id = Model.ChargePointId, t = Model.Timespan, category = Model.Category, severity = Model.Severity, page = page });
+}
+<br />
+
+<h4>@Localizer["Heading"]: @Model.ChargePointName (@Model.ChargePointId)</h4>
+<br />
+
+<form method="get" action="@Url.Action("ChargePointEvents", Constants.HomeController, new { id = Model.ChargePointId })">
+    <div class="form-row align-items-end">
+        <div class="col-auto mb-2">
+            <label for="selTimespan">@Localizer["TimeSpanLabel"]</label>
+            <select class="form-control" id="selTimespan" name="t" onchange="this.form.submit()">
+                <option value="1" selected="@(Model.Timespan == 1)">@Localizer["TimeSpan30"]</option>
+                <option value="2" selected="@(Model.Timespan == 2)">@Localizer["TimeSpan90"]</option>
+                <option value="3" selected="@(Model.Timespan == 3)">@Localizer["TimeSpan365"]</option>
+            </select>
+        </div>
+        <div class="col-auto mb-2">
+            <label for="selCategory">@Localizer["CategoryLabel"]</label>
+            <select class="form-control" id="selCategory" name="category" onchange="this.form.submit()">
+                <option value="" selected="@(Model.Category == null)">@Localizer["All"]</option>
+                @foreach (string category in EventCategory.All)
+                {
+                    <option value="@category" selected="@(Model.Category == category)">@display.Category(category)</option>
+                }
+            </select>
+        </div>
+        <div class="col-auto mb-2">
+            <label for="selSeverity">@Localizer["SeverityLabel"]</label>
+            <select class="form-control" id="selSeverity" name="severity" onchange="this.form.submit()">
+                <option value="" selected="@(Model.Severity == null)">@Localizer["All"]</option>
+                <option value="@EventSeverity.Warning" selected="@(Model.Severity == EventSeverity.Warning)">@Localizer["SeverityWarningAndError"]</option>
+                <option value="@EventSeverity.Error" selected="@(Model.Severity == EventSeverity.Error)">@Localizer["SeverityError"]</option>
+            </select>
+        </div>
+        <div class="col mb-2 text-right">
+            <a class="btn btn-secondary" href="@Url.Action("ChargePoint", Constants.HomeController, new { id = Model.ChargePointId })">@Localizer["Back"]</a>
+        </div>
+    </div>
+</form>
+
+@if (Model.Events.Count == 0)
+{
+    <p>@Localizer["NoEvents"]</p>
+}
+else
+{
+    <table id="dtEvents" class="table table-striped table-bordered table-sm table-hover" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th class="th-sm">@Localizer["Time"]</th>
+                <th class="th-sm">@Localizer["Connector"]</th>
+                <th class="th-sm"></th>
+                <th class="th-sm">@Localizer["Category"]</th>
+                <th class="th-sm">@Localizer["Event"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (ChargePointEvent e in Model.Events)
+            {
+                string connector = null;
+                if (e.ConnectorId.HasValue)
+                {
+                    connector = Model.ConnectorNames.TryGetValue(e.ConnectorId.Value, out string name) ? name : e.ConnectorId.Value.ToString();
+                }
+                // technical details as tooltip
+                string details = string.IsNullOrEmpty(e.Details) ? e.Parameters : e.Details;
+                <tr>
+                    <td class="text-nowrap">@e.EventTime.ToLocalTime().ToString("G")</td>
+                    <td>@connector</td>
+                    <td class="text-center"><i class="@EventDisplay.SeverityIcon(e.Severity)" title="@display.Severity(e.Severity)"></i></td>
+                    <td>@display.Category(e.Category)</td>
+                    <td title="@details">@display.Text(e)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-auto align-self-center">
+            @string.Format(Localizer["PageInfo"].Value, Model.Page, Model.PageCount, Model.TotalCount)
+        </div>
+        <div class="col-auto">
+            <nav>
+                <ul class="pagination mb-0">
+                    <li class="page-item @(Model.Page <= 1 ? "disabled" : "")"><a class="page-link" href="@PageUrl(1)" title="@Localizer["FirstPage"]">&laquo;</a></li>
+                    <li class="page-item @(Model.Page <= 1 ? "disabled" : "")"><a class="page-link" href="@PageUrl(Model.Page - 1)" title="@Localizer["PreviousPage"]">&lsaquo;</a></li>
+                    <li class="page-item @(Model.Page >= Model.PageCount ? "disabled" : "")"><a class="page-link" href="@PageUrl(Model.Page + 1)" title="@Localizer["NextPage"]">&rsaquo;</a></li>
+                    <li class="page-item @(Model.Page >= Model.PageCount ? "disabled" : "")"><a class="page-link" href="@PageUrl(Model.PageCount)" title="@Localizer["LastPage"]">&raquo;</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+}

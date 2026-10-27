@@ -126,6 +126,7 @@ namespace OCPP.Core.Server
                         transaction.StopReason = stopTransactionRequest.Reason.ToString();
                         transaction.StopTime = stopTransactionRequest.Timestamp.UtcDateTime;
                         DbContext.SaveChanges();
+                        WriteTransactionStoppedEvent(transaction);
                     }
                 }
                 catch (Exception exp)
@@ -134,6 +135,7 @@ namespace OCPP.Core.Server
                     errorCode = ErrorCodes.InternalError;
                 }
 
+                WriteAuthorizationEvent(ownTransaction ? transaction.ConnectorId : 0, idTag, stopTransactionResponse.IdTagInfo?.Status.ToString(), stopTransactionResponse.IdTagInfo?.Status == IdTagInfoStatus.Accepted, "Stop");
                 msgOut.JsonPayload = JsonConvert.SerializeObject(stopTransactionResponse);
                 Logger.LogTrace("StopTransaction => Response serialized");
             }

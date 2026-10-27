@@ -146,6 +146,8 @@ namespace OCPP.Core.Management.Controllers
                     Uri uri = new Uri(new Uri(serverApiUrl), apiPath);
                     httpClient.Timeout = timeout;
 
+                    AddUserHeader(httpClient);
+
                     // API-Key authentication?
                     if (!string.IsNullOrWhiteSpace(apiKeyConfig))
                     {

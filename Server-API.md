@@ -17,6 +17,9 @@ The REST-API uses the following format:
 
 For authentication/authorization purposes the API uses an API-key (like a password). This key must be send as an http header "X-API-Key" - see [here](https://swagger.io/docs/specification/authentication/api-keys/).
 The allowed key is configured in the appsettings.json.
+
+Commands with an effect on a charger (e.g. Reset, UnlockConnector, start/stop charging, SetVariables) are recorded in the EventLog of the charger with their result.
+The optional http header "X-OCPP-User" names the user who triggered the command (URL encoded, e.g. the user logged in to the management); without it the EventLog shows "API".
 Without a configured key the API only accepts requests from the local computer (requests from the network or via a reverse proxy are rejected with 401). The setting `"AllowUnauthenticatedApi": true` opens the API for every caller without a key (not recommended).
 
 

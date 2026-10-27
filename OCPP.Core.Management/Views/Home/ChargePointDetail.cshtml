@@ -171,6 +171,9 @@
                         <div class="col-sm-2">
                             <a class="btn btn-info" id="btnConfiguration" title="@Localizer["TitleConfiguration"]" href="@Url.Action("ChargePointConfiguration", Constants.HomeController, new { id = Model.ChargePointId })"><i class="fas fa-sliders-h"></i> @Localizer["TitleConfiguration"]</a>
                         </div>
+                        <div class="col-sm-2">
+                            <a class="btn btn-info" id="btnEvents" title="@Localizer["TitleEvents"]" href="@Url.Action("ChargePointEvents", Constants.HomeController, new { id = Model.ChargePointId })"><i class="fas fa-list"></i> @Localizer["TitleEvents"]</a>
+                        </div>
                     }
                 </div>
             }

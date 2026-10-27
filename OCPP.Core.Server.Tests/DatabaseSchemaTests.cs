@@ -85,7 +85,7 @@ namespace OCPP.Core.Server.Tests
             using (OCPPCoreContext dbContext = _factory.CreateDbContext())
             {
                 // block size 3 => 3 blocks (3 + 3 + 1)
-                int deleted = await MessageLogCleanupService.DeleteOldEntriesAsync(dbContext, cutoff, 3, CancellationToken.None);
+                int deleted = await LogCleanupService.DeleteOldMessageLogEntriesAsync(dbContext, cutoff, 3, CancellationToken.None);
                 Assert.Equal(7, deleted);
             }
 

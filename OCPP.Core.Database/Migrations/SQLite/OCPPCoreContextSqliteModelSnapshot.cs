@@ -243,6 +243,53 @@ namespace OCPP.Core.Database.Migrations.SQLite
                     b.ToTable("ChargePoint", (string)null);
                 });
 
+            modelBuilder.Entity("OCPP.Core.Database.ChargePointEvent", b =>
+                {
+                    b.Property<long>("EventId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ChargePointId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ConnectorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EventCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("EventTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Parameters")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("EventId");
+
+                    b.HasIndex(new[] { "ChargePointId", "EventTime" }, "IX_EventLog_ChargePointId_EventTime");
+
+                    b.HasIndex(new[] { "EventTime" }, "IX_EventLog_EventTime");
+
+                    b.ToTable("EventLog", (string)null);
+                });
+
             modelBuilder.Entity("OCPP.Core.Database.ChargeTag", b =>
                 {
                     b.Property<string>("TagId")
@@ -442,6 +489,18 @@ namespace OCPP.Core.Database.Migrations.SQLite
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("OCPP.Core.Database.ChargePointEvent", b =>
+                {
+                    b.HasOne("OCPP.Core.Database.ChargePoint", "ChargePoint")
+                        .WithMany()
+                        .HasForeignKey("ChargePointId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_EventLog_ChargePoint");
+
+                    b.Navigation("ChargePoint");
                 });
 
             modelBuilder.Entity("OCPP.Core.Database.ConnectorStatus", b =>

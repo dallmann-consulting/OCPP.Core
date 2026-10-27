@@ -18,6 +18,7 @@
  */
 
 using System;
+using System.Net.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -48,5 +49,17 @@ namespace OCPP.Core.Management.Controllers
             DbContext = dbContext;
         }
 
+        /// <summary>
+        /// Header with the logged in user for commands to the OCPP server => EventLog of the charge point
+        /// (URL encoded: HTTP headers only allow ASCII)
+        /// </summary>
+        protected void AddUserHeader(HttpClient httpClient)
+        {
+            string user = User?.Identity?.Name;
+            if (!string.IsNullOrEmpty(user))
+            {
+                httpClient.DefaultRequestHeaders.Add("X-OCPP-User", Uri.EscapeDataString(user));
+            }
+        }
     }
 }

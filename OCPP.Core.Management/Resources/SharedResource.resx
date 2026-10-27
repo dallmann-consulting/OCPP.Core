@@ -150,4 +150,229 @@
   <data name="ExportNote" xml:space="preserve">
     <value>Note</value>
   </data>
+  <data name="EventCategory_Connection" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="EventCategory_Station" xml:space="preserve">
+    <value>Station</value>
+  </data>
+  <data name="EventCategory_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="EventCategory_Authorization" xml:space="preserve">
+    <value>Authorization</value>
+  </data>
+  <data name="EventCategory_Transaction" xml:space="preserve">
+    <value>Charging</value>
+  </data>
+  <data name="EventCategory_Command" xml:space="preserve">
+    <value>Command</value>
+  </data>
+  <data name="EventSeverity_Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="EventSeverity_Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="EventSeverity_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Event_Connected" xml:space="preserve">
+    <value>Connected (protocol {0})</value>
+  </data>
+  <data name="Event_Disconnected" xml:space="preserve">
+    <value>Disconnected: {0}</value>
+  </data>
+  <data name="Close_NormalClosure" xml:space="preserve">
+    <value>closed by the charging station</value>
+  </data>
+  <data name="Close_Aborted" xml:space="preserve">
+    <value>aborted</value>
+  </data>
+  <data name="Close_Closed" xml:space="preserve">
+    <value>closed</value>
+  </data>
+  <data name="Event_ConnectionReplaced" xml:space="preserve">
+    <value>Connection replaced by a new connection</value>
+  </data>
+  <data name="Event_ConnectionRefused" xml:space="preserve">
+    <value>New connection refused: already connected</value>
+  </data>
+  <data name="Event_AuthenticationFailed" xml:space="preserve">
+    <value>Login of the charging station failed: {0}</value>
+  </data>
+  <data name="AuthMethod_Password" xml:space="preserve">
+    <value>wrong user name or password</value>
+  </data>
+  <data name="AuthMethod_Missing" xml:space="preserve">
+    <value>no credentials sent</value>
+  </data>
+  <data name="AuthMethod_Certificate" xml:space="preserve">
+    <value>certificate doesn't match</value>
+  </data>
+  <data name="AuthMethod_NotConfigured" xml:space="preserve">
+    <value>no credentials configured, but authentication is required</value>
+  </data>
+  <data name="Event_Boot" xml:space="preserve">
+    <value>Boot notification: {0}</value>
+  </data>
+  <data name="Event_Firmware" xml:space="preserve">
+    <value>firmware {0}</value>
+  </data>
+  <data name="Event_BootReason" xml:space="preserve">
+    <value>reason: {0}</value>
+  </data>
+  <data name="Event_FirmwareChanged" xml:space="preserve">
+    <value>Firmware changed: {0} → {1}</value>
+  </data>
+  <data name="Event_StatusChanged" xml:space="preserve">
+    <value>Status: {0} → {1}</value>
+  </data>
+  <data name="Event_StatusError" xml:space="preserve">
+    <value>error: {0}</value>
+  </data>
+  <data name="Status_Available" xml:space="preserve">
+    <value>available</value>
+  </data>
+  <data name="Status_Occupied" xml:space="preserve">
+    <value>occupied</value>
+  </data>
+  <data name="Status_Unavailable" xml:space="preserve">
+    <value>unavailable</value>
+  </data>
+  <data name="Status_Faulted" xml:space="preserve">
+    <value>faulted</value>
+  </data>
+  <data name="Event_TokenAccepted" xml:space="preserve">
+    <value>Token {0} accepted ({1})</value>
+  </data>
+  <data name="Event_TokenRejected" xml:space="preserve">
+    <value>Token {0} rejected: {1} ({2})</value>
+  </data>
+  <data name="AuthAction_Authorize" xml:space="preserve">
+    <value>authorization</value>
+  </data>
+  <data name="AuthAction_Start" xml:space="preserve">
+    <value>start</value>
+  </data>
+  <data name="AuthAction_Stop" xml:space="preserve">
+    <value>stop</value>
+  </data>
+  <data name="AuthStatus_Invalid" xml:space="preserve">
+    <value>unknown or invalid</value>
+  </data>
+  <data name="AuthStatus_Unknown" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+  <data name="AuthStatus_Blocked" xml:space="preserve">
+    <value>blocked</value>
+  </data>
+  <data name="AuthStatus_Expired" xml:space="preserve">
+    <value>expired</value>
+  </data>
+  <data name="AuthStatus_ConcurrentTx" xml:space="preserve">
+    <value>already in use</value>
+  </data>
+  <data name="Event_TransactionStarted" xml:space="preserve">
+    <value>Charging {0} started</value>
+  </data>
+  <data name="Event_TransactionStopped" xml:space="preserve">
+    <value>Charging {0} stopped</value>
+  </data>
+  <data name="Event_TransactionClosedAutomatically" xml:space="preserve">
+    <value>Charging {0} closed automatically (stop message missing, a new charging started)</value>
+  </data>
+  <data name="Event_StopTagNotPermitted" xml:space="preserve">
+    <value>Charging {0} stopped with token {1} which is neither the start token {2} nor in its group</value>
+  </data>
+  <data name="Event_MeterDecreased" xml:space="preserve">
+    <value>Charging {0}: meter value decreased from {1} to {2} kWh - {3}</value>
+  </data>
+  <data name="Event_MeterTakenOver" xml:space="preserve">
+    <value>final value taken over</value>
+  </data>
+  <data name="Event_MeterIgnored" xml:space="preserve">
+    <value>intermediate value ignored</value>
+  </data>
+  <data name="Event_Token" xml:space="preserve">
+    <value>token {0}</value>
+  </data>
+  <data name="Event_MeterStart" xml:space="preserve">
+    <value>meter {0} kWh</value>
+  </data>
+  <data name="Event_Energy" xml:space="preserve">
+    <value>{0} kWh</value>
+  </data>
+  <data name="Event_StopReason" xml:space="preserve">
+    <value>reason: {0}</value>
+  </data>
+  <data name="Event_Command" xml:space="preserve">
+    <value>Command '{0}': {1}</value>
+  </data>
+  <data name="Event_CommandUser" xml:space="preserve">
+    <value>by {0}</value>
+  </data>
+  <data name="Command_Reset" xml:space="preserve">
+    <value>restart</value>
+  </data>
+  <data name="Command_UnlockConnector" xml:space="preserve">
+    <value>unlock connector</value>
+  </data>
+  <data name="Command_RemoteStartTransaction" xml:space="preserve">
+    <value>start charging</value>
+  </data>
+  <data name="Command_RequestStartTransaction" xml:space="preserve">
+    <value>start charging</value>
+  </data>
+  <data name="Command_RemoteStopTransaction" xml:space="preserve">
+    <value>stop charging</value>
+  </data>
+  <data name="Command_RequestStopTransaction" xml:space="preserve">
+    <value>stop charging</value>
+  </data>
+  <data name="Command_ChangeConfiguration" xml:space="preserve">
+    <value>change configuration</value>
+  </data>
+  <data name="Command_SetVariables" xml:space="preserve">
+    <value>change configuration</value>
+  </data>
+  <data name="Command_SetChargingProfile" xml:space="preserve">
+    <value>limit charging power</value>
+  </data>
+  <data name="Command_ClearChargingProfile" xml:space="preserve">
+    <value>clear charging limit</value>
+  </data>
+  <data name="Result_Accepted" xml:space="preserve">
+    <value>accepted</value>
+  </data>
+  <data name="Result_Rejected" xml:space="preserve">
+    <value>rejected</value>
+  </data>
+  <data name="Result_Unlocked" xml:space="preserve">
+    <value>unlocked</value>
+  </data>
+  <data name="Result_UnlockFailed" xml:space="preserve">
+    <value>unlock failed</value>
+  </data>
+  <data name="Result_Scheduled" xml:space="preserve">
+    <value>scheduled</value>
+  </data>
+  <data name="Result_RebootRequired" xml:space="preserve">
+    <value>accepted, restart required</value>
+  </data>
+  <data name="Result_Timeout" xml:space="preserve">
+    <value>no answer (timeout)</value>
+  </data>
+  <data name="Result_Disconnected" xml:space="preserve">
+    <value>charging station not connected</value>
+  </data>
+  <data name="Result_CallError" xml:space="preserve">
+    <value>error of the charging station</value>
+  </data>
+  <data name="Result_InvalidAnswer" xml:space="preserve">
+    <value>invalid answer</value>
+  </data>
+  <data name="Result_Answered" xml:space="preserve">
+    <value>answered</value>
+  </data>
 </root>

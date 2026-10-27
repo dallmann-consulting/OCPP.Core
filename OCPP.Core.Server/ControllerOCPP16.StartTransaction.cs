@@ -92,6 +92,7 @@ namespace OCPP.Core.Server
                         transaction.StartResult = startTransactionResponse.IdTagInfo.Status.ToString();
                         DbContext.Add<Transaction>(transaction);
                         DbContext.SaveChanges();
+                        WriteTransactionStartedEvent(transaction);
 
                         // Return DB-ID as transaction ID
                         startTransactionResponse.TransactionId = transaction.TransactionId;
@@ -103,6 +104,7 @@ namespace OCPP.Core.Server
                     errorCode = ErrorCodes.InternalError;
                 }
 
+                WriteAuthorizationEvent(connectorId, idTag, startTransactionResponse.IdTagInfo?.Status.ToString(), startTransactionResponse.IdTagInfo?.Status == IdTagInfoStatus.Accepted, "Start");
                 msgOut.JsonPayload = JsonConvert.SerializeObject(startTransactionResponse);
                 Logger.LogTrace("StartTransaction => Response serialized");
             }

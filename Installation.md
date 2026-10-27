@@ -45,6 +45,10 @@ The server deletes entries in the database message log (table MessageLog) older 
 ```
 "MessageLogRetentionDays": 90,
 ```
+Independent of the message log the server always records business events of the charge points in the EventLog (table EventLog): connections and failed logins, boot notifications (firmware changes), status changes of the connectors, accepted and rejected tokens, start and stop of charging, special cases (e.g. a decreased meter value) and the commands sent to the charge point (with result and user). Administrators can view them in the Management-UI on the detail page of a charge point ("Events"). Events older than `EventLogRetentionDays` are deleted once a day (default 365 days, 0 = keep forever).
+```
+"EventLogRetentionDays": 365,
+```
 **OCPP.Core.Management**
 See above for the database connection. 
 With an empty database the Management-UI shows a setup page to register the first admin user.

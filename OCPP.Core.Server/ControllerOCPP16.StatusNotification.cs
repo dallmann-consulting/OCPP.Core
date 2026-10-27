@@ -75,7 +75,10 @@ namespace OCPP.Core.Server
 
                 if (connectorId > 0)
                 {
-                    if (UpdateConnectorStatus(connectorId, newStatus.ToString(), statusNotificationRequest.Timestamp, null, null) == false)
+                    // error code / info of the charge point => EventLog
+                    string statusErrorCode = (statusNotificationRequest.ErrorCode != StatusNotificationRequestErrorCode.NoError) ? statusNotificationRequest.ErrorCode.ToString() : null;
+                    string statusInfo = string.Join(" / ", new[] { statusNotificationRequest.Info, statusNotificationRequest.VendorErrorCode }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                    if (UpdateConnectorStatus(connectorId, newStatus.ToString(), statusNotificationRequest.Timestamp, null, null, statusErrorCode, statusInfo) == false)
                     {
                         errorCode = ErrorCodes.InternalError;
                     }

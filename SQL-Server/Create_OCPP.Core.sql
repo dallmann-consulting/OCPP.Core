@@ -255,6 +255,26 @@ CREATE INDEX [EmailIndex] ON [dbo].[AspNetUsers] ([NormalizedEmail]);
 CREATE UNIQUE INDEX [UserNameIndex] ON [dbo].[AspNetUsers] ([NormalizedUserName]) WHERE [NormalizedUserName] IS NOT NULL;
 GO
 
+/**** New with V1.9.0: business events of the charge points (migration "EventLog") ****/
+CREATE TABLE [dbo].[EventLog] (
+    [EventId] bigint NOT NULL IDENTITY,
+    [EventTime] datetime2 NOT NULL,
+    [ChargePointId] nvarchar(100) NOT NULL,
+    [ConnectorId] int NULL,
+    [Category] nvarchar(20) NOT NULL,
+    [Severity] nvarchar(10) NOT NULL,
+    [EventCode] nvarchar(50) NOT NULL,
+    [Parameters] nvarchar(max) NULL,
+    [Details] nvarchar(max) NULL,
+    CONSTRAINT [PK_EventLog] PRIMARY KEY ([EventId]),
+    CONSTRAINT [FK_EventLog_ChargePoint] FOREIGN KEY ([ChargePointId]) REFERENCES [dbo].[ChargePoint] ([ChargePointId]) ON DELETE CASCADE
+);
+GO
+CREATE INDEX [IX_EventLog_ChargePointId_EventTime] ON [dbo].[EventLog] ([ChargePointId], [EventTime]);
+GO
+CREATE INDEX [IX_EventLog_EventTime] ON [dbo].[EventLog] ([EventTime]);
+GO
+
 /****** Object:  Table [dbo].[__EFMigrationsHistory]    Script Date: 15.06.2025 20:07:07 ******/
 SET ANSI_NULLS ON
 GO
@@ -287,6 +307,9 @@ values ('20261025120424_TransactionsUidIndex','10.0.12')
 GO
 INSERT INTO [dbo].[__EFMigrationsHistory]
 values ('20261025182008_TagLengthMessageLogIndex','10.0.12')
+GO
+INSERT INTO [dbo].[__EFMigrationsHistory]
+values ('20261026215936_EventLog','10.0.12')
 GO
 
 USE [master]

@@ -148,7 +148,7 @@ namespace OCPP.Core.Server
             Messages_OCPP16.ResetRequest resetRequest = new Messages_OCPP16.ResetRequest();
             resetRequest.Type = Messages_OCPP16.ResetRequestType.Soft;
             // Send request and wait (asynchronously) for the chargepoint response
-            string apiResult = (await SendRequestAndWait(chargePointStatus, "Reset", resetRequest, logger, apiCallerContext.RequestAborted)).ApiResult;
+            string apiResult = (await SendRequestAndWait(chargePointStatus, "Reset", resetRequest, logger, apiCallerContext, dbContext)).ApiResult;
 
             apiCallerContext.Response.StatusCode = 200;
             apiCallerContext.Response.ContentType = "application/json";
@@ -193,7 +193,7 @@ namespace OCPP.Core.Server
                 }
                 // else: no key => charger returns ALL configuration keys
 
-                requestResult = await SendRequestAndWait(chargePointStatus, "GetConfiguration", getConfigurationRequest, logger, apiCallerContext.RequestAborted);
+                requestResult = await SendRequestAndWait(chargePointStatus, "GetConfiguration", getConfigurationRequest, logger, apiCallerContext, dbContext);
                 string ocppResult = requestResult.Answer;
                 if (ocppResult != null)
                 {
@@ -290,7 +290,7 @@ namespace OCPP.Core.Server
                         changeConfigurationRequest.Key = data.Variable.Name;
                         changeConfigurationRequest.Value = data.Value;
 
-                        OcppRequestResult requestResult = await SendRequestAndWait(chargePointStatus, "ChangeConfiguration", changeConfigurationRequest, logger, apiCallerContext.RequestAborted);
+                        OcppRequestResult requestResult = await SendRequestAndWait(chargePointStatus, "ChangeConfiguration", changeConfigurationRequest, logger, apiCallerContext, dbContext);
                         string ocppResult = requestResult.Answer;
                         if (ocppResult != null)
                         {
@@ -378,7 +378,7 @@ namespace OCPP.Core.Server
             logger.LogTrace("OCPPMiddleware.OCPP16 => UnlockConnector16: ChargePoint='{0}' / ConnectorId={1}", chargePointStatus.Id, unlockConnectorRequest.ConnectorId);
 
             // Send request and wait (asynchronously) for the chargepoint response
-            string apiResult = (await SendRequestAndWait(chargePointStatus, "UnlockConnector", unlockConnectorRequest, logger, apiCallerContext.RequestAborted)).ApiResult;
+            string apiResult = (await SendRequestAndWait(chargePointStatus, "UnlockConnector", unlockConnectorRequest, logger, apiCallerContext, dbContext)).ApiResult;
 
             apiCallerContext.Response.StatusCode = 200;
             apiCallerContext.Response.ContentType = "application/json";
@@ -427,7 +427,7 @@ namespace OCPP.Core.Server
             logger.LogInformation ("OCPPMiddleware.OCPP16 => SetChargingProfile16: ChargePoint='{0}' / ConnectorId={1} / Power='{2}{3}'", chargePointStatus.Id, setChargingProfileRequest.ConnectorId, power, unit);
 
             // Send request and wait (asynchronously) for the chargepoint response
-            string apiResult = (await SendRequestAndWait(chargePointStatus, "SetChargingProfile", setChargingProfileRequest, logger, apiCallerContext.RequestAborted)).ApiResult;
+            string apiResult = (await SendRequestAndWait(chargePointStatus, "SetChargingProfile", setChargingProfileRequest, logger, apiCallerContext, dbContext)).ApiResult;
 
             apiCallerContext.Response.StatusCode = 200;
             apiCallerContext.Response.ContentType = "application/json";
@@ -459,7 +459,7 @@ namespace OCPP.Core.Server
             logger.LogTrace("OCPPMiddleware.OCPP16 => ClearChargingProfile16: ChargePoint='{0}' / ConnectorId={1}", chargePointStatus.Id, clearChargingProfileRequest.ConnectorId);
 
             // Send request and wait (asynchronously) for the chargepoint response
-            string apiResult = (await SendRequestAndWait(chargePointStatus, "ClearChargingProfile", clearChargingProfileRequest, logger, apiCallerContext.RequestAborted)).ApiResult;
+            string apiResult = (await SendRequestAndWait(chargePointStatus, "ClearChargingProfile", clearChargingProfileRequest, logger, apiCallerContext, dbContext)).ApiResult;
 
             apiCallerContext.Response.StatusCode = 200;
             apiCallerContext.Response.ContentType = "application/json";
@@ -497,7 +497,7 @@ namespace OCPP.Core.Server
                 logger.LogInformation("OCPPMiddleware.OCPP16 => RemoteStartTransaction16: ChargePoint='{0}' / ConnectorId={1} / idTag='{2}'", chargePointStatus.Id, remoteStartTransactionRequest.ConnectorId, idTag);
 
                 // Send request and wait (asynchronously) for the chargepoint response
-                apiResult = (await SendRequestAndWait(chargePointStatus, "RemoteStartTransaction", remoteStartTransactionRequest, logger, apiCallerContext.RequestAborted)).ApiResult;
+                apiResult = (await SendRequestAndWait(chargePointStatus, "RemoteStartTransaction", remoteStartTransactionRequest, logger, apiCallerContext, dbContext)).ApiResult;
             }
             else
             {
@@ -531,7 +531,7 @@ namespace OCPP.Core.Server
             logger.LogInformation("OCPPMiddleware.OCPP16 => RemoteStopTransaction16: ChargePoint='{0}' / ConnectorId={1} / TransactionId='{2}'", chargePointStatus.Id, connectorId, transactionId);
 
             // Send request and wait (asynchronously) for the chargepoint response
-            string apiResult = (await SendRequestAndWait(chargePointStatus, "RemoteStopTransaction", remoteStopTransactionRequest, logger, apiCallerContext.RequestAborted)).ApiResult;
+            string apiResult = (await SendRequestAndWait(chargePointStatus, "RemoteStopTransaction", remoteStopTransactionRequest, logger, apiCallerContext, dbContext)).ApiResult;
 
             apiCallerContext.Response.StatusCode = 200;
             apiCallerContext.Response.ContentType = "application/json";

@@ -254,6 +254,55 @@ namespace OCPP.Core.Database.Migrations
                     b.ToTable("ChargePoint", (string)null);
                 });
 
+            modelBuilder.Entity("OCPP.Core.Database.ChargePointEvent", b =>
+                {
+                    b.Property<long>("EventId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("EventId"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ChargePointId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("ConnectorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EventCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("EventTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Parameters")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.HasKey("EventId");
+
+                    b.HasIndex(new[] { "ChargePointId", "EventTime" }, "IX_EventLog_ChargePointId_EventTime");
+
+                    b.HasIndex(new[] { "EventTime" }, "IX_EventLog_EventTime");
+
+                    b.ToTable("EventLog", (string)null);
+                });
+
             modelBuilder.Entity("OCPP.Core.Database.ChargeTag", b =>
                 {
                     b.Property<string>("TagId")
@@ -457,6 +506,18 @@ namespace OCPP.Core.Database.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("OCPP.Core.Database.ChargePointEvent", b =>
+                {
+                    b.HasOne("OCPP.Core.Database.ChargePoint", "ChargePoint")
+                        .WithMany()
+                        .HasForeignKey("ChargePointId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_EventLog_ChargePoint");
+
+                    b.Navigation("ChargePoint");
                 });
 
             modelBuilder.Entity("OCPP.Core.Database.ConnectorStatus", b =>

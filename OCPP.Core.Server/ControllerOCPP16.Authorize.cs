@@ -44,6 +44,7 @@ namespace OCPP.Core.Server
 
                 authorizeResponse.IdTagInfo = InternalAuthorize(idTag, ocppMiddleware, 0, AuthAction.Authorize, string.Empty, string.Empty, false);
 
+                WriteAuthorizationEvent(0, idTag, authorizeResponse.IdTagInfo?.Status.ToString(), authorizeResponse.IdTagInfo?.Status == IdTagInfoStatus.Accepted, "Authorize");
                 msgOut.JsonPayload = JsonConvert.SerializeObject(authorizeResponse);
                 Logger.LogTrace("Authorize => Response serialized");
             }

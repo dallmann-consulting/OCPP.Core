@@ -207,4 +207,7 @@
   <data name="PasswordHint" xml:space="preserve">
     <value>The password is not shown after saving. It is removed when the username is cleared.</value>
   </data>
+  <data name="TitleEvents" xml:space="preserve">
+    <value>Events</value>
+  </data>
 </root>

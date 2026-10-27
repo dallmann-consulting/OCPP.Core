@@ -86,6 +86,8 @@ namespace OCPP.Core.Management.Controllers
                                     // the OCPP server waits up to 60 s for the answer of the charge point => wait a little longer
                                     httpClient.Timeout = new TimeSpan(0, 0, 70);
 
+                                    AddUserHeader(httpClient);
+
                                     // API-Key authentication?
                                     if (!string.IsNullOrWhiteSpace(apiKeyConfig))
                                     {

@@ -22,6 +22,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using OCPP.Core.Database;
 using OCPP.Core.Server.Messages_Api;
 using System;
@@ -114,6 +115,7 @@ namespace OCPP.Core.Server
                             // Chargepoint MUST send basic authentication header
 
                             bool basicAuthSuccess = false;
+                            string authFailure = "Missing";
                             if (TryReadBasicAuthentication(context.Request.Headers["Authorization"], out string username, out string password))
                             {
                                 // password is stored as hash (or as plaintext before the migration / the first login)
@@ -135,6 +137,7 @@ namespace OCPP.Core.Server
                                 {
                                     // Authentication does NOT match => Failure
                                     _logger.LogWarning("OCPPMiddleware => FAILURE: Basic authentication for chargepoint '{0}' does NOT match", chargePoint.ChargePointId);
+                                    authFailure = "Password";
                                 }
                             }
                             else
@@ -143,6 +146,7 @@ namespace OCPP.Core.Server
                             }
                             if (basicAuthSuccess == false)
                             {
+                                WriteAuthenticationFailed(dbContext, chargePoint.ChargePointId, authFailure);
                                 context.Response.Headers.Append("WWW-Authenticate", "Basic realm=\"OCPP.Core\"");
                                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                                 return;
@@ -171,6 +175,7 @@ namespace OCPP.Core.Server
                             }
                             if (certAuthSuccess == false)
                             {
+                                WriteAuthenticationFailed(dbContext, chargePoint.ChargePointId, "Certificate");
                                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                                 return;
                             }
@@ -179,6 +184,7 @@ namespace OCPP.Core.Server
                         {
                             // Authentication required but nothing configured for this chargepoint => reject
                             _logger.LogWarning("OCPPMiddleware => FAILURE: No authentication for chargepoint '{0}' configured but 'RequireChargePointAuthentication' is active", chargePoint.ChargePointId);
+                            WriteAuthenticationFailed(dbContext, chargePoint.ChargePointId, "NotConfigured");
                             context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                             return;
                         }
@@ -220,6 +226,8 @@ namespace OCPP.Core.Server
                             {
                                 // existing connection must not be replaced => refuse the new one
                                 _logger.LogWarning("OCPPMiddleware => Chargepoint '{0}' is already connected and 'ReplaceExistingConnection' is deactivated => refuse connection", chargepointIdentifier);
+                                dbContext.WriteEvent(_logger, chargePointStatus.Id, null, EventCategory.Connection, EventSeverity.Warning, EventCode.ConnectionRefused,
+                                    new Dictionary<string, object> { ["reason"] = "AlreadyConnected" });
                                 context.Response.StatusCode = (int)HttpStatusCode.Conflict;
                             }
                             else
@@ -227,6 +235,7 @@ namespace OCPP.Core.Server
                                 // Handle socket communication
                                 _logger.LogTrace("OCPPMiddleware => Waiting for message...");
 
+                                bool connected = false;
                                 try
                                 {
                                     using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync(subProtocol))
@@ -235,13 +244,23 @@ namespace OCPP.Core.Server
                                         chargePointStatus.WebSocket = webSocket;
 
                                         // Register the connection only after the handshake => every registered status has a WebSocket
-                                        if (!RegisterChargePointStatus(chargepointIdentifier, chargePointStatus, replaceExistingConnection))
+                                        if (!RegisterChargePointStatus(chargepointIdentifier, chargePointStatus, replaceExistingConnection, out bool replaced))
                                         {
                                             // another connection was registered in the meantime and must not be replaced
                                             _logger.LogWarning("OCPPMiddleware => Chargepoint '{0}' is already connected and 'ReplaceExistingConnection' is deactivated => close new connection", chargepointIdentifier);
+                                            dbContext.WriteEvent(_logger, chargePointStatus.Id, null, EventCategory.Connection, EventSeverity.Warning, EventCode.ConnectionRefused,
+                                                new Dictionary<string, object> { ["reason"] = "AlreadyConnected" });
                                             await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Already connected", CancellationToken.None);
                                             return;
                                         }
+
+                                        connected = true;
+                                        if (replaced)
+                                        {
+                                            dbContext.WriteEvent(_logger, chargePointStatus.Id, null, EventCategory.Connection, EventSeverity.Warning, EventCode.ConnectionReplaced);
+                                        }
+                                        dbContext.WriteEvent(_logger, chargePointStatus.Id, null, EventCategory.Connection, EventSeverity.Info, EventCode.Connected,
+                                            new Dictionary<string, object> { ["protocol"] = subProtocol });
 
                                         if (subProtocol == Protocol_OCPP21)
                                         {
@@ -284,6 +303,14 @@ namespace OCPP.Core.Server
                                     }
                                     // Remove chargepoint status
                                     RemoveChargePointStatus(chargePointStatus);
+                                }
+
+                                if (connected)
+                                {
+                                    // close status of the charge point (or "Aborted" for a lost/replaced connection)
+                                    string closeStatus = chargePointStatus.WebSocket?.CloseStatus?.ToString() ?? chargePointStatus.WebSocket?.State.ToString();
+                                    dbContext.WriteEvent(_logger, chargePointStatus.Id, null, EventCategory.Connection, EventSeverity.Info, EventCode.Disconnected,
+                                        new Dictionary<string, object> { ["closeStatus"] = closeStatus });
                                 }
                             }
                         }
@@ -870,6 +897,15 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// EventLog: the authentication of a known charge point failed (method: Password, Missing, Certificate, NotConfigured)
+        /// </summary>
+        private void WriteAuthenticationFailed(OCPPCoreContext dbContext, string chargePointId, string method)
+        {
+            dbContext.WriteEvent(_logger, chargePointId, null, EventCategory.Connection, EventSeverity.Warning, EventCode.AuthenticationFailed,
+                new Dictionary<string, object> { ["method"] = method });
+        }
+
+        /// <summary>
         /// Checks the authorization of an API request:
         /// - ApiKey configured => the caller must send the matching "X-API-Key" header
         /// - no ApiKey configured => only local requests are allowed (unless "AllowUnauthenticatedApi" is set)
@@ -942,7 +978,107 @@ namespace OCPP.Core.Server
         /// The API caller waits at most "RequestTimeout" in total (waiting for the previous request included):
         /// max. half of it for the previous request => at least the other half remains for the answer
         /// (a request isn't sent just before the API caller gets a timeout).
+        /// Commands with an effect (not the reading ones) are written into the EventLog with their result.
         /// </summary>
+        private async Task<OcppRequestResult> SendRequestAndWait(ChargePointStatus chargePointStatus, string action, object request, ILogger logger,
+            HttpContext apiCallerContext, OCPPCoreContext dbContext)
+        {
+            OcppRequestResult result = await SendRequestAndWait(chargePointStatus, action, request, logger, apiCallerContext.RequestAborted);
+            if (!ReadingCommands.Contains(action))
+            {
+                WriteCommandEvent(dbContext, chargePointStatus, action, request, result, apiCallerContext);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Commands without effect on the charge point => not in the EventLog
+        /// </summary>
+        private static readonly HashSet<string> ReadingCommands = new HashSet<string> { "GetConfiguration", "GetVariables", "GetBaseReport" };
+
+        /// <summary>
+        /// Header of an API request with the user who triggered it (e.g. the user logged in to the management)
+        /// </summary>
+        public const string ApiUserHeader = "X-OCPP-User";
+
+        /// <summary>
+        /// Answers of the charge point that mean "done/accepted"
+        /// </summary>
+        private static readonly HashSet<string> CommandSuccessResults = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Accepted", "Unlocked", "Scheduled", "RebootRequired"
+        };
+
+        /// <summary>
+        /// EventLog: command sent to the charge point with its parameters, result and the triggering user
+        /// </summary>
+        private void WriteCommandEvent(OCPPCoreContext dbContext, ChargePointStatus chargePointStatus, string action, object request, OcppRequestResult result, HttpContext apiCallerContext)
+        {
+            try
+            {
+                Dictionary<string, object> parameters = new Dictionary<string, object> { ["action"] = action };
+                int? connectorId = null;
+                string details = null;
+                if (request != null)
+                {
+                    JObject json = JObject.FromObject(request, JsonSerializer.Create(new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
+                    details = json.ToString(Formatting.None);
+
+                    // connector: OCPP 2.x "evseId" or "evse.id" (the server uses the EVSE as connector), OCPP 1.6 "connectorId"
+                    int? connector = (json["evseId"] ?? json.SelectToken("evse.id") ?? json["connectorId"])?.Value<int?>();
+                    if (connector > 0) connectorId = connector;
+
+                    string tag = (json["idTag"] ?? json.SelectToken("idToken.idToken"))?.Value<string>();
+                    if (!string.IsNullOrEmpty(tag)) parameters["tag"] = tag;
+                    string type = json["type"]?.Value<string>();
+                    if (!string.IsNullOrEmpty(type)) parameters["type"] = type;
+                    string transactionId = json["transactionId"]?.ToString();
+                    if (!string.IsNullOrEmpty(transactionId)) parameters["transactionId"] = transactionId;
+                    // OCPP 1.6 ChangeConfiguration
+                    string key = json["key"]?.Value<string>();
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        parameters["key"] = key;
+                        parameters["value"] = json["value"]?.ToString();
+                    }
+                    // OCPP 2.x SetVariables
+                    if (json["setVariableData"] is JArray variables)
+                    {
+                        parameters["variables"] = string.Join(", ", variables.Select(v =>
+                            $"{v.SelectToken("component.name")}.{v.SelectToken("variable.name")}={v["attributeValue"]}"));
+                    }
+                }
+
+                string status = result.NoAnswerStatus;
+                if (status == null)
+                {
+                    try
+                    {
+                        status = JToken.Parse(result.Answer)["status"]?.Value<string>();
+                    }
+                    catch (JsonException)
+                    {
+                    }
+                }
+                status ??= "Answered";
+                parameters["result"] = status;
+                if (!string.IsNullOrEmpty(result.ErrorInfo)) parameters["error"] = result.ErrorInfo;
+
+                // URL encoded by the management (HTTP headers only allow ASCII)
+                string user = apiCallerContext?.Request.Headers[ApiUserHeader].FirstOrDefault();
+                parameters["user"] = string.IsNullOrWhiteSpace(user) ? "API" : Uri.UnescapeDataString(user);
+
+                // SetVariables/ChangeConfiguration: result per variable in the API answer => no general status
+                bool success = CommandSuccessResults.Contains(status) || status == "Answered";
+                dbContext.WriteEvent(_logger, chargePointStatus.Id, connectorId, EventCategory.Command, success ? EventSeverity.Info : EventSeverity.Warning,
+                    EventCode.Command, parameters, details);
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError(exp, "OCPPMiddleware => Error writing command event '{0}' of chargepoint '{1}': {2}", action, chargePointStatus.Id, exp.Message);
+            }
+        }
+
         private async Task<OcppRequestResult> SendRequestAndWait(ChargePointStatus chargePointStatus, string action, object request, ILogger logger, CancellationToken cancellationToken)
         {
             if (chargePointStatus.WebSocket?.State != WebSocketState.Open)
@@ -1235,8 +1371,9 @@ namespace OCPP.Core.Server
         /// that still seems to be open) is replaced and aborted - or the new connection is refused (returns false)
         /// if "ReplaceExistingConnection" is deactivated.
         /// </summary>
-        private bool RegisterChargePointStatus(string chargepointIdentifier, ChargePointStatus newStatus, bool replaceExistingConnection)
+        private bool RegisterChargePointStatus(string chargepointIdentifier, ChargePointStatus newStatus, bool replaceExistingConnection, out bool replaced)
         {
+            replaced = false;
             while (true)
             {
                 if (_chargePointStatusDict.TryAdd(chargepointIdentifier, newStatus))
@@ -1262,6 +1399,7 @@ namespace OCPP.Core.Server
                     if (existingIsOpen)
                     {
                         _logger.LogWarning("OCPPMiddleware => Connection of chargepoint '{0}' is replaced by a new connection", chargepointIdentifier);
+                        replaced = true;
                         try
                         {
                             // Abort (not close): a graceful close could hang on a dead TCP connection
