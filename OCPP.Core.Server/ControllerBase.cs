@@ -335,9 +335,11 @@ namespace OCPP.Core.Server
         /// <summary>
         /// EventLog: a transaction was started
         /// </summary>
-        protected void WriteTransactionStartedEvent(Transaction transaction)
+        protected void WriteTransactionStartedEvent(Transaction transaction, int? remoteStartId = null)
         {
             Dictionary<string, object> parameters = new Dictionary<string, object> { ["transactionId"] = transaction.TransactionId };
+            // OCPP 2.x: started by a remote start command with this ID (see the command event)
+            if (remoteStartId.HasValue) parameters["remoteStartId"] = remoteStartId.Value;
             if (!string.IsNullOrEmpty(transaction.StartTagId)) parameters["tag"] = transaction.StartTagId;
             if (transaction.MeterStart >= 0) parameters["meterStart"] = Math.Round(transaction.MeterStart, 3);
             WriteEvent(transaction.ConnectorId, EventCategory.Transaction, EventSeverity.Info, EventCode.TransactionStarted, parameters);

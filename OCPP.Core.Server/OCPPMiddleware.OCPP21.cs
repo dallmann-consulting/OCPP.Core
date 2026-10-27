@@ -279,8 +279,9 @@ namespace OCPP.Core.Server
 
                 Messages_OCPP21.RequestStartTransactionRequest requestStartTransactionRequest = new Messages_OCPP21.RequestStartTransactionRequest();
                 requestStartTransactionRequest.EvseId = connectorId;
+                requestStartTransactionRequest.RemoteStartId = chargePointStatus.NewRemoteStartId();
                 requestStartTransactionRequest.IdToken = new IdTokenType();
-                requestStartTransactionRequest.IdToken.Type = IdTokenEnumStringType.ISO14443;
+                requestStartTransactionRequest.IdToken.Type = RemoteStartIdTokenType21();
                 requestStartTransactionRequest.IdToken.IdToken = idTag;
 
                 logger.LogInformation("OCPPMiddleware.OCPP21 => RequestStartTransaction21: ChargePoint='{0}' / ConnectorId={1} / idTag='{2}'", chargePointStatus.Id, connectorId, idTag);

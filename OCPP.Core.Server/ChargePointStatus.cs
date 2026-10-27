@@ -109,6 +109,18 @@ namespace OCPP.Core.Server
         {
             return Interlocked.Increment(ref _lastReportRequestId);
         }
+
+        // random start value => IDs of a previous connection don't match
+        private int _lastRemoteStartId = Random.Shared.Next(1, 1000000);
+
+        /// <summary>
+        /// Returns a new ID for a remote start (OCPP 2.x "remoteStartId"): the charge point returns it in the
+        /// TransactionEvent => the started transaction can be assigned to the command
+        /// </summary>
+        public int NewRemoteStartId()
+        {
+            return Interlocked.Increment(ref _lastRemoteStartId);
+        }
     }
 
     /// <summary>

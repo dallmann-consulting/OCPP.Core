@@ -185,7 +185,7 @@ namespace OCPP.Core.Server
                                 DbContext.Add<Transaction>(transaction);
 
                                 DbContext.SaveChanges();
-                                WriteTransactionStartedEvent(transaction);
+                                WriteTransactionStartedEvent(transaction, transactionEventRequest.TransactionInfo.RemoteStartId);
                             }
                         }
                         catch (Exception exp)
@@ -228,7 +228,7 @@ namespace OCPP.Core.Server
                             transaction.MeterStart = meterKWH;
                             DbContext.Add<Transaction>(transaction);
                             DbContext.SaveChanges();
-                            WriteTransactionStartedEvent(transaction);
+                            WriteTransactionStartedEvent(transaction, transactionEventRequest.TransactionInfo.RemoteStartId);
                         }
 
                         if (transaction.StopTime.HasValue)

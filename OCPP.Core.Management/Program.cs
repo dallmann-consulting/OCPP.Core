@@ -62,6 +62,8 @@ namespace OCPP.Core.Management
             }
             // warning if the database schema is older than the application (e.g. no rights for automatic migrations)
             dbContext.LogPendingMigrations(logger);
+            // SQLite: server and management write at the same time => WAL mode
+            dbContext.EnableSqliteWal(logger);
 
             // Ensure the Admin role exists
             if (!await roleManager.RoleExistsAsync(Constants.AdminRoleName))

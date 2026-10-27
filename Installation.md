@@ -21,6 +21,8 @@ The project includes templates for SQL-Server and SQLite:
 	* SQLite
 	The folder 'SQLite' contains an empty ready-to-use database file. Or you use the SQL script in the same folder.
 
+**SQLite:** Server and Management-UI write into the same database file. At startup they switch SQLite to the WAL mode (write-ahead log), so concurrent writes wait for each other instead of failing with "database is locked". In this mode SQLite also uses the files `OCPP.Core.sqlite-wal` and `OCPP.Core.sqlite-shm` next to the database: back up all files (or stop both applications before copying the database file). WAL mode doesn't work on network drives - use a local disk or a Docker volume.
+
 The main Script in both folders always contain the latest version for a full database. For updating an existing SQL-Server database from any previous version there is the update script `SQL-Server/Update_OCPP.Core.sql` (see below).
 
 By default both applications update the database schema automatically at startup (`"AutoMigrateDB": true`). On SQL-Server the database login of the applications usually has no rights to change the schema. Then set `"AutoMigrateDB": false` in both applications and run `SQL-Server/Update_OCPP.Core.sql` with an administrative login (SSMS or `sqlcmd`). It updates a database of any previous version (since V1.0), applies only the missing changes and can be run repeatedly. A new database created with `Create_OCPP.Core.sql` is already up to date. If the database schema is older than the application, both applications log a warning at startup and the Management-UI shows a warning to administrators. Server and Management-UI may start at the same time (e.g. in Docker): the migration is protected by a database lock, the second application waits.
@@ -90,12 +92,14 @@ After a network failure the server may still consider the old connection of a ch
 - **ReplaceExistingConnection** (default `true`): a new connection of a chargepoint replaces its existing connection. The old connection is aborted and pending server commands to it end immediately. With `false` the new connection is refused (HTTP 409) as long as the old one seems to be open. If two devices are accidentally configured with the same chargepoint ID, they replace each other - see the warnings in the log.
 - **WebSocketPingInterval** / **WebSocketPingTimeout** (default `60` / `60` seconds): the server sends a WebSocket ping in this interval and aborts the connection if no pong arrives within the timeout. Dead connections are detected after about 2 minutes. `0` deactivates the ping (interval) or the check of the pong (timeout).
 - **RequestTimeout** (default `60` seconds): how long the server waits for the answer of a chargepoint to a command (e.g. reset, unlock, remote start). The server sends only one command at a time to a chargepoint; a second command waits until the first one is answered or timed out (see `Server-API.md`). Keep the timeout of the Management-UI calls (70 seconds) in mind when you increase it.
+- **RemoteStartIdTokenType** (default `ISO14443`, OCPP 2.x): type of the token in a remote start ("start charging" in the Management-UI). The charge tags are normally the IDs of RFID cards (`ISO14443`), so the charge point recognizes the card when it's presented to stop charging. Change it e.g. to `ISO15693` for such cards. With `Central` many charge points don't accept the card as the same token for stopping.
 
 ```
 "ReplaceExistingConnection": true,
 "WebSocketPingInterval": 60,
 "WebSocketPingTimeout": 60,
 "RequestTimeout": 60,
+"RemoteStartIdTokenType": "ISO14443",
 ```
 
 

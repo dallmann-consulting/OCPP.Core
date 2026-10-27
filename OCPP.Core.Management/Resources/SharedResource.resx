@@ -468,4 +468,7 @@
   <data name="Event_ConnectionRefusedProtocol" xml:space="preserve">
     <value>Connection refused: no supported OCPP version offered ({0})</value>
   </data>
+  <data name="Event_RemoteStartId" xml:space="preserve">
+    <value>remote start ID {0}</value>
+  </data>
 </root>

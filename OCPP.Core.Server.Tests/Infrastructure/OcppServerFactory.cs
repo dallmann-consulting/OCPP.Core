@@ -129,15 +129,39 @@ namespace OCPP.Core.Server.Tests.Infrastructure
         public override async ValueTask DisposeAsync()
         {
             await base.DisposeAsync();
-            // only the pool of this database: ClearAllPools() would also close the connections of other test classes running in parallel
-            SqliteConnection.ClearPool(new SqliteConnection(ConnectionString));
+
+            // The server may still write when the host is disposed (e.g. the "Disconnected" event of a closed connection)
+            // => the file is still in use or is created again by a late write. Retry for a short time.
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                // only the pool of this database: ClearAllPools() would also close the connections of other test classes running in parallel
+                SqliteConnection.ClearPool(new SqliteConnection(ConnectionString));
+                if (TryDeleteDatabase())
+                {
+                    await Task.Delay(100);
+                    if (!File.Exists(_dbFile)) return;
+                }
+                else
+                {
+                    await Task.Delay(100);
+                }
+            }
+            // still in use => remains in the temp directory
+        }
+
+        private bool TryDeleteDatabase()
+        {
             try
             {
-                File.Delete(_dbFile);
+                foreach (string file in new[] { _dbFile, _dbFile + "-journal", _dbFile + "-wal", _dbFile + "-shm" })
+                {
+                    File.Delete(file);
+                }
+                return true;
             }
             catch (IOException)
             {
-                // file still in use => remains in the temp directory
+                return false;
             }
         }
     }

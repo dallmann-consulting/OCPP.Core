@@ -138,6 +138,7 @@ namespace OCPP.Core.Management
                     text = Format("Event_TransactionStarted", P("transactionId"));
                     Add(additions, "Event_Token", Tag("tag"));
                     Add(additions, "Event_MeterStart", Number("meterStart"));
+                    Add(additions, "Event_RemoteStartId", P("remoteStartId"));
                     break;
                 case EventCode.TransactionStopped:
                     text = Format("Event_TransactionStopped", P("transactionId"));
@@ -162,6 +163,7 @@ namespace OCPP.Core.Management
                     Add(additions, "Event_CommandUser", P("user"));
                     if (!string.IsNullOrEmpty(P("type"))) additions.Add(P("type"));
                     Add(additions, "Event_Token", Tag("tag"));
+                    Add(additions, "Event_RemoteStartId", P("remoteStartId"));
                     if (!string.IsNullOrEmpty(P("key"))) additions.Add($"{P("key")} = {P("value")}");
                     if (!string.IsNullOrEmpty(P("variables"))) additions.Add(P("variables"));
                     if (!string.IsNullOrEmpty(P("error"))) additions.Add(P("error"));

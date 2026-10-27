@@ -1003,6 +1003,42 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// idToken type of a remote start (OCPP 2.x), setting "RemoteStartIdTokenType".
+        /// Default "ISO14443": the tags are the IDs of RFID cards => the charge point recognizes the card when it's presented to stop
+        /// (with another type, e.g. "Central", many charge points don't consider the card as the same token)
+        /// </summary>
+        private string RemoteStartIdTokenTypeSetting => _configuration.GetValue<string>("RemoteStartIdTokenType", "ISO14443");
+
+        /// <summary>
+        /// OCPP 2.0.1: only the types of the specification are allowed
+        /// </summary>
+        private Messages_OCPP20.IdTokenEnumType RemoteStartIdTokenType20()
+        {
+            string setting = RemoteStartIdTokenTypeSetting;
+            if (!string.IsNullOrWhiteSpace(setting) && !int.TryParse(setting, out _) &&
+                Enum.TryParse(setting, ignoreCase: true, out Messages_OCPP20.IdTokenEnumType type) && Enum.IsDefined(type))
+            {
+                return type;
+            }
+            _logger.LogWarning("OCPPMiddleware => Invalid 'RemoteStartIdTokenType' '{0}' for OCPP 2.0.1 => ISO14443", setting);
+            return Messages_OCPP20.IdTokenEnumType.ISO14443;
+        }
+
+        /// <summary>
+        /// OCPP 2.1: the type is a string (max. 20 characters, values of the specification or custom values)
+        /// </summary>
+        private string RemoteStartIdTokenType21()
+        {
+            string setting = RemoteStartIdTokenTypeSetting?.Trim();
+            if (!string.IsNullOrEmpty(setting) && setting.Length <= 20)
+            {
+                return setting;
+            }
+            _logger.LogWarning("OCPPMiddleware => Invalid 'RemoteStartIdTokenType' '{0}' for OCPP 2.1 => ISO14443", setting);
+            return Messages_OCPP21.IdTokenEnumStringType.ISO14443;
+        }
+
+        /// <summary>
         /// Commands without effect on the charge point => not in the EventLog
         /// </summary>
         private static readonly HashSet<string> ReadingCommands = new HashSet<string> { "GetConfiguration", "GetVariables", "GetBaseReport" };
@@ -1045,6 +1081,9 @@ namespace OCPP.Core.Server
                     if (!string.IsNullOrEmpty(type)) parameters["type"] = type;
                     string transactionId = json["transactionId"]?.ToString();
                     if (!string.IsNullOrEmpty(transactionId)) parameters["transactionId"] = transactionId;
+                    // OCPP 2.x remote start: ID returned by the charge point in the TransactionEvent ("Started")
+                    string remoteStartId = json["remoteStartId"]?.ToString();
+                    if (!string.IsNullOrEmpty(remoteStartId)) parameters["remoteStartId"] = remoteStartId;
                     // OCPP 1.6 ChangeConfiguration
                     string key = json["key"]?.Value<string>();
                     if (!string.IsNullOrEmpty(key))
