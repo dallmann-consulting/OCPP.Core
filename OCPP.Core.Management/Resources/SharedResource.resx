@@ -375,4 +375,94 @@
   <data name="Result_Answered" xml:space="preserve">
     <value>answered</value>
   </data>
+  <data name="Event_SecurityEvent" xml:space="preserve">
+    <value>Security event: {0}</value>
+  </data>
+  <data name="Security_FirmwareUpdated" xml:space="preserve">
+    <value>firmware updated</value>
+  </data>
+  <data name="Security_StartupOfTheDevice" xml:space="preserve">
+    <value>charging station started</value>
+  </data>
+  <data name="Security_ResetOrReboot" xml:space="preserve">
+    <value>reset or reboot</value>
+  </data>
+  <data name="Security_SettingSystemTime" xml:space="preserve">
+    <value>system time changed</value>
+  </data>
+  <data name="Security_FailedToAuthenticateAtCsms" xml:space="preserve">
+    <value>login at the server failed</value>
+  </data>
+  <data name="Security_CsmsFailedToAuthenticate" xml:space="preserve">
+    <value>login of the server rejected</value>
+  </data>
+  <data name="Security_SecurityLogWasCleared" xml:space="preserve">
+    <value>security log cleared</value>
+  </data>
+  <data name="Security_ReconfigurationOfSecurityParameters" xml:space="preserve">
+    <value>security parameters changed</value>
+  </data>
+  <data name="Security_MemoryExhaustion" xml:space="preserve">
+    <value>memory almost full</value>
+  </data>
+  <data name="Security_InvalidMessages" xml:space="preserve">
+    <value>invalid messages received</value>
+  </data>
+  <data name="Security_AttemptedReplayAttacks" xml:space="preserve">
+    <value>replayed message received</value>
+  </data>
+  <data name="Security_TamperDetectionActivated" xml:space="preserve">
+    <value>tamper detection triggered</value>
+  </data>
+  <data name="Security_InvalidFirmwareSignature" xml:space="preserve">
+    <value>invalid firmware signature</value>
+  </data>
+  <data name="Security_InvalidFirmwareSigningCertificate" xml:space="preserve">
+    <value>invalid firmware signing certificate</value>
+  </data>
+  <data name="Security_InvalidCsmsCertificate" xml:space="preserve">
+    <value>invalid server certificate</value>
+  </data>
+  <data name="Security_InvalidChargingStationCertificate" xml:space="preserve">
+    <value>invalid charging station certificate</value>
+  </data>
+  <data name="Security_InvalidTLSVersion" xml:space="preserve">
+    <value>TLS version not allowed</value>
+  </data>
+  <data name="Security_InvalidTLSCipherSuite" xml:space="preserve">
+    <value>TLS cipher suite not allowed</value>
+  </data>
+  <data name="Event_StationEvent" xml:space="preserve">
+    <value>Message of the charging station: {0} = {1}</value>
+  </data>
+  <data name="Event_StationEventCleared" xml:space="preserve">
+    <value>cleared</value>
+  </data>
+  <data name="Event_FunctionNotSupported" xml:space="preserve">
+    <value>Function not supported by the server: {0} (answer: {1})</value>
+  </data>
+  <data name="Function_SignCertificate" xml:space="preserve">
+    <value>signing a certificate</value>
+  </data>
+  <data name="Function_Get15118EVCertificate" xml:space="preserve">
+    <value>ISO 15118 certificate of the vehicle</value>
+  </data>
+  <data name="Function_GetCertificateStatus" xml:space="preserve">
+    <value>certificate status (OCSP)</value>
+  </data>
+  <data name="Function_NotifyEVChargingNeeds" xml:space="preserve">
+    <value>charging schedule for the vehicle (ISO 15118)</value>
+  </data>
+  <data name="Event_UnexpectedMessage" xml:space="preserve">
+    <value>Unexpected message '{0}' (not requested by the server, accepted)</value>
+  </data>
+  <data name="Event_UnsupportedMessage" xml:space="preserve">
+    <value>Message '{0}' is not supported by the server (rejected)</value>
+  </data>
+  <data name="Result_Failed" xml:space="preserve">
+    <value>failed</value>
+  </data>
+  <data name="Result_NoChargingProfile" xml:space="preserve">
+    <value>no charging schedule</value>
+  </data>
 </root>

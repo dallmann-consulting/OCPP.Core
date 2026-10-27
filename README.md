@@ -10,17 +10,21 @@ Here's a report of the [first real live experiences](Real_life_Experiences_KEBA.
 <br/>
 The OCPP-Server currently handles the following messages:
 
-OCPP V1.6:
+**OCPP V1.6**
+
+Messages from the charge point (processed):
 * BootNotification
 * Heartbeat
 * Authorize
 * StartTransaction
 * StopTransaction
-* RemoteStartTransaction
-* RemoteStopTransaction
 * MeterValues
 * StatusNotification
 * DataTransfer
+
+Commands to the charge point (via API / Management-UI):
+* RemoteStartTransaction
+* RemoteStopTransaction
 * Reset
 * UnlockConnector
 * SetChargingProfile
@@ -28,21 +32,44 @@ OCPP V1.6:
 * GetConfiguration
 * ChangeConfiguration
 
-OCPP V2.0 and V2.1:
+**OCPP V2.0 and V2.1**
+
+Messages from the charge point (processed):
 * BootNotification
 * Heartbeat
 * Authorize
 * TransactionEvent
-* RequestStartTransaction
-* RequestStopTransaction
 * MeterValues
 * StatusNotification
 * DataTransfer
+* NotifyReport (answer to GetBaseReport)
+
+Messages from the charge point that are accepted, but not processed further (content in the log or in the EventLog of the charge point):
 * LogStatusNotification
 * FirmwareStatusNotification
 * ClearedChargingLimit
 * NotifyChargingLimit
 * NotifyEVChargingSchedule
+* SecurityEventNotification (EventLog)
+* NotifyEvent (EventLog)
+
+Messages from the charge point for functions the server doesn't offer - answered as the specification requires and noted in the EventLog:
+* SignCertificate (Rejected)
+* Get15118EVCertificate (Failed)
+* GetCertificateStatus (Failed)
+* NotifyEVChargingNeeds (Rejected, OCPP 2.1: NoChargingProfile)
+
+Answers to requests the server never sends - accepted and noted in the EventLog:
+* ReservationStatusUpdate
+* NotifyMonitoringReport
+* ReportChargingProfiles
+* NotifyCustomerInformation
+* NotifyDisplayMessages
+* PublishFirmwareStatusNotification
+
+Commands to the charge point (via API / Management-UI):
+* RequestStartTransaction
+* RequestStopTransaction
 * Reset
 * UnlockConnector
 * SetChargingProfile
@@ -50,6 +77,8 @@ OCPP V2.0 and V2.1:
 * GetVariables
 * GetBaseReport
 * SetVariables
+
+All other messages from a charge point are rejected (CALLERROR "NotSupported") and noted in the EventLog of the charge point, so you can see when a charge point sends messages the server doesn't support.
 
 ## Management Web-UI
 The Web-UI is **localized in English and German**. It has an overview page with all charge stations and their availabilty.

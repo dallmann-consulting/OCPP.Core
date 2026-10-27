@@ -104,8 +104,18 @@ namespace OCPP.Core.Server
                         break;
 
                     default:
-                        errorCode = ErrorCodes.NotSupported;
-                        WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
+                        if (StationMessageActions.Contains(msgIn.Action))
+                        {
+                            // reports of the charge point, not offered functions, unexpected answers (EventLog)
+                            errorCode = HandleStationMessage(msgIn, msgOut, ErrorCodes.FormatViolation, ErrorCodes.InternalError);
+                            WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, null, errorCode);
+                        }
+                        else
+                        {
+                            errorCode = ErrorCodes.NotSupported;
+                            WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
+                            WriteUnsupportedMessage(msgIn);
+                        }
                         break;
                 }
             }

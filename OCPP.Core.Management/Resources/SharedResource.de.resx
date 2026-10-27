@@ -375,4 +375,94 @@
   <data name="Result_Answered" xml:space="preserve">
     <value>beantwortet</value>
   </data>
+  <data name="Event_SecurityEvent" xml:space="preserve">
+    <value>Sicherheitsereignis: {0}</value>
+  </data>
+  <data name="Security_FirmwareUpdated" xml:space="preserve">
+    <value>Firmware aktualisiert</value>
+  </data>
+  <data name="Security_StartupOfTheDevice" xml:space="preserve">
+    <value>Ladestation gestartet</value>
+  </data>
+  <data name="Security_ResetOrReboot" xml:space="preserve">
+    <value>Reset bzw. Neustart</value>
+  </data>
+  <data name="Security_SettingSystemTime" xml:space="preserve">
+    <value>Systemzeit geändert</value>
+  </data>
+  <data name="Security_FailedToAuthenticateAtCsms" xml:space="preserve">
+    <value>Anmeldung am Server fehlgeschlagen</value>
+  </data>
+  <data name="Security_CsmsFailedToAuthenticate" xml:space="preserve">
+    <value>Anmeldung des Servers abgelehnt</value>
+  </data>
+  <data name="Security_SecurityLogWasCleared" xml:space="preserve">
+    <value>Sicherheitsprotokoll gelöscht</value>
+  </data>
+  <data name="Security_ReconfigurationOfSecurityParameters" xml:space="preserve">
+    <value>Sicherheitsparameter geändert</value>
+  </data>
+  <data name="Security_MemoryExhaustion" xml:space="preserve">
+    <value>Speicher fast voll</value>
+  </data>
+  <data name="Security_InvalidMessages" xml:space="preserve">
+    <value>ungültige Nachrichten empfangen</value>
+  </data>
+  <data name="Security_AttemptedReplayAttacks" xml:space="preserve">
+    <value>wiederholte (Replay-)Nachricht empfangen</value>
+  </data>
+  <data name="Security_TamperDetectionActivated" xml:space="preserve">
+    <value>Manipulationserkennung ausgelöst</value>
+  </data>
+  <data name="Security_InvalidFirmwareSignature" xml:space="preserve">
+    <value>ungültige Firmware-Signatur</value>
+  </data>
+  <data name="Security_InvalidFirmwareSigningCertificate" xml:space="preserve">
+    <value>ungültiges Zertifikat der Firmware-Signatur</value>
+  </data>
+  <data name="Security_InvalidCsmsCertificate" xml:space="preserve">
+    <value>ungültiges Server-Zertifikat</value>
+  </data>
+  <data name="Security_InvalidChargingStationCertificate" xml:space="preserve">
+    <value>ungültiges Zertifikat der Ladestation</value>
+  </data>
+  <data name="Security_InvalidTLSVersion" xml:space="preserve">
+    <value>TLS-Version nicht zulässig</value>
+  </data>
+  <data name="Security_InvalidTLSCipherSuite" xml:space="preserve">
+    <value>TLS-Verschlüsselung nicht zulässig</value>
+  </data>
+  <data name="Event_StationEvent" xml:space="preserve">
+    <value>Meldung der Ladestation: {0} = {1}</value>
+  </data>
+  <data name="Event_StationEventCleared" xml:space="preserve">
+    <value>behoben</value>
+  </data>
+  <data name="Event_FunctionNotSupported" xml:space="preserve">
+    <value>Funktion vom Server nicht unterstützt: {0} (Antwort: {1})</value>
+  </data>
+  <data name="Function_SignCertificate" xml:space="preserve">
+    <value>Zertifikat signieren</value>
+  </data>
+  <data name="Function_Get15118EVCertificate" xml:space="preserve">
+    <value>ISO-15118-Zertifikat des Fahrzeugs</value>
+  </data>
+  <data name="Function_GetCertificateStatus" xml:space="preserve">
+    <value>Zertifikatsstatus (OCSP)</value>
+  </data>
+  <data name="Function_NotifyEVChargingNeeds" xml:space="preserve">
+    <value>Ladeplan für das Fahrzeug (ISO 15118)</value>
+  </data>
+  <data name="Event_UnexpectedMessage" xml:space="preserve">
+    <value>Unerwartete Nachricht „{0}“ (vom Server nicht angefordert, angenommen)</value>
+  </data>
+  <data name="Event_UnsupportedMessage" xml:space="preserve">
+    <value>Nachricht „{0}“ wird vom Server nicht unterstützt (abgelehnt)</value>
+  </data>
+  <data name="Result_Failed" xml:space="preserve">
+    <value>fehlgeschlagen</value>
+  </data>
+  <data name="Result_NoChargingProfile" xml:space="preserve">
+    <value>kein Ladeplan</value>
+  </data>
 </root>

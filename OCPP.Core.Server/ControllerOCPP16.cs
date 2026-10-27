@@ -89,6 +89,7 @@ namespace OCPP.Core.Server
                 default:
                     errorCode = ErrorCodes.NotSupported;
                     WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, errorCode);
+                    WriteUnsupportedMessage(msgIn);
                     break;
             }
 

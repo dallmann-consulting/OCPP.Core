@@ -98,6 +98,26 @@ namespace OCPP.Core.Management
                     text = Format("Event_FirmwareChanged", P("old"), P("new"));
                     break;
 
+                case EventCode.SecurityEvent:
+                    text = Format("Event_SecurityEvent", Translate("Security", P("type")));
+                    if (!string.IsNullOrEmpty(P("techInfo"))) additions.Add(P("techInfo"));
+                    break;
+                case EventCode.StationEvent:
+                    text = Format("Event_StationEvent", string.Join(" / ", new[] { P("component"), P("variable") }.Where(s => !string.IsNullOrEmpty(s))), P("value"));
+                    if (P("cleared") == "true") additions.Add(Format("Event_StationEventCleared"));
+                    if (!string.IsNullOrEmpty(P("techCode"))) additions.Add(P("techCode"));
+                    break;
+                case EventCode.FunctionNotSupported:
+                    text = Format("Event_FunctionNotSupported", Translate("Function", P("action")), Translate("Result", P("answer")));
+                    if (!string.IsNullOrEmpty(P("info"))) additions.Add(P("info"));
+                    break;
+                case EventCode.UnexpectedMessage:
+                    text = Format("Event_UnexpectedMessage", P("action"));
+                    break;
+                case EventCode.UnsupportedMessage:
+                    text = Format("Event_UnsupportedMessage", P("action"));
+                    break;
+
                 case EventCode.StatusChanged:
                     text = Format("Event_StatusChanged", P("old") == null ? "–" : Translate("Status", P("old")), Translate("Status", P("new")));
                     Add(additions, "Event_StatusError", P("errorCode"));

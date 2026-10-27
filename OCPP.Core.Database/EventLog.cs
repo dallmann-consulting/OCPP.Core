@@ -74,6 +74,17 @@ namespace OCPP.Core.Database
         /// <summary>Parameters: old, new</summary>
         public const string FirmwareChanged = "FirmwareChanged";
 
+        /// <summary>Parameters: type, techInfo (details: timestamp of the charge point)</summary>
+        public const string SecurityEvent = "SecurityEvent";
+        /// <summary>Parameters: component, variable, value, trigger, cleared, techCode (details: techInfo)</summary>
+        public const string StationEvent = "StationEvent";
+        /// <summary>Parameters: action, answer, info - the charge point requested a function the server doesn't offer</summary>
+        public const string FunctionNotSupported = "FunctionNotSupported";
+        /// <summary>Parameters: action - answer to a request the server never sent (accepted)</summary>
+        public const string UnexpectedMessage = "UnexpectedMessage";
+        /// <summary>Parameters: action - message the server doesn't support (CALLERROR)</summary>
+        public const string UnsupportedMessage = "UnsupportedMessage";
+
         // Status
         /// <summary>Parameters: old, new, errorCode, info</summary>
         public const string StatusChanged = "StatusChanged";
