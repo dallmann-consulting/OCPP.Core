@@ -213,6 +213,56 @@ namespace OCPP.Core.Server.Tests
             Assert.Equal("3", Parameters(stopped)["energy"]);
         }
 
+        [Theory]
+        [InlineData(OcppProtocols.Ocpp201)]
+        [InlineData(OcppProtocols.Ocpp21)]
+        public async Task Ocpp2x_TokenRepeatedInUpdated_IsLoggedOnlyOnce(string protocol)
+        {
+            string chargePointId = _factory.AddChargePoint();
+            string tagId = _factory.AddChargeTag();
+            string otherTagId = _factory.AddChargeTag();
+            string uid = Guid.NewGuid().ToString();
+            await using ChargePointSimulator cp = await _factory.ConnectAsync(chargePointId, protocol);
+            DateTimeOffset start = DateTimeOffset.UtcNow.AddMinutes(-10);
+
+            // some stations send the token in every "Updated" (e.g. periodic meter values)
+            await TransactionEventAsync(cp, "Started", uid, 0, start, 1000, tagId);
+            for (int i = 1; i <= 3; i++)
+            {
+                OcppResult updated = await TransactionEventAsync(cp, "Updated", uid, i, start.AddMinutes(i), 1000 + i * 100, tagId);
+                // the charge point still gets the authorization status
+                Assert.Equal("Accepted", updated.Payload!["idTokenInfo"]!["status"]!.Value<string>());
+            }
+            // another token during the transaction is a new authorization
+            await TransactionEventAsync(cp, "Updated", uid, 4, start.AddMinutes(4), 1500, otherTagId);
+            await TransactionEventAsync(cp, "Ended", uid, 5, start.AddMinutes(10), 2000, tagId);
+
+            List<ChargePointEvent> accepted = Events(chargePointId, EventCode.TokenAccepted);
+            Assert.Equal(new[] { "Start", "Start", "Stop" }, accepted.Select(e => Parameters(e)["action"]));
+            Assert.Equal(new[] { tagId, otherTagId, tagId }, accepted.Select(e => Parameters(e)["tag"]));
+        }
+
+        [Theory]
+        [InlineData(OcppProtocols.Ocpp201)]
+        [InlineData(OcppProtocols.Ocpp21)]
+        public async Task Ocpp2x_TokenAfterStartInUpdated_IsLogged(string protocol)
+        {
+            string chargePointId = _factory.AddChargePoint();
+            string tagId = _factory.AddChargeTag();
+            string uid = Guid.NewGuid().ToString();
+            await using ChargePointSimulator cp = await _factory.ConnectAsync(chargePointId, protocol);
+            DateTimeOffset start = DateTimeOffset.UtcNow.AddMinutes(-10);
+
+            // cable plugged in first => token follows in "Updated"
+            await TransactionEventAsync(cp, "Started", uid, 0, start, 1000, null);
+            await TransactionEventAsync(cp, "Updated", uid, 1, start.AddMinutes(1), 1100, tagId);
+            await TransactionEventAsync(cp, "Updated", uid, 2, start.AddMinutes(2), 1200, tagId);
+
+            ChargePointEvent accepted = Assert.Single(Events(chargePointId, EventCode.TokenAccepted));
+            Assert.Equal(tagId, Parameters(accepted)["tag"]);
+            Assert.Equal("Start", Parameters(accepted)["action"]);
+        }
+
         private static Task<OcppResult> TransactionEventAsync(ChargePointSimulator cp, string eventType, string uid, int seqNo, DateTimeOffset timestamp, double meterWh, string? idTag)
         {
             Dictionary<string, object> payload = new Dictionary<string, object>

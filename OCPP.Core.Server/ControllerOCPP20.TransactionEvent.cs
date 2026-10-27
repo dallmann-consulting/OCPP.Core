@@ -41,6 +41,8 @@ namespace OCPP.Core.Server
 
             int connectorId = 0;
             string msgLogText = string.Empty;
+            // EventLog: is the token in this message a new authorization? (some stations repeat it in every "Updated")
+            bool newAuthorization = true;
 
             try
             {
@@ -177,6 +179,7 @@ namespace OCPP.Core.Server
                             Logger.LogInformation("UpdateTransaction => Transaction uid='{0}' is already ended => ignored", transaction.Uid);
                             transactionEventResponse.IdTokenInfo = string.IsNullOrWhiteSpace(idTag) ? null :
                                 InternalAuthorize(idTag, ocppMiddleware, connectorId, AuthAction.StartTransaction, transaction.Uid, string.Empty, false);
+                            newAuthorization = false;
                         }
                         else
                         {
@@ -184,6 +187,8 @@ namespace OCPP.Core.Server
                             {
                                 // Token in "Updated" (e.g. cable plugged in first, then authorized) => authorize and answer with idTokenInfo
                                 transactionEventResponse.IdTokenInfo = InternalAuthorize(idTag, ocppMiddleware, connectorId, AuthAction.StartTransaction, transaction.Uid, string.Empty, false);
+                                // same token as at the start => repetition, not a new authorization
+                                newAuthorization = !idTag.Equals(transaction.StartTagId, StringComparison.InvariantCultureIgnoreCase);
                                 if (string.IsNullOrEmpty(transaction.StartTagId))
                                 {
                                     // transaction started without token => store the token as start tag
@@ -309,7 +314,7 @@ namespace OCPP.Core.Server
                     msgLogText = $"EndTx => {transactionEventResponse.IdTokenInfo?.Status} | {msgLogText}";
                 }
 
-                if (transactionEventResponse.IdTokenInfo != null)
+                if (transactionEventResponse.IdTokenInfo != null && newAuthorization)
                 {
                     WriteAuthorizationEvent(connectorId, idTag, transactionEventResponse.IdTokenInfo.Status.ToString(),
                         transactionEventResponse.IdTokenInfo.Status == AuthorizationStatusEnumType.Accepted,
