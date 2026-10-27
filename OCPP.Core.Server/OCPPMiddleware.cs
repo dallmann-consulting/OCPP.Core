@@ -212,10 +212,21 @@ namespace OCPP.Core.Server
                             .FirstOrDefault(requestedProtocol => SupportedProtocols.Contains(requestedProtocol));
                         if (string.IsNullOrEmpty(subProtocol))
                         {
-                            // Not matching protocol! => failure
+                            // Not matching protocol! => OCPP-J: complete the handshake without "Sec-WebSocket-Protocol"
+                            // and close the connection immediately (no HTTP error)
                             string protocols = string.Join(", ", context.WebSockets.WebSocketRequestedProtocols);
-                            _logger.LogWarning("OCPPMiddleware => No supported sub-protocol in '{0}' from charge station '{1}'", protocols, chargepointIdentifier);
-                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                            _logger.LogWarning("OCPPMiddleware => No supported sub-protocol in '{0}' from charge station '{1}' => connection closed", protocols, chargepointIdentifier);
+                            dbContext.WriteEvent(_logger, chargePointStatus.Id, null, EventCategory.Connection, EventSeverity.Warning, EventCode.ConnectionRefused,
+                                new Dictionary<string, object> { ["reason"] = "UnsupportedProtocol", ["protocols"] = protocols });
+                            try
+                            {
+                                using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                                await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, "Unsupported sub-protocol", CancellationToken.None);
+                            }
+                            catch (Exception exp) when (exp is WebSocketException || exp is OperationCanceledException)
+                            {
+                                _logger.LogTrace("OCPPMiddleware => Closing connection without sub-protocol failed: {0}", exp.Message);
+                            }
                         }
                         else
                         {
@@ -324,9 +335,9 @@ namespace OCPP.Core.Server
                 }
                 else
                 {
-                    // unknown chargepoint
-                    _logger.LogTrace("OCPPMiddleware => no chargepoint: http 412");
-                    context.Response.StatusCode = (int)HttpStatusCode.PreconditionFailed;
+                    // unknown chargepoint (OCPP-J chapter 3.2: SHOULD answer with 404)
+                    _logger.LogTrace("OCPPMiddleware => no chargepoint: http 404");
+                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 }
             }
             else if (context.Request.Path.StartsWithSegments("/API"))

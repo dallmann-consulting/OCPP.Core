@@ -465,4 +465,7 @@
   <data name="Result_NoChargingProfile" xml:space="preserve">
     <value>no charging schedule</value>
   </data>
+  <data name="Event_ConnectionRefusedProtocol" xml:space="preserve">
+    <value>Connection refused: no supported OCPP version offered ({0})</value>
+  </data>
 </root>

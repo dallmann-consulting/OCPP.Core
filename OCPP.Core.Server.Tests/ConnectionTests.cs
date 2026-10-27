@@ -33,8 +33,8 @@ namespace OCPP.Core.Server.Tests
             InvalidOperationException exp = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => _factory.ConnectAsync("unknown-" + Guid.NewGuid().ToString("N"), OcppProtocols.Ocpp16));
 
-            // current behavior: HTTP 412 (OCPP-J recommends 404 => see finding #27)
-            Assert.Contains("412", exp.Message);
+            // OCPP-J chapter 3.2: unknown charge point => 404
+            Assert.Contains("404", exp.Message);
         }
 
         [Fact]
@@ -42,8 +42,15 @@ namespace OCPP.Core.Server.Tests
         {
             string chargePointId = _factory.AddChargePoint();
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => _factory.ConnectAsync(chargePointId, "ocpp1.5"));
+            // OCPP-J: handshake without sub-protocol, then the server closes the connection immediately
+            await using ChargePointSimulator cp = await _factory.ConnectAsync(chargePointId, "ocpp1.5");
+
+            Assert.True(string.IsNullOrEmpty(cp.Protocol));
+            for (int i = 0; i < 100 && cp.State == WebSocketState.Open; i++)
+            {
+                await Task.Delay(20, TestContext.Current.CancellationToken);
+            }
+            Assert.NotEqual(WebSocketState.Open, cp.State);
         }
 
         [Fact]

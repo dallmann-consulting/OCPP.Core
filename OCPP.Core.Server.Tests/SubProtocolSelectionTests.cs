@@ -1,5 +1,7 @@
 using System.Net.WebSockets;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
+using OCPP.Core.Database;
 using OCPP.Core.Server.Tests.Infrastructure;
 
 namespace OCPP.Core.Server.Tests
@@ -47,10 +49,21 @@ namespace OCPP.Core.Server.Tests
             client.SubProtocols.Add("ocpp1.5");
             client.SubProtocols.Add("ocpp1.2");
 
-            InvalidOperationException exp = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => client.ConnectAsync(new Uri(_factory.Server.BaseAddress, "OCPP/" + chargePointId), TestContext.Current.CancellationToken));
+            // OCPP-J chapter 3.2 (MUST): complete the handshake without "Sec-WebSocket-Protocol" and close immediately (no HTTP error)
+            using WebSocket webSocket = await client.ConnectAsync(new Uri(_factory.Server.BaseAddress, "OCPP/" + chargePointId), TestContext.Current.CancellationToken);
+            Assert.True(string.IsNullOrEmpty(webSocket.SubProtocol));
 
-            Assert.Contains("400", exp.Message);
+            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(new byte[1024]), TestContext.Current.CancellationToken);
+            Assert.Equal(WebSocketMessageType.Close, result.MessageType);
+            Assert.Equal(WebSocketCloseStatus.ProtocolError, result.CloseStatus);
+
+            // noted in the EventLog with the offered protocols
+            using OCPPCoreContext db = _factory.CreateDbContext();
+            ChargePointEvent e = Assert.Single(db.ChargePointEvents.AsNoTracking().Where(ev => ev.ChargePointId == chargePointId));
+            Assert.Equal(EventCode.ConnectionRefused, e.EventCode);
+            Dictionary<string, string> parameters = EventLogExtensions.ReadParameters(e.Parameters);
+            Assert.Equal("UnsupportedProtocol", parameters["reason"]);
+            Assert.Equal("ocpp1.5, ocpp1.2", parameters["protocols"]);
         }
     }
 }

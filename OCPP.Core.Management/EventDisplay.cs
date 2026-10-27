@@ -83,7 +83,10 @@ namespace OCPP.Core.Management
                     text = Format("Event_ConnectionReplaced");
                     break;
                 case EventCode.ConnectionRefused:
-                    text = Format("Event_ConnectionRefused");
+                    // reason: "AlreadyConnected" or "UnsupportedProtocol" (with the offered protocols)
+                    text = P("reason") == "UnsupportedProtocol"
+                        ? Format("Event_ConnectionRefusedProtocol", P("protocols") ?? "–")
+                        : Format("Event_ConnectionRefused");
                     break;
                 case EventCode.AuthenticationFailed:
                     text = Format("Event_AuthenticationFailed", Translate("AuthMethod", P("method")));

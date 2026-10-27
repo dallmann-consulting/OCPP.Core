@@ -465,4 +465,7 @@
   <data name="Result_NoChargingProfile" xml:space="preserve">
     <value>kein Ladeplan</value>
   </data>
+  <data name="Event_ConnectionRefusedProtocol" xml:space="preserve">
+    <value>Verbindung abgelehnt: keine unterstützte OCPP-Version angeboten ({0})</value>
+  </data>
 </root>
