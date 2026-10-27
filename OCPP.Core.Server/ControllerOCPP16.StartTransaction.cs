@@ -44,6 +44,7 @@ namespace OCPP.Core.Server
                 StartTransactionRequest startTransactionRequest = DeserializeMessage<StartTransactionRequest>(msgIn);
                 Logger.LogTrace("StartTransaction => Message deserialized");
 
+                connectorId = startTransactionRequest.ConnectorId;
                 string idTag = CleanChargeTagId(startTransactionRequest.IdTag, Logger);
                 DateTime startTime = startTransactionRequest.Timestamp.UtcDateTime;
                 double meterStart = (double)startTransactionRequest.MeterStart / 1000; // Meter value here is always Wh

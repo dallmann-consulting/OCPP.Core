@@ -191,6 +191,35 @@ namespace OCPP.Core.Server.Tests
             Assert.Equal("Invalid", transaction.StartResult);
         }
 
+        /// <summary>
+        /// StartTransaction updates the connector: status "occupied", meter (database and live status)
+        /// and the connector of the authorization event
+        /// </summary>
+        [Fact]
+        public async Task StartTransaction_UpdatesConnectorStatus()
+        {
+            string chargePointId = _factory.AddChargePoint();
+            string tagId = _factory.AddChargeTag();
+            await using ChargePointSimulator cp = await _factory.ConnectAsync(chargePointId, OcppProtocols.Ocpp16);
+
+            await cp.CallAsync("StartTransaction", new { connectorId = 2, idTag = tagId, meterStart = 12345, timestamp = DateTimeOffset.UtcNow });
+
+            using OCPPCoreContext db = _factory.CreateDbContext();
+            ConnectorStatus status = db.ConnectorStatuses.Single(c => c.ChargePointId == chargePointId && c.ConnectorId == 2);
+            Assert.Equal("Occupied", status.LastStatus);
+            Assert.Equal(12.345, status.LastMeter!.Value, 6);
+
+            HttpResponseMessage response = await _factory.CreateClient().GetAsync("/API/Status", TestContext.Current.CancellationToken);
+            JToken entry = JArray.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken))
+                .Single(s => s["id"]?.Value<string>() == chargePointId);
+            JObject connectors = (JObject)((JObject)entry).Properties().Single(p => string.Equals(p.Name, "OnlineConnectors", StringComparison.OrdinalIgnoreCase)).Value;
+            JObject connector = (JObject)connectors["2"]!;
+            Assert.Equal(12.345, connector.Properties().Single(p => string.Equals(p.Name, "MeterKWH", StringComparison.OrdinalIgnoreCase)).Value.Value<double>(), 6);
+
+            ChargePointEvent accepted = db.ChargePointEvents.Single(e => e.ChargePointId == chargePointId && e.EventCode == EventCode.TokenAccepted);
+            Assert.Equal(2, accepted.ConnectorId);
+        }
+
         [Fact]
         public async Task StopTransaction_UnknownTransaction_IsAnsweredPositively()
         {
