@@ -273,6 +273,10 @@ namespace OCPP.Core.Server
                                         dbContext.WriteEvent(_logger, chargePointStatus.Id, null, EventCategory.Connection, EventSeverity.Info, EventCode.Connected,
                                             new Dictionary<string, object> { ["protocol"] = subProtocol });
 
+                                        // Live status: last known status until the chargepoint reports the current one (on request)
+                                        List<int> connectorIds = LoadConnectorStatus(chargePointStatus, dbContext);
+                                        _ = TriggerStatusNotificationsAsync(chargePointStatus, connectorIds);
+
                                         if (subProtocol == Protocol_OCPP21)
                                         {
                                             // OCPP V2.1

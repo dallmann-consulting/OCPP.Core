@@ -99,6 +99,13 @@ namespace OCPP.Core.Server
         [JsonIgnore]
         public ConcurrentDictionary<int, PendingReport> PendingReports { get; } = new ConcurrentDictionary<int, PendingReport>();
 
+        /// <summary>
+        /// True when the chargepoint sent a BootNotification on this connection
+        /// (after a boot it sends the status of all connectors by itself)
+        /// </summary>
+        [JsonIgnore]
+        public bool BootNotificationReceived { get; set; }
+
         // random start value => late reports of a previous connection don't match
         private int _lastReportRequestId = Random.Shared.Next(1, 1000000);
 

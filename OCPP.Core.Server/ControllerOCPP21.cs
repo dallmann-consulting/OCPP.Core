@@ -171,6 +171,9 @@ namespace OCPP.Core.Server
                 case "GetBaseReport":
                     HandleGetBaseReport(msgIn, msgOut);
                     break;
+                case "TriggerMessage":
+                    HandleTriggerMessage(msgIn, msgOut);
+                    break;
                 default:
                     WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, msgIn.JsonPayload, "Unknown answer");
                     break;

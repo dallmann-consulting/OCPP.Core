@@ -44,6 +44,8 @@ namespace OCPP.Core.Server.Tests.Infrastructure
                 ["ValidateMessages"] = "true",
                 ["ApiKey"] = "",
                 ["HeartBeatInterval"] = "300",
+                // no TriggerMessage after a reconnect: tests expect only the server calls they cause themselves
+                ["TriggerStatusAfterConnect"] = "0",
                 ["Serilog:MinimumLevel:Default"] = "Warning",
             };
             ConfigureSettings(settings);

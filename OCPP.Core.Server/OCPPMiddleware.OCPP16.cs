@@ -538,6 +538,21 @@ namespace OCPP.Core.Server
             await apiCallerContext.Response.WriteAsync(apiResult);
         }
 
+        /// <summary>
+        /// Requests the status of a connector (TriggerMessage) - not from the API => not in the EventLog
+        /// </summary>
+        private Task<OcppRequestResult> TriggerStatusNotification16(ChargePointStatus chargePointStatus, int connectorId)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP16");
+
+            TriggerMessageRequest triggerMessageRequest = new TriggerMessageRequest();
+            triggerMessageRequest.RequestedMessage = TriggerMessageRequestRequestedMessage.StatusNotification;
+            triggerMessageRequest.ConnectorId = connectorId;
+
+            logger.LogTrace("OCPPMiddleware.OCPP16 => TriggerStatusNotification16: ChargePoint='{0}' / ConnectorId={1}", chargePointStatus.Id, connectorId);
+            return SendRequestAndWait(chargePointStatus, "TriggerMessage", triggerMessageRequest, logger, CancellationToken.None);
+        }
+
         private Task SendOcpp16Message(OCPPMessage msg, ILogger logger, ChargePointStatus chargePointStatus)
         {
             return SendOcppFrame(msg, logger, chargePointStatus, "ocpp16-out");

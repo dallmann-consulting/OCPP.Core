@@ -878,6 +878,9 @@ namespace OCPP.Core.Test
                             string uniqueId = message[1].ToString();
                             switch (action)
                             {
+                                case "TriggerMessage":
+                                    await SendCallResult(uniqueId, new { status = "Accepted" });
+                                    break;
                                 case "Reset":
                                     await SendCallResult(uniqueId, new { status = "Accepted" });
                                     break;

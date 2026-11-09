@@ -92,6 +92,7 @@ After a network failure the server may still consider the old connection of a ch
 - **ReplaceExistingConnection** (default `true`): a new connection of a chargepoint replaces its existing connection. The old connection is aborted and pending server commands to it end immediately. With `false` the new connection is refused (HTTP 409) as long as the old one seems to be open. If two devices are accidentally configured with the same chargepoint ID, they replace each other - see the warnings in the log.
 - **WebSocketPingInterval** / **WebSocketPingTimeout** (default `60` / `60` seconds): the server sends a WebSocket ping in this interval and aborts the connection if no pong arrives within the timeout. Dead connections are detected after about 2 minutes. `0` deactivates the ping (interval) or the check of the pong (timeout).
 - **RequestTimeout** (default `60` seconds): how long the server waits for the answer of a chargepoint to a command (e.g. reset, unlock, remote start). The server sends only one command at a time to a chargepoint; a second command waits until the first one is answered or timed out (see `Server-API.md`). Keep the timeout of the Management-UI calls (70 seconds) in mind when you increase it.
+- **TriggerStatusAfterConnect** (default `5` seconds): chargepoints send the status of their connectors only after a boot or a change. After a reconnect without boot (e.g. network failure) the server shows the last known status from the database and requests the current status with `TriggerMessage(StatusNotification)` for every known connector after this delay. No request if the chargepoint sends a BootNotification within the delay, and no further requests if the chargepoint doesn't accept the first one. `0` deactivates the request (the status from the database is still shown).
 - **RemoteStartIdTokenType** (default `ISO14443`, OCPP 2.x): type of the token in a remote start ("start charging" in the Management-UI). The charge tags are normally the IDs of RFID cards (`ISO14443`), so the charge point recognizes the card when it's presented to stop charging. Change it e.g. to `ISO15693` for such cards. With `Central` many charge points don't accept the card as the same token for stopping.
 
 ```
@@ -99,6 +100,7 @@ After a network failure the server may still consider the old connection of a ch
 "WebSocketPingInterval": 60,
 "WebSocketPingTimeout": 60,
 "RequestTimeout": 60,
+"TriggerStatusAfterConnect": 5,
 "RemoteStartIdTokenType": "ISO14443",
 ```
 
@@ -189,6 +191,12 @@ Alternatively, build the image directly:
 
 ```
 docker build -t ocpp.core .
+```
+
+To build an image for several platforms (e.g. also for a Raspberry Pi with a 64-bit OS) use buildx. The .NET build always runs on the platform of the build machine, only the final image uses the target platform:
+
+```
+docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/ocpp.core:<version> --push .
 ```
 
 # Running

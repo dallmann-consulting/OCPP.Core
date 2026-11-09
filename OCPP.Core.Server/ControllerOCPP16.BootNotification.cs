@@ -49,6 +49,7 @@ namespace OCPP.Core.Server
                 {
                     // Known charge station => accept
                     bootNotificationResponse.Status = BootNotificationResponseStatus.Accepted;
+                    ChargePointStatus.BootNotificationReceived = true;
                     WriteBootEvent(bootNotificationRequest.ChargePointVendor, bootNotificationRequest.ChargePointModel, bootNotificationRequest.FirmwareVersion, null);
                 }
                 else

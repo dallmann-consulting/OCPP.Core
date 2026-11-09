@@ -607,6 +607,24 @@ namespace OCPP.Core.Server
             return string.IsNullOrEmpty(statusInfo.AdditionalInfo) ? statusInfo.ReasonCode : $"{statusInfo.ReasonCode}: {statusInfo.AdditionalInfo}";
         }
 
+        /// <summary>
+        /// Requests the status of an EVSE (TriggerMessage) - not from the API => not in the EventLog
+        /// </summary>
+        private Task<OcppRequestResult> TriggerStatusNotification20(ChargePointStatus chargePointStatus, int evseId)
+        {
+            ILogger logger = _logFactory.CreateLogger("OCPPMiddleware.OCPP20");
+
+            Messages_OCPP20.TriggerMessageRequest triggerMessageRequest = new Messages_OCPP20.TriggerMessageRequest();
+            triggerMessageRequest.RequestedMessage = Messages_OCPP20.MessageTriggerEnumType.StatusNotification;
+            // the server addresses EVSEs (one connector each) => connector 1
+            triggerMessageRequest.Evse = new EVSEType() { Id = evseId, ConnectorId = 1 };
+            triggerMessageRequest.CustomData = new CustomDataType();
+            triggerMessageRequest.CustomData.VendorId = ControllerOCPP20.VendorId;
+
+            logger.LogTrace("OCPPMiddleware.OCPP20 => TriggerStatusNotification20: ChargePoint='{0}' / EvseId={1}", chargePointStatus.Id, evseId);
+            return SendRequestAndWait(chargePointStatus, "TriggerMessage", triggerMessageRequest, logger, CancellationToken.None);
+        }
+
         private Task SendOcpp20Message(OCPPMessage msg, ILogger logger, ChargePointStatus chargePointStatus)
         {
             return SendOcppFrame(msg, logger, chargePointStatus, "ocpp201-out");

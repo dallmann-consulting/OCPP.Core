@@ -1,5 +1,9 @@
+# The build stages always run on the platform of the build machine (no slow emulation for other platforms):
+# the output is platform independent ("portable", native SQLite libraries for all platforms are included),
+# only the final image uses the runtime of the target platform (linux/amd64, linux/arm64)
+
 # Build OCPP Server
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build_server
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build_server
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["OCPP.Core.Server/OCPP.Core.Server.csproj", "OCPP.Core.Server/"]
@@ -10,7 +14,7 @@ COPY . .
 RUN dotnet publish "./OCPP.Core.Server/OCPP.Core.Server.csproj" -c $BUILD_CONFIGURATION -o /app/server /p:UseAppHost=false
 
 # Build Management UI
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build_management
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build_management
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["OCPP.Core.Management/OCPP.Core.Management.csproj", "OCPP.Core.Management/"]
