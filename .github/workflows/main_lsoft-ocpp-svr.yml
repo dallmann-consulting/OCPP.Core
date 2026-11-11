@@ -3,10 +3,9 @@
 
 name: Build and deploy ASP.Net Core app to Azure Web App - lsoft-ocpp-svr
 
+# Push trigger disabled during the move to the Raspberry Pi (see docs/MIGRATIE-PI.md):
+# main now targets .NET 10/SQLite and must not be deployed to Azure anymore.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:

@@ -1,0 +1,51 @@
+name: Build (Raspberry Pi)
+
+# Builds OCPP.Core.Server and OCPP.Core.Management as self-contained linux-arm publishes
+# (artifacts "ocpp-server" and "ocpp-mgmt"). The Raspberry Pi fetches the latest successful
+# build on main itself and deploys it (see docs/MIGRATIE-PI.md); GitHub has no ARM32 runners.
+# No single-file publish: the Server reads its OCPP schema files and extensions from disk.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build OCPP.Core.sln -c Release
+
+      - name: Publish Server (linux-arm)
+        run: >
+          dotnet publish OCPP.Core.Server/OCPP.Core.Server.csproj -c Release
+          -r linux-arm --self-contained true -o out/server
+
+      - name: Publish Management (linux-arm)
+        run: >
+          dotnet publish OCPP.Core.Management/OCPP.Core.Management.csproj -c Release
+          -r linux-arm --self-contained true -o out/mgmt
+
+      # Only pushes to main are deployed; PR builds don't need to keep artifacts.
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocpp-server
+          path: out/server
+          retention-days: 1
+
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocpp-mgmt
+          path: out/mgmt
+          retention-days: 1

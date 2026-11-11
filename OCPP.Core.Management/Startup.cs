@@ -53,8 +53,15 @@ namespace OCPP.Core.Management
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDataProtection()
-                .PersistKeysToFileSystem(new DirectoryInfo(@"D:\home\site\dataprotection-keys"));
+            // Azure App Service used D:\home\site\dataprotection-keys; on the Pi this is configured
+            // in appsettings.Production.json. Without a path the default key location is used.
+            string dataProtectionKeysPath = Configuration["DataProtectionKeysPath"];
+            if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+            {
+                services.AddDataProtection()
+                    .SetApplicationName("OCPP.Core.Management")
+                    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+            }
 
             services.AddOCPPDbContext(Configuration);
 
@@ -96,18 +103,31 @@ namespace OCPP.Core.Management
                 backgroundJosServerOptions.WorkerCount = 1;
             });
 
+            // SQL Server storage when a HangfireDb connection string is configured, otherwise in-memory.
+            // In-memory is enough here: the only job is a recurring one that is re-registered on every
+            // start (see Configure), so nothing of value is lost on a restart.
+            string hangfireDb = Configuration.GetConnectionString("HangfireDb");
             services.AddHangfire(configuration =>
-                configuration.UseSqlServerStorage(Configuration.GetConnectionString("HangfireDb"), new Hangfire.SqlServer.SqlServerStorageOptions
+            {
+                if (!string.IsNullOrWhiteSpace(hangfireDb))
                 {
-                    UseRecommendedIsolationLevel = true,
-                    QueuePollInterval = TimeSpan.FromSeconds(15),
-                    JobExpirationCheckInterval = TimeSpan.FromHours(1),
-                    CountersAggregateInterval = TimeSpan.FromMinutes(5),
-                    PrepareSchemaIfNecessary = true,
-                    DashboardJobListLimit = 50000,
-                    TransactionTimeout = TimeSpan.FromMinutes(1),
-                    SchemaName = "Hangfire"
-                }));
+                    configuration.UseSqlServerStorage(hangfireDb, new Hangfire.SqlServer.SqlServerStorageOptions
+                    {
+                        UseRecommendedIsolationLevel = true,
+                        QueuePollInterval = TimeSpan.FromSeconds(15),
+                        JobExpirationCheckInterval = TimeSpan.FromHours(1),
+                        CountersAggregateInterval = TimeSpan.FromMinutes(5),
+                        PrepareSchemaIfNecessary = true,
+                        DashboardJobListLimit = 50000,
+                        TransactionTimeout = TimeSpan.FromMinutes(1),
+                        SchemaName = "Hangfire"
+                    });
+                }
+                else
+                {
+                    configuration.UseInMemoryStorage();
+                }
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -141,26 +161,33 @@ namespace OCPP.Core.Management
                     pattern: "{controller=Home}/{action=Index}/{id?}/{connectorId?}/");
             });
 
-            app.UseHangfireDashboard(options: new DashboardOptions
+            // The dashboard is only mapped when credentials are configured (Hangfire:DashboardUser /
+            // Hangfire:DashboardPassword, kept out of the repo).
+            string dashboardUser = Configuration["Hangfire:DashboardUser"];
+            string dashboardPassword = Configuration["Hangfire:DashboardPassword"];
+            if (!string.IsNullOrWhiteSpace(dashboardUser) && !string.IsNullOrWhiteSpace(dashboardPassword))
             {
-                Authorization =
-                [
-                    new Hangfire.Dashboard.BasicAuthorization.BasicAuthAuthorizationFilter(new Hangfire.Dashboard.BasicAuthorization.BasicAuthAuthorizationFilterOptions
-                    {
-                        RequireSsl = false,
-                        SslRedirect = false,
-                        LoginCaseSensitive = false,
-                        Users = [
-                            new BasicAuthAuthorizationUser
-                            {
-                                Login = "frederic",
-                                PasswordClear = "H@ngf!re123"
-                            },
-                        ]
-                    })
-                ],
-                IsReadOnlyFunc = (DashboardContext context) => false,
-            });
+                app.UseHangfireDashboard(options: new DashboardOptions
+                {
+                    Authorization =
+                    [
+                        new BasicAuthAuthorizationFilter(new BasicAuthAuthorizationFilterOptions
+                        {
+                            RequireSsl = false,
+                            SslRedirect = false,
+                            LoginCaseSensitive = false,
+                            Users = [
+                                new BasicAuthAuthorizationUser
+                                {
+                                    Login = dashboardUser,
+                                    PasswordClear = dashboardPassword
+                                },
+                            ]
+                        })
+                    ],
+                    IsReadOnlyFunc = (DashboardContext context) => false,
+                });
+            }
 
             var exportLastQuarterTransactionsCron = Configuration.GetSection("CronSettings")["ExportLastQuarterTransactionsCron"];
             RecurringJob.AddOrUpdate<IEmailExcelExportService>("exportLastQuarterTransactions", x => x.ExportLastQuarterTransactionsAsync(), () => exportLastQuarterTransactionsCron, new RecurringJobOptions { TimeZone = TimeZoneInfo.Local });
