@@ -1,0 +1,22 @@
+[Unit]
+Description=OCPP.Core Server (laadpaal-backend)
+Wants=network-online.target
+After=network-online.target mnt-data.mount
+RequiresMountsFor=/mnt/data
+
+[Service]
+Type=simple
+User=frederic
+WorkingDirectory=/home/frederic/OCPP/server
+ExecStart=/home/frederic/OCPP/server/OCPP.Core.Server
+Environment=ASPNETCORE_ENVIRONMENT=Production
+# Listens on the LAN (the Alfen connects to ws://192.168.0.160:8081/OCPP); the
+# endpoint itself is set in appsettings.Production.json (Kestrel:Endpoints:Http:Url).
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

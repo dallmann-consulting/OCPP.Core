@@ -1,0 +1,12 @@
+[Unit]
+Description=OCPP.Core database-backup
+RequiresMountsFor=/mnt/data
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=frederic
+ExecStart=/home/frederic/ocpp-deploy/ocpp-backup.sh
+Nice=10
+IOSchedulingClass=idle

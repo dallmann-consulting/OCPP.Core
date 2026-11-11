@@ -115,7 +115,7 @@ jij (Tailscale) ──https://srvrasp05…:8445──► OCPP.Core.Management (1
    - `appsettings.Production.example.json` voor beide apps
    - `README.md` met installatiestappen
 
-### Status fase A (2026-11-11, branch `feature/pi-hosting`, nog niet gecommit)
+### Status fase A (2026-11-11, branch `feature/pi-hosting`, gecommit)
 
 Klaar en getest:
 - **Upgrade naar .NET 10**: alle projecten gebruiken `net10.0`. EF Core en Microsoft.Extensions staan op 10.0.15,
@@ -190,6 +190,9 @@ transactie-ID's verwijst.
 |---|---|---|
 | A | Codewijzigingen 3.0–3.6 lokaal testen met SQLite (Simulator in `Simulators/`) | ja |
 | B | `build-pi.yml` en `deploy/` mergen, services en timers op de Pi installeren, met een **lege** SQLite-database | ja |
+
+**Status fase B (2026-11-11):** de `deploy/`-map is klaar (services `OcppServer` en `OcppManagement`, `ocpp-deploy`- en `ocpp-backup`-timers, voorbeeldconfig per app en de installatiestappen in `deploy/README.md`). De voorbeeldconfig is lokaal getest: juiste poorten, alleen de nieuwe ApiKey wordt aanvaard, de standaard-logins zijn vervangen en er komen geen logbestanden. Nog te doen: mergen naar `main`, zodat er een build-artefact op `main` komt, en daarna de installatie op de Pi.
+
 | C | Proefmigratie van de data naar de Pi, Management-UI via Tailscale nakijken, Excel-export eenmaal handmatig starten via het Hangfire-dashboard | ja |
 | D | **Overstap** (zie §6) | nee |
 | E | Een week parallel beschikbaar laten: Azure stopt met ontvangen, maar wordt nog niet verwijderd | nee |

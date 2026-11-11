@@ -1,0 +1,22 @@
+[Unit]
+Description=OCPP.Core Management (web-UI)
+Wants=network-online.target OcppServer.service
+After=network-online.target mnt-data.mount OcppServer.service
+RequiresMountsFor=/mnt/data
+
+[Service]
+Type=simple
+User=frederic
+WorkingDirectory=/home/frederic/OCPP/mgmt
+ExecStart=/home/frederic/OCPP/mgmt/OCPP.Core.Management
+Environment=ASPNETCORE_ENVIRONMENT=Production
+# Only local (127.0.0.1:8082, see appsettings.Production.json);
+# reachable from the tailnet via `tailscale serve --https=8445`.
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

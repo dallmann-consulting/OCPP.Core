@@ -1,0 +1,9 @@
+[Unit]
+Description=OCPP.Core: laatste build van GitHub deployen
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=frederic
+ExecStart=/home/frederic/ocpp-deploy/ocpp-deploy.sh

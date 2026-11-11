@@ -1,0 +1,9 @@
+[Unit]
+Description=OCPP.Core: elke minuut controleren op een nieuwe build
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+
+[Install]
+WantedBy=timers.target
