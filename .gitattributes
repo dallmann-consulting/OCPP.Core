@@ -61,3 +61,7 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+# Deploy files run on the Raspberry Pi: always LF
+*.sh text eol=lf
+deploy/* text eol=lf
