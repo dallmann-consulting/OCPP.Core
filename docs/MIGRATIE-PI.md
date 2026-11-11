@@ -24,6 +24,34 @@ in Network Profile 1. Laadpaal en Pi zitten op hetzelfde LAN.
 - **Wat SQL Server nodig heeft**: `Hangfire.SqlServer` (`Management/Startup.cs`, `UseSqlServerStorage`).
 - De CI bouwt op `windows-latest` en deployt via een publish profile naar Azure. Dat moet worden vervangen.
 
+**Azure (bekeken 2026-11-11, abonnement LSoft-DEV, tenant "Standaardmap" met MFA, dus aanmelden met
+`az login --tenant 8a411eba-397d-4120-b9b2-9a9923de60dd`)**:
+
+| Resource | Groep | Details |
+|---|---|---|
+| Webapp `lsoft-ocpp-svr` | lsoft-ocpp-svr_group | Windows, .NET 8, websockets aan, httpsOnly uit, AlwaysOn uit. Draait op plan `ASP-LaadpaalZwevegem-b24a` (**F1 Free**) |
+| Webapp `lsoft-ocpp-mgt` | LaadpaalZwevegem | Windows, .NET 8, httpsOnly aan, AlwaysOn uit. Draait op plan `ASP-lsoftocppsvrgroup-9b39` (**F1 Free**). De plannen zitten dus kruiselings in elkaars groep |
+| SQL-server `lsoft-ocpp-sql` / db `lsoft-ocpp-core-db` | LaadpaalZwevegem | **Basic** (5 DTU, max 2 GB, geo-redundante back-up), **~118 MB in gebruik**. Firewall: "Allow Azure services" en één oud client-IP uit 2023 |
+| Application Insights `lsoft-ocpp-svr` en `lsoft-ocpp-mgt` | beide | met Smart Detection-alertregels en een action group |
+| Managed identity `lsoft-ocpp-mgt-id-9552` | LaadpaalZwevegem | waarschijnlijk voor de GitHub-deploy aangemaakt |
+
+Kosten: Azure geeft voor dit abonnement geen bedragen per resource terug. Op basis van de lijstprijzen
+kost alleen de SQL Basic-database iets, ongeveer €4–5 per maand. De App Service-plannen zijn gratis (F1),
+en Application Insights blijft vermoedelijk binnen de gratis hoeveelheid.
+
+**App settings op Azure** die naar `appsettings.Production.json` op de Pi moeten. Neem de waarden over uit
+de portal of met `az webapp config appsettings list`, maar zet ze niet in de repo:
+- **Server**:
+  - `ApiKey`
+  - connection string `SqlServer`, alleen nodig voor de datamigratie
+- **Management**:
+  - `ApiKey` en `ServerApiUrl`
+  - `SmtpSettings:Password`
+  - `Users:0:UserName`, `Users:0:Password` en `Users:0:Administrator`
+  - `Users:1:Password`. De gebruikersnaam blijft `user` uit de repo.
+  - connection strings `SqlServer` en `HangfireDb`
+- **De `APPLICATIONINSIGHTS_*`- en `XDT_*`-instellingen** zijn alleen voor Azure en verhuizen niet mee.
+
 ## 2. Doelarchitectuur
 
 ```
@@ -146,8 +174,8 @@ Aanpak: een **eenmalige console-tool** (`tools/OCPP.Core.Migrate`, niet in de so
 transactie-ID's verwijst.
 
 - Volgorde: `ChargePoint` → `ChargeTags` → `ConnectorStatus` → `Transactions` → (optioneel) `MessageLog`.
-- `MessageLog` is vermoedelijk veruit de grootste tabel en is niet nodig voor de werking. Neem alleen de
-  laatste 30–90 dagen mee, of niets.
+- De hele database is maar ongeveer 118 MB, dus **alles inclusief `MessageLog` meenemen** is geen probleem
+  voor de USB-stick.
 - Het doel is een database die met `Migrate()` is aangemaakt (het `AutoMigrateDB`-pad van de Server), zodat
   `__EFMigrationsHistory` klopt. Daarna pas de data importeren.
 - De Hangfire-data niet migreren: de recurring job registreert zichzelf opnieuw.
@@ -188,15 +216,14 @@ en een eventuele terugkeer dus kort.
 
 1. Eindexport (`.bacpac`) van de Azure SQL-database bewaren, bijvoorbeeld op `/mnt/data/ocpp/archive` en ook
    off-site.
-2. Webapps `lsoft-ocpp-svr` en `lsoft-ocpp-mgt`, App Service plan(s) en de SQL-server/database verwijderen.
-   Kijk eerst wat er nog meer in `LaadpaalZwevegem` en `lsoft-ocpp-svr_group` staat, zoals Service Bus of
-   Application Insights.
+2. Beide resourcegroepen bevatten alleen OCPP-resources (zie §1). Je kan `LaadpaalZwevegem` en
+   `lsoft-ocpp-svr_group` dus in hun geheel verwijderen. Geen Service Bus aanwezig.
 3. GitHub-secrets `AZUREAPPSERVICE_PUBLISHPROFILE_*` verwijderen.
 
 ## 8. Openstaande punten en risico's
 
-- **Grootte van de Azure-database** is nog niet bekeken (de `az` CLI ontbreekt op de pc). Die bepaalt hoeveel
-  `MessageLog` je meeneemt.
+- **De Azure-database** (~118 MB, Basic) is bekeken, zie §1. Voor de migratie moet je tijdelijk een
+  firewallregel toevoegen voor je huidige publieke IP. Verwijder de oude regel `ClientIp-2023-12-27_19-50-1`.
 - **Is de GitHub-repo publiek?** Zo ja, dan zijn de `ApiKey` en het Hangfire-wachtwoord in de historie
   sowieso te beschouwen als gelekt. Daarom vervangen we ze (3.2).
 - **Afhankelijkheid van de Pi**: als de Pi uitvalt, laadt de Alfen nog wel (afhankelijk van de
