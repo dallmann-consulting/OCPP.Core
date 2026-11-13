@@ -98,7 +98,7 @@ The answer should be:
 ### RemoteStartTransaction
 Request the charger to (remotely) start a transaction (simply explained: virtually presenting a specific charge tag to the charger)
 
-	/API/RemoteStartTransaction/station42/1/tag1234
+	/API/StartTransaction/station42/1/tag1234
 
 The answer should be:
 {"status"="Accepted"} or {"status"="Rejected"}
@@ -107,7 +107,7 @@ The answer should be:
 ### RemoteStopTransaction
 Request the charger to end a specific transaction.
 
-	/API/RemoteStopTransaction/station42/1
+	/API/StopTransaction/station42/1
 
 The answer should be:
 {"status"="Accepted"} or {"status"="Rejected"}
