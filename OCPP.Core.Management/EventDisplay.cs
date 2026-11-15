@@ -126,6 +126,9 @@ namespace OCPP.Core.Management
                     Add(additions, "Event_StatusError", P("errorCode"));
                     if (!string.IsNullOrEmpty(P("info"))) additions.Add(P("info"));
                     break;
+                case EventCode.ConnectorIdNotAllowed:
+                    text = Format("Event_ConnectorIdNotAllowed", e.ConnectorId, P("max"));
+                    break;
 
                 case EventCode.TokenAccepted:
                     text = Format("Event_TokenAccepted", Tag("tag"), Translate("AuthAction", P("action")));

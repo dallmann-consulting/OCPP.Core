@@ -132,6 +132,15 @@
   <data name="ClientCertThumbPlaceholder" xml:space="preserve">
     <value>Client-Certificate (Thumbprint)</value>
   </data>
+  <data name="MaxConnectorIdLabel" xml:space="preserve">
+    <value>Max. connector ID</value>
+  </data>
+  <data name="MaxConnectorIdHint" xml:space="preserve">
+    <value>Highest connector ID (OCPP 2.x: EVSE ID) of the charging station. Status messages for higher IDs are rejected (protection against any number of connectors).</value>
+  </data>
+  <data name="MaxConnectorIdRange" xml:space="preserve">
+    <value>Please enter a number from {0} to {1}.</value>
+  </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>

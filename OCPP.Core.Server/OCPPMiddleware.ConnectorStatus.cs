@@ -40,6 +40,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Sets the last known status of all connectors (database) as live status of a new connection
         /// until the chargepoint reports the current status. Returns the IDs of the known connectors.
+        /// Connectors above the maximum of the chargepoint are ignored (e.g. old entries after the maximum was lowered).
         /// Must be called before the receive loop starts (=> doesn't overwrite newer reported values).
         /// </summary>
         private List<int> LoadConnectorStatus(ChargePointStatus chargePointStatus, OCPPCoreContext dbContext)
@@ -48,7 +49,7 @@ namespace OCPP.Core.Server
             try
             {
                 List<ConnectorStatus> dbConnectors = dbContext.ConnectorStatuses
-                    .Where(cs => cs.ChargePointId == chargePointStatus.Id && cs.ConnectorId > 0)
+                    .Where(cs => cs.ChargePointId == chargePointStatus.Id && cs.ConnectorId > 0 && cs.ConnectorId <= chargePointStatus.MaxConnectorId)
                     .AsNoTracking()
                     .ToList();
 

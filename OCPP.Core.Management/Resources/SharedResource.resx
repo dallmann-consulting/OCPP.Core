@@ -228,6 +228,9 @@
   <data name="Event_StatusChanged" xml:space="preserve">
     <value>Status: {0} → {1}</value>
   </data>
+  <data name="Event_ConnectorIdNotAllowed" xml:space="preserve">
+    <value>Connector {0} is above the max. connector ID {1} of the charging station: no connector status</value>
+  </data>
   <data name="Event_StatusError" xml:space="preserve">
     <value>error: {0}</value>
   </data>

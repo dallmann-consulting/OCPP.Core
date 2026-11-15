@@ -223,6 +223,9 @@ namespace OCPP.Core.Database.Migrations.SQLite
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("MaxConnectorId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");

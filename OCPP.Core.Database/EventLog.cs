@@ -88,6 +88,8 @@ namespace OCPP.Core.Database
         // Status
         /// <summary>Parameters: old, new, errorCode, info</summary>
         public const string StatusChanged = "StatusChanged";
+        /// <summary>Parameters: max - message for a connector (EVSE) ID above the maximum of the charge point (no connector status)</summary>
+        public const string ConnectorIdNotAllowed = "ConnectorIdNotAllowed";
 
         // Authorization
         /// <summary>Parameters: tag, action (Authorize, Start, Stop)</summary>

@@ -44,6 +44,22 @@
             <div class="row">
                 <div class="col-sm-2 align-self-center">
                     <div class="form-group">
+                        <label class="inline-label" for="MaxConnectorId">@Localizer["MaxConnectorIdLabel"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input class="form-control" data-val="true" data-val-required="@Localizer["RequiredField"]" data-val-range="@string.Format(Localizer["MaxConnectorIdRange"].Value, ChargePointViewModel.MinConnectorId, ChargePointViewModel.MaxConnectorIdLimit)" data-val-range-min="@ChargePointViewModel.MinConnectorId" data-val-range-max="@ChargePointViewModel.MaxConnectorIdLimit" id="MaxConnectorId" name="MaxConnectorId" type="number" min="@ChargePointViewModel.MinConnectorId" max="@ChargePointViewModel.MaxConnectorIdLimit" step="1" value="@Model.MaxConnectorId" />
+                        <small class="form-text text-muted">@Localizer["MaxConnectorIdHint"]</small>
+                    </div>
+                </div>
+                <div class="col-sm-2">
+                    <span class="field-validation-valid text-danger" data-valmsg-for="MaxConnectorId" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
                         <label class="inline-label" for="Name">@Localizer["NameLabel"]</label>
                     </div>
                 </div>

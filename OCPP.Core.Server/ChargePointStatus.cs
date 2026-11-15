@@ -40,6 +40,7 @@ namespace OCPP.Core.Server
         {
             Id = chargePoint.ChargePointId;
             Name = chargePoint.Name;
+            MaxConnectorId = chargePoint.MaxConnectorId;
         }
 
         /// <summary>
@@ -105,6 +106,19 @@ namespace OCPP.Core.Server
         /// </summary>
         [JsonIgnore]
         public bool BootNotificationReceived { get; set; }
+
+        /// <summary>
+        /// Highest allowed connector ID (OCPP 2.x: EVSE ID) of the chargepoint (from the database)
+        /// </summary>
+        [JsonIgnore]
+        public int MaxConnectorId { get; set; }
+
+        /// <summary>
+        /// Connector IDs above the maximum that were already written into the EventLog on this connection
+        /// (one event per ID, limited number)
+        /// </summary>
+        [JsonIgnore]
+        public ConcurrentDictionary<int, byte> ReportedInvalidConnectorIds { get; } = new ConcurrentDictionary<int, byte>();
 
         // random start value => late reports of a previous connection don't match
         private int _lastReportRequestId = Random.Shared.Next(1, 1000000);

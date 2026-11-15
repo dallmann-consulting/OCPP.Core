@@ -126,6 +126,9 @@
   <data name="ChargePointIdRequired" xml:space="preserve">
     <value>Please enter an charging station ID.</value>
   </data>
+  <data name="MaxConnectorIdInvalid" xml:space="preserve">
+    <value>Please enter a max. connector ID from {0} to {1}.</value>
+  </data>
   <data name="ChargeReport" xml:space="preserve">
     <value>ChargeReport</value>
   </data>

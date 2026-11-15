@@ -147,11 +147,55 @@ namespace OCPP.Core.Server
 
 
         /// <summary>
+        /// Max. number of different invalid connector IDs per connection that are written into the EventLog
+        /// </summary>
+        private const int MaxReportedInvalidConnectorIds = 10;
+
+        /// <summary>
+        /// True if the connector ID (OCPP 2.x: EVSE ID) is within the maximum of the charge point.
+        /// Otherwise the message creates no connector (status): warning in the log and (once per ID and connection) in the EventLog.
+        /// </summary>
+        protected bool IsConnectorIdAllowed(int connectorId)
+        {
+            if (connectorId <= ChargePointStatus.MaxConnectorId) return true;
+
+            try
+            {
+                // maximum raised in the management after the connect => takes effect immediately
+                int? maxConnectorId = DbContext.ChargePoints.AsNoTracking()
+                    .Where(cp => cp.ChargePointId == ChargePointStatus.Id)
+                    .Select(cp => (int?)cp.MaxConnectorId)
+                    .FirstOrDefault();
+                if (maxConnectorId.HasValue)
+                {
+                    ChargePointStatus.MaxConnectorId = maxConnectorId.Value;
+                    if (connectorId <= maxConnectorId.Value) return true;
+                }
+            }
+            catch (Exception exp)
+            {
+                Logger.LogError(exp, "IsConnectorIdAllowed => Error reading the max. connector ID of chargepoint '{0}': {1}", ChargePointStatus.Id, exp.Message);
+            }
+
+            Logger.LogWarning("IsConnectorIdAllowed => Chargepoint '{0}': connector ID {1} is above the maximum {2} => ignored", ChargePointStatus.Id, connectorId, ChargePointStatus.MaxConnectorId);
+            if (ChargePointStatus.ReportedInvalidConnectorIds.Count < MaxReportedInvalidConnectorIds &&
+                ChargePointStatus.ReportedInvalidConnectorIds.TryAdd(connectorId, 0))
+            {
+                WriteEvent(connectorId, EventCategory.Status, EventSeverity.Warning, EventCode.ConnectorIdNotAllowed,
+                    new Dictionary<string, object> { ["max"] = ChargePointStatus.MaxConnectorId });
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Helper function for creating and updating the ConnectorStatus in then database
+        /// (nothing for a connector ID above the maximum of the charge point)
         /// </summary>
         protected bool UpdateConnectorStatus(int connectorId, string status, DateTimeOffset? statusTime, double? meter, DateTimeOffset? meterTime,
             string statusErrorCode = null, string statusInfo = null)
         {
+            if (!IsConnectorIdAllowed(connectorId)) return true;
+
             try
             {
                 ConnectorStatus connectorStatus = DbContext.Find<ConnectorStatus>(ChargePointStatus.Id, connectorId);
@@ -211,9 +255,12 @@ namespace OCPP.Core.Server
 
         /// <summary>
         /// Set/Update in memory connector status with meter (and more) values
+        /// (nothing for a connector ID above the maximum of the charge point)
         /// </summary>
         protected void UpdateMemoryConnectorStatus(int connectorId, double meterKWH, DateTimeOffset meterTime, double? currentChargeKW, double? stateOfCharge)
         {
+            if (!IsConnectorIdAllowed(connectorId)) return;
+
             // Values <1 have no meaning => null
             if (currentChargeKW.HasValue && currentChargeKW < 0) currentChargeKW = null;
             if (stateOfCharge.HasValue && stateOfCharge < 0) stateOfCharge = null;

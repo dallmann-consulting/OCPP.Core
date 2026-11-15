@@ -228,6 +228,9 @@
   <data name="Event_StatusChanged" xml:space="preserve">
     <value>Status: {0} → {1}</value>
   </data>
+  <data name="Event_ConnectorIdNotAllowed" xml:space="preserve">
+    <value>Anschluss-Nr. {0} liegt über der max. Anzahl {1} der Ladestation: kein Anschluss-Status</value>
+  </data>
   <data name="Event_StatusError" xml:space="preserve">
     <value>Fehler: {0}</value>
   </data>

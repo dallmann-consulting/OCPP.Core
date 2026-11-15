@@ -12,7 +12,8 @@ CREATE TABLE [dbo].[ChargePoint](
 	[Username] [nvarchar](50) NULL,
 	[Password] [nvarchar](200) NULL,
 	[ClientCertThumb] [nvarchar](100) NULL,
- CONSTRAINT [PK_ChargePoint_1] PRIMARY KEY CLUSTERED 
+	[MaxConnectorId] [int] NOT NULL DEFAULT 1,
+ CONSTRAINT [PK_ChargePoint_1] PRIMARY KEY CLUSTERED
 (
 	[ChargePointId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
@@ -310,6 +311,9 @@ values ('20261025182008_TagLengthMessageLogIndex','10.0.12')
 GO
 INSERT INTO [dbo].[__EFMigrationsHistory]
 values ('20261026215936_EventLog','10.0.12')
+GO
+INSERT INTO [dbo].[__EFMigrationsHistory]
+values ('20261109203427_ChargePointMaxConnectorId','10.0.12')
 GO
 
 USE [master]

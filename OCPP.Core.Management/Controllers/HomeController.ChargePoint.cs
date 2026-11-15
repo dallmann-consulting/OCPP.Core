@@ -67,6 +67,15 @@ namespace OCPP.Core.Management.Controllers
                 {
                     string errorMsg = null;
 
+                    if (Request.Form["action"] != "Delete" &&
+                        (cpvm.MaxConnectorId < ChargePointViewModel.MinConnectorId || cpvm.MaxConnectorId > ChargePointViewModel.MaxConnectorIdLimit))
+                    {
+                        Logger.LogInformation("ChargePoint: Invalid max. connector ID: {0}", cpvm.MaxConnectorId);
+                        cpvm.HasPassword = !string.IsNullOrEmpty(currentChargePoint?.Password);
+                        ViewBag.ErrorMsg = string.Format(_localizer["MaxConnectorIdInvalid"].Value, ChargePointViewModel.MinConnectorId, ChargePointViewModel.MaxConnectorIdLimit);
+                        return View("ChargePointDetail", cpvm);
+                    }
+
                     if (Id == "@")
                     {
                         Logger.LogTrace("ChargePoint: Creating new chargepoint...");
@@ -104,6 +113,7 @@ namespace OCPP.Core.Management.Controllers
                             // password only with user name (basic authentication)
                             newChargePoint.Password = (string.IsNullOrEmpty(cpvm.Username) || string.IsNullOrEmpty(cpvm.Password)) ? null : StoredChargePointPassword(cpvm.Password);
                             newChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
+                            newChargePoint.MaxConnectorId = cpvm.MaxConnectorId;
                             DbContext.ChargePoints.Add(newChargePoint);
                             DbContext.SaveChanges();
                             Logger.LogInformation("ChargePoint: New => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
@@ -172,6 +182,7 @@ namespace OCPP.Core.Management.Controllers
                                 currentChargePoint.Password = StoredChargePointPassword(cpvm.Password);
                             }
                             currentChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
+                            currentChargePoint.MaxConnectorId = cpvm.MaxConnectorId;
 
                             DbContext.SaveChanges();
                             Logger.LogInformation("ChargePoint: Edit => chargepoint saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
@@ -197,6 +208,7 @@ namespace OCPP.Core.Management.Controllers
                         // the password is never shown (stored as hash)
                         cpvm.HasPassword = !string.IsNullOrEmpty(currentChargePoint.Password);
                         cpvm.ClientCertThumb = currentChargePoint.ClientCertThumb;
+                        cpvm.MaxConnectorId = currentChargePoint.MaxConnectorId;
                     }
 
                     string viewName = (!string.IsNullOrEmpty(cpvm.ChargePointId) || Id == "@") ? "ChargePointDetail" : "ChargePointList";

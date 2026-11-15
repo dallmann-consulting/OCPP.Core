@@ -132,6 +132,15 @@
   <data name="ClientCertThumbPlaceholder" xml:space="preserve">
     <value>Fingerabdruck des Client-Zertifikates (Thumbprint)</value>
   </data>
+  <data name="MaxConnectorIdLabel" xml:space="preserve">
+    <value>Max. Anschluss-Nr/ID</value>
+  </data>
+  <data name="MaxConnectorIdHint" xml:space="preserve">
+    <value>Höchste Anschluss-Nr/ID (OCPP 2.x: EVSE-ID) der Ladestation. Statusmeldungen für höhere IDs werden abgelehnt (Schutz vor beliebig vielen Anschlüssen).</value>
+  </data>
+  <data name="MaxConnectorIdRange" xml:space="preserve">
+    <value>Bitte eine Zahl von {0} bis {1} eingeben.</value>
+  </data>
   <data name="Close" xml:space="preserve">
     <value>Schließen</value>
   </data>

@@ -484,3 +484,39 @@ END;
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261109203427_ChargePointMaxConnectorId'
+)
+BEGIN
+    ALTER TABLE [ChargePoint] ADD [MaxConnectorId] int NOT NULL DEFAULT 1;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261109203427_ChargePointMaxConnectorId'
+)
+BEGIN
+    EXEC(N'UPDATE ChargePoint SET MaxConnectorId = (SELECT MAX(cs.ConnectorId) FROM ConnectorStatus cs WHERE cs.ChargePointId = ChargePoint.ChargePointId) WHERE (SELECT MAX(cs.ConnectorId) FROM ConnectorStatus cs WHERE cs.ChargePointId = ChargePoint.ChargePointId) > MaxConnectorId')
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261109203427_ChargePointMaxConnectorId'
+)
+BEGIN
+    EXEC(N'UPDATE ChargePoint SET MaxConnectorId = (SELECT MAX(t.ConnectorId) FROM Transactions t WHERE t.ChargePointId = ChargePoint.ChargePointId) WHERE (SELECT MAX(t.ConnectorId) FROM Transactions t WHERE t.ChargePointId = ChargePoint.ChargePointId) > MaxConnectorId')
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261109203427_ChargePointMaxConnectorId'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261109203427_ChargePointMaxConnectorId', N'10.0.12');
+END;
+
+COMMIT;
+GO

@@ -110,6 +110,8 @@ This results in different scenarios for displaying charge points:
 
 If a connector has a name specified this name overrides the charge point name or default scheme (see above). This allows you to define custom names for every connector (like left / right).
 
+Every charge point has a **max. connector ID** (OCPP 2.x: EVSE ID, default 1). Messages for higher connector IDs create no connector: status notifications are rejected (CALLERROR "PropertyConstraintViolation"), transactions are still recorded - but without connector status. The server writes an event into the EventLog (once per connection and connector ID). So a charge point cannot create any number of connectors in the database. Set the value to the number of connectors (EVSEs) of the charge point when you create it. The database migration sets existing charge points to the highest connector ID used so far.
+
 ## System Requirements
 OCPP.Core is written in .NET 8 and therefore runs on different plattforms. I also installed it in Azure for testing purposes.
 The storage is based on the EntityFramework-Core and supports different databases. The project contains script for SQL-Server (SQL-Express) and SQLite.
@@ -139,6 +141,7 @@ Create new chargepoint:
 
 ![NewChargePoint](images/NewChargePoint.png)
 
+Enter the max. connector ID (number of connectors/EVSEs) of the chargepoint (see "Multi connector behavior" above).
 Optionally, you can add authentication data for this chargepoint: Username/Password for basic authentication and/or a certificate thumbprint for a client certificate.
 When you're editing a chargepoint you can send restart or unlock commands to the chargepoint here.
 

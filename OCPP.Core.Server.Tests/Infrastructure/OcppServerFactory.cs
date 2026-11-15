@@ -75,8 +75,9 @@ namespace OCPP.Core.Server.Tests.Infrastructure
 
         /// <summary>
         /// Creates a charge point with a unique ID in the database and returns the ID
+        /// (max. connector ID 10: enough for all tests that don't test the limit itself)
         /// </summary>
-        public string AddChargePoint(string? username = null, string? password = null)
+        public string AddChargePoint(string? username = null, string? password = null, int maxConnectorId = 10)
         {
             string chargePointId = "CP-" + Guid.NewGuid().ToString("N").Substring(0, 12);
             using OCPPCoreContext dbContext = CreateDbContext();
@@ -85,7 +86,8 @@ namespace OCPP.Core.Server.Tests.Infrastructure
                 ChargePointId = chargePointId,
                 Name = chargePointId,
                 Username = username,
-                Password = password
+                Password = password,
+                MaxConnectorId = maxConnectorId
             });
             dbContext.SaveChanges();
             return chargePointId;

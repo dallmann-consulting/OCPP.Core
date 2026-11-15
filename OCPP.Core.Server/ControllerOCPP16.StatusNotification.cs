@@ -73,7 +73,12 @@ namespace OCPP.Core.Server
                 }
                 Logger.LogInformation("StatusNotification => ChargePoint={0} / Connector={1} / newStatus={2}", ChargePointStatus?.Id, connectorId, newStatus.ToString());
 
-                if (connectorId > 0)
+                if (connectorId > 0 && !IsConnectorIdAllowed(connectorId))
+                {
+                    // above the maximum of the charge point => no new connector
+                    errorCode = ErrorCodes.PropertyConstraintViolation;
+                }
+                else if (connectorId > 0)
                 {
                     // error code / info of the charge point => EventLog
                     string statusErrorCode = (statusNotificationRequest.ErrorCode != StatusNotificationRequestErrorCode.NoError) ? statusNotificationRequest.ErrorCode.ToString() : null;

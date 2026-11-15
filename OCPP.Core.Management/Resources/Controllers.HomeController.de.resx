@@ -126,6 +126,9 @@
   <data name="ChargePointIdRequired" xml:space="preserve">
     <value>Bitte geben Sie die Kennung der Ladestation an.</value>
   </data>
+  <data name="MaxConnectorIdInvalid" xml:space="preserve">
+    <value>Bitte eine max. Anschluss-Nr/ID von {0} bis {1} angeben.</value>
+  </data>
   <data name="ChargeReport" xml:space="preserve">
     <value>RFID Auswertung</value>
   </data>

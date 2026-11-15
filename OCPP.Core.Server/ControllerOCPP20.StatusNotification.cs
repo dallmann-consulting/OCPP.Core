@@ -71,7 +71,12 @@ namespace OCPP.Core.Server
                 }
                 Logger.LogInformation("StatusNotification => ChargePoint={0} / Connector={1} / EvseID={2} / newStatus={3}", ChargePointStatus?.Id, statusNotificationRequest.ConnectorId, evseId, newStatus.ToString());
 
-                if (evseId > 0)
+                if (evseId > 0 && !IsConnectorIdAllowed(evseId))
+                {
+                    // above the maximum of the charge point => no new connector
+                    errorCode = ErrorCodes.PropertyConstraintViolation;
+                }
+                else if (evseId > 0)
                 {
                     if (UpdateConnectorStatus(evseId, newStatus.ToString(), statusNotificationRequest.Timestamp, null, null) == false)
                     {

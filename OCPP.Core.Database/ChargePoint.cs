@@ -38,6 +38,12 @@ namespace OCPP.Core.Database
         public string Password { get; set; }
         public string ClientCertThumb { get; set; }
 
+        /// <summary>
+        /// Highest connector ID (OCPP 2.x: EVSE ID) the charge point may use. Messages for higher IDs
+        /// create no connector (status) => a charge point cannot create any number of connectors.
+        /// </summary>
+        public int MaxConnectorId { get; set; } = 1;
+
         public virtual ICollection<Transaction> Transactions { get; set; }
     }
 }

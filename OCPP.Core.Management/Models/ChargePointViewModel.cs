@@ -58,5 +58,17 @@ namespace OCPP.Core.Management.Models
 
         [StringLength(100)]
         public string ClientCertThumb { get; set; }
+
+        /// <summary>
+        /// Allowed range of the max. connector ID
+        /// </summary>
+        public const int MinConnectorId = 1;
+        public const int MaxConnectorIdLimit = 1000;
+
+        /// <summary>
+        /// Highest connector ID (OCPP 2.x: EVSE ID) of the charge point (empty field => 0 => invalid)
+        /// </summary>
+        [Required, Range(MinConnectorId, MaxConnectorIdLimit)]
+        public int MaxConnectorId { get; set; } = 1;
     }
 }
